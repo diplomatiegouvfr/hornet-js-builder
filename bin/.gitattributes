@@ -1,0 +1,2 @@
+# Les fichiers suivants seront automatiquement convertis avec un saut de ligne Unix
+builder-cli.js text eol=lf
