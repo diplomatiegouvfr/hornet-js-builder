@@ -1,4 +1,17 @@
-# Hornet JS Builder 5.0.0
+# Hornet JS Builder 1.1.0
+
+- 0055704: [hornet] Qualimétrie : support de tslint-microsoft-contrib (heurtemattes) - traité.
+- 0055719: [hornet] Qualimétrie : Amélioration support tslint (heurtemattes) - traité.
+- 0054393: [hornet] Plugin gulp "absolutizeModuleRequire" > permettre la résolution des fichiers JSON (buganp) - traité.
+- 0055261: [hornet] Intégration webpack dans les buildAndTestDependencies et plugin worker-loader (buganp) - traité.
+- 0055341: [hornet] Génération du hash dans l'historique (buganp) - traité.
+- 0055609: [hornet] chunk webpack & source-map : faire le lien avec les TS, TSX (buganp) - traité.
+- 0055342: [hornet] compile ts dans node_modules + tsconfig (buganp) - traité.
+- 0055345: [hornet] Construction des thèmes (buganp) - traité.
+- 0054144: [hornet] per-registry : retrieve-registry et publish-registry (buganp) - traité.
+
+
+# Hornet JS Builder 1.0.0
 
 - 51715  -  EXP_INF_IAT  -  En tant que Exploitant je peux installer l'applitutoriel
 - 51716  -  INT_PIC_CAT  -  En tant que Intégrateur je peux construire l'applitutoriel
@@ -67,7 +80,7 @@
 - 51791  -  DEV_APT_HAN  -  En tant que Developpeur je peux utiliser React pour le template de page
 - 51792  -  DEV_DEV_DTS  -  En tant que Developpeur je peux mettre des point d'arret dans les TS 
 - 51793  -  DEV_DEV_SCO  -  En tant que Developpeur je peux Lancer les application sans ligne de commande
-- 51794  -  DEV_TEM_TJS  -  En tant que Developpeur je peux Constuire une application Node JS basée sur yeoman (thème Intranet)
+- 51794  -  DEV_TEM_TJS  -  En tant que Developpeur je peux Constuire une application Node JS basée sur yeoman (thème default)
 - 51795  -  DEV_TEM_TJA  -  En tant que Developpeur je peux Constuire une application Service basée sur Maven (Archetype)
 - 51796  -  UTI_APT_ECS  -  En tant que Utilisateur je peux Exporter les données du tableau partenaire au format CSV
 - 51797  -  UTI_APT_EXL  -  En tant que Utilisateur je peux Exporter les données du tableau partenaire au format EXL
@@ -135,13 +148,3 @@
 - 52956  -  UTI_APT_SPI  -  En tant que Utilisateur je peux savoir si un traitement est en cours
 - 52957  -  DEV_APT_UCP  -  En tant que Developpeur je peux Utiliser un context path
 
-
-# Hornet JS Builder 5.0.0-rc2
-- 53168 - Génération des thèmes
-- 53153 - deprecated envify-loader
-- 53088 - Message d'erreur en cas de non présence de route
-- 53142 - Licence.md en minuscule
-- 53260 - Suppression des devdependencies lors du package
-
-# Hornet JS Builder 5.0.0-rc3
-- 53260 - Suppression des devdependencies lors du package

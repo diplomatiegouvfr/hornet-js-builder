@@ -1,9 +1,9 @@
 "use strict";
 module.exports = WebPackComponentTransformer;
-var fs = require('fs');
-var helper = require('../helpers');
-var path = require('path');
-var loaderUtils = require('loader-utils');
+var fs = require("fs");
+var helper = require("../helpers");
+var path = require("path");
+var loaderUtils = require("loader-utils");
 
 function WebPackComponentTransformer(content) {
     this.cacheable();
@@ -12,22 +12,22 @@ function WebPackComponentTransformer(content) {
     var currentFilePath = this.resourcePath;
     //On gère le cas où le fichier ne contient pas le texte, dans ce cas pas de modification
     if (content.indexOf(query.replaceText) === -1) {
-        helper.debug('[webpack]: Ignore du fichier ', currentFilePath);
+        helper.debug("[webpack]: Ignore du fichier ", currentFilePath);
         return content;
     }
 
-    helper.debug('[webpack]: Conf de WebPackComponentTransformer: ', query);
+    helper.debug("[webpack]: Conf de WebPackComponentTransformer: ", query);
 
-    var newLine = '\r\n';
-    var addContent = '// [AUTO GENERATED] DO NOT EDIT THIS FUNCTION DIRECTLY' + newLine;
+    var newLine = "\r\n";
+    var addContent = "// [AUTO GENERATED] DO NOT EDIT THIS FUNCTION DIRECTLY" + newLine;
     var firstIf = true;
 
     var currentFileDir = path.dirname(currentFilePath);
-    helper.debug('[webpack]: currentFilePath: ', currentFilePath);
-    helper.debug('[webpack]: currentFileDir: ', currentFileDir);
+    helper.debug("[webpack]: currentFilePath: ", currentFilePath);
+    helper.debug("[webpack]: currentFileDir: ", currentFileDir);
 
     var sourcesDir = path.join(path.resolve(currentFileDir, query.sourcesDir), path.sep);
-    helper.debug('[webpack]: sourcesDir: ', sourcesDir);
+    helper.debug("[webpack]: sourcesDir: ", sourcesDir);
 
     /**
      * Fonction gérant l'ajout des composants dans la conf webpack
@@ -35,35 +35,35 @@ function WebPackComponentTransformer(content) {
     function handleFile(dir, file) {
         if (helper.endsWith(file, query.fileSuffix)) {
             var fullName = path.join(dir, file);
-            helper.debug('[webpack]: Adding:', fullName);
+            helper.debug("[webpack]: Adding:", fullName);
 
             var extension = path.extname(fullName);
             //helper.debug('File extension:', extension);
 
-            var fileToImport = path.relative(currentFileDir, fullName).replace(/\\/g, '/');
-            if (!helper.startsWith(fileToImport, '.')) {
-                fileToImport = './' + fileToImport;
+            var fileToImport = path.relative(currentFileDir, fullName).replace(/\\/g, "/");
+            if (!helper.startsWith(fileToImport, ".")) {
+                fileToImport = "./" + fileToImport;
             }
-            helper.debug('[webpack]: Relative fileToImport:', fileToImport);
+            helper.debug("[webpack]: Relative fileToImport:", fileToImport);
 
-            var chunkName = fullName.replace(sourcesDir, '').replace(extension, '').replace(/\\/g, '/');
-            helper.debug('[webpack]: chunkName:', chunkName);
+            var chunkName = fullName.replace(sourcesDir, "").replace(extension, "").replace(/\\/g, "/");
+            helper.debug("[webpack]: chunkName:", chunkName);
 
-            var tab = ['if (name === \'', //
-                chunkName,//
-                '\') { ' + newLine,//
-                'require([ \'',//
-                fileToImport,//
-                '\' ], callback);' + newLine,//
-                '}', newLine];
+            var tab = ["if (name === '",
+                chunkName,
+                "') { " + newLine,
+                "require(['",
+                fileToImport,
+                "'], callback);" + newLine,
+                "}", newLine];
 
             if (firstIf) {
                 firstIf = false;
             } else {
-                tab.splice(0, 0, 'else ');
+                tab.splice(0, 0, "else ");
             }
 
-            addContent = addContent + tab.join('');
+            addContent = addContent + tab.join("");
 
         } else {
             // console.log('Skipping: ' + dir + file);
@@ -73,7 +73,7 @@ function WebPackComponentTransformer(content) {
     helper.readDirRecursive(sourcesDir, handleFile);
 
     if (firstIf) {
-        helper.warn('Aucun fichier de type  ', query.fileSuffix, ' présent dans le dossier ', sourcesDir);
+        helper.warn("Aucun fichier de type  ", query.fileSuffix, " présent dans le dossier ", sourcesDir);
         addContent = 'callback(\'ERROR: No File with name \\\'\'+name+\'\\\' found\');';
     } else {
         addContent = addContent + 'else{callback(\'ERROR: No File with name \\\'\'+name+\'\\\' found\');}';

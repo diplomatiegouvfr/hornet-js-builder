@@ -20,24 +20,33 @@ commander
     .option("-d, --debug", "Mode debug")
     .option("--show-webpack-files", "Log les fichiers pris en compte par webpack dans sa phase de compilation du bundle client")
     .option("-i, --ide", "Indique que c'est l'IDE qui compile les TS, dans ce cas la compilation TS est désactivée ainsi que les watchers associés")
-    .option("-r, --registry <url>", "L'url du repository servant à la publication (tasks 'publish' & 'unpublish'")
+    .option("-r, --registry <url>", "L'url du repository global : servant à la récupération des dépendances et à la publication")
+    .option("--publish-registry <url>", "L'url du repository servant uniquement à la publication (tasks 'publish' & 'unpublish'")
+
     .option("-f, --force", "Forcer la mise à jour des dépendances")
     .option("--skipTests", "Permet de ne pas exécuter les tests")
     .option("--skipMinified", "Permet de ne pas minifier les chuncks")
-    .option("-p, --debugPort <port>", "Le port utilisé par node pour permettre la connexion d'un debugger")
+    .option("-p, --debugPort <port>", "Indique le port utilisé par node pour permettre la connexion d'un debugger externe")
+    .option("--lintRules <path>", "Indique un fichier de rules 'tslint.json' autre que celui utilisé par le builder")
+    .option("--lintReport <format>", "Indique le format de sortie pour tslint : prose (défaut), json, verbose, full, msbuild")
     .parse(process.argv);
 
 helper.setForce(commander.force);
 helper.setDebug(commander.debug);
 helper.setRegistry(commander.registry);
+helper.setPublishRegistry(commander.publishRegistry);
 helper.setSkipTests(commander.skipTests);
 helper.setSkipMinified(commander.skipMinified);
 helper.setIDE(commander.ide);
 helper.setShowWebPackFiles(commander.showWebpackFiles);
+helper.setDebugPort(commander.debugPort);
+helper.setLintRules(commander.lintRules);
+helper.setLintReport(commander.lintReport);
 
 helper.info(chalk.cyan("Démarrage de hornet-js-builder dans ", processDir));
 helper.logBuilderModes();
-helper.setDebugPort(commander.debugPort);
+
+helper.allowJSON5();
 
 npm.load(function (err, npmLoaded) {
     if (err) {
@@ -47,11 +56,17 @@ npm.load(function (err, npmLoaded) {
     var project = helper.getCurrentProject();
     helper.info(chalk.cyan("Builder lancé sur le projet", project.packageJson.name, "en version", project.packageJson.version));
 
-    // mise à jour du registry dans npm si passé en paramètre
-    if (helper.getRegistry()) {
-        npm.config.set("registry", helper.getRegistry());
+    var npmDefaultRegistry = npm.config.get("registry");
+    if (!helper.getRegistry() && !helper.getPublishRegistry()) {
+        helper.info("Utilisation du registry configuré dans NPM : " + npmDefaultRegistry);
+    } else {
+        var retrieveRegistry = helper.getRegistry() ? helper.getRegistry() : npmDefaultRegistry;
+        var publishRegistry = helper.getPublishRegistry() ? helper.getPublishRegistry() : npmDefaultRegistry;
+        helper.info("Utilisation des registry : [ retrieve : " + retrieveRegistry + " ; publish : " + publishRegistry + "]");
+
+        // on prend par défaut le retrieve registry
+        npm.config.set("registry", retrieveRegistry);
     }
-    helper.info("Utilisation du registry : " + npm.config.get("registry"));
 
     // adaptation de gulp
     require("../src/extended/gulp-cli-adapter")(gulp);

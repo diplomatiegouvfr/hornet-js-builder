@@ -1,8 +1,8 @@
 "use strict";
 module.exports = WebPackFileLogger;
-var path = require('path');
-var fs = require('fs');
-var helper = require('../helpers');
+var path = require("path");
+var fs = require("fs");
+var helper = require("../helpers");
 var _ = require("lodash");
 
 /**
@@ -18,7 +18,7 @@ function WebPackFileLogger(content) {
     var continueLoop = true;
 
     while (!_.isEmpty(currentDir) && continueLoop) {
-        var currentPackageFile = path.join(currentDir, 'package.json');
+        var currentPackageFile = path.join(currentDir, "package.json");
         //helper.debug('Test package:', currentPackageFile);
         if (helper.fileExists(currentPackageFile)) {
             continueLoop = false;
@@ -35,7 +35,7 @@ function WebPackFileLogger(content) {
                     //Même fichier
                     continue;
                 } else if (sameFileInfos) {
-                    helper.warn('[webpack]: Fichier importé 2 fois:', sameFileInfos.filePath, '=>', ressourcePath);
+                    helper.warn("[webpack]: Fichier importé 2 fois:", sameFileInfos.filePath, "=>", ressourcePath);
                 } else {
                     sameVersionDep.files.push({
                         fileName: relativeFileName,
@@ -49,7 +49,8 @@ function WebPackFileLogger(content) {
                     //helper.info('Librairie ', nameDep.name, ' importée dans 2 versions différentes');
                     var sameFileInfos = _.find(nameDep.files, byFileNamePredicate(relativeFileName));
                     if (sameFileInfos) {
-                        helper.warn('[webpack]: Fichier importé 2 fois dans des versions différentes (', nameDep.version, '=>', currentPackage.version, '):', sameFileInfos.filePath, '=>', ressourcePath);
+                        helper.warn("[webpack]: Fichier importé 2 fois dans des versions différentes (",
+                            nameDep.version, "=>", currentPackage.version, "):", sameFileInfos.filePath, "=>", ressourcePath);
                     }
                 }
 
@@ -64,7 +65,7 @@ function WebPackFileLogger(content) {
                 });
             }
         } else {
-            currentDir = path.resolve(currentDir, '..' + path.sep);
+            currentDir = path.resolve(currentDir, ".." + path.sep);
         }
     }
     return content;

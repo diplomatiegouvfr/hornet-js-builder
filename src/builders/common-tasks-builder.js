@@ -9,6 +9,8 @@ var promise = require("promise");
 var _ = require("lodash");
 var gutil = require("gulp-util");
 var os = require("os");
+var lnk = require("lnk");
+
 /**
  * Module permettant de gérer les tâches communes :
  *   > gestion des dépendances
@@ -26,7 +28,9 @@ module.exports = {
         var autoResolved = {};
         helper.getExternalModules(project).forEach(function(mod) {
             autoResolved[mod.name] = mod;
+            helper.info("Auto resolving module '" + mod.name + "@" + mod.version + " in '" + mod.dir + "'")
         });
+
 
         function cleanAppNodeModules(done) {
             helper.removeDir(path.join(project.dir, helper.NODE_MODULES_APP));
@@ -50,6 +54,21 @@ module.exports = {
                 if (!helper.isValidVersion(version)) {
                     ok = false;
                     helper.error("Version '" + version + "' interdite pour la dépendance '" + key + "' ==> vous devez utiliser une version figée");
+                }
+            });
+            if (ok) done();
+            else {
+                throw new Error("Erreur de versions")
+            }
+        }
+
+        function checkTsDefinitionDependencies(done) {
+            var root = project.packageJson;
+            var ok = true;
+            helper.each(root[helper.TS_DEFINITIONS_DEPENDENCIES], function(version, key) {
+                if (!helper.isValidVersion(version)) {
+                    ok = false;
+                    helper.error("Version '" + version + "' interdite pour la dépendance de definition typescript '" + key + "' ==> vous devez utiliser une version figée");
                 }
             });
             if (ok) done();
@@ -129,42 +148,48 @@ module.exports = {
                     }
                 });
 
+                if (!(helper.HB_JSON_KEY in root)) root[helper.HB_JSON_KEY] = {
+                    current: "",
+                    history: {}
+                };
+
                 // on vérifie si on doit sauvegarder le package.json
                 var saveJson = false;
                 var depsHash = helper.getDependenciesHash(root);
-                if (Object.keys(newFixed).length > 0) {
-                    if (!(helper.HB_JSON_KEY in root)) root[helper.HB_JSON_KEY] = {
-                        current: "",
-                        history: {}
-                    };
-
+                if (Object.keys(newFixed).length > 0 || !root[helper.HB_JSON_KEY].history[depsHash]) {
                     saveJson = true;
                     root[helper.HB_JSON_KEY].current = depsHash;
 
-                    //if (!(depsHash in root[helper.HB_JSON_KEY].history)) {
-                        var allFixed = {};
-                        helper.forEach1Depth(rootReport.fixed, function (name, version) {
-                            allFixed[name] = version;
-                        });
-                        helper.forEach2Depth(newFixed, function (name, version) {
-                            allFixed[name] = version;
-                        });
-                        allFixed = helper.sortObj(allFixed);
-                        root[helper.HB_JSON_KEY].history[depsHash] = {
-                            date: new Date(),
-                            deps: allFixed
-                        };
+                    var allFixed = {};
+                    helper.forEach1Depth(rootReport.fixed, function (name, version) {
+                        allFixed[name] = version;
+                    });
+                    helper.forEach2Depth(newFixed, function (name, version) {
+                        allFixed[name] = version;
+                    });
+                    allFixed = helper.sortObj(allFixed);
+                    root[helper.HB_JSON_KEY].history[depsHash] = {
+                        date: new Date(),
+                        deps: allFixed
+                    };
 
-                    //}
                 } else if (root[helper.HB_JSON_KEY]) {
+                    // cas d'un hash déjà présent > on actualise la date de l'historique
                     if (root[helper.HB_JSON_KEY].current && depsHash != root[helper.HB_JSON_KEY].current) {
                         root[helper.HB_JSON_KEY].current = depsHash;
+                        root[helper.HB_JSON_KEY].history[depsHash].date = new Date();
                         saveJson = true;
                     }
                 }
 
                 // On sauvegarde le package.json si nécessaire
                 if (saveJson) {
+                    // on trie l'historique afin que le courant soit le dernier
+                    root[helper.HB_JSON_KEY].history = helper.sortObj(root[helper.HB_JSON_KEY].history, function(h1, h2) {
+                        var d1 = new Date(h1.value.date);
+                        var d2 = new Date(h2.value.date);
+                        return d1 < d2 ? -1 : d1 > d2 ? 1 : 0;
+                    });
                     helper.stream(
                         end,
                         gulp.src(["package.json"])
@@ -175,6 +200,44 @@ module.exports = {
                     end();
                 }
             });
+        }
+
+        function installTsDefinitionDependencies(done) {
+            var root = project.packageJson;
+            var myPromise = new promise(function(resolve, reject) { resolve(); });
+            helper.each(root[helper.TS_DEFINITIONS_DEPENDENCIES], function(version, name) {
+                myPromise = myPromise.then(function(resolve, reject) {
+                    var targetPath = path.join(helper.TS_DEFINITIONS_DEPENDENCIES_PATH, name);
+                    if (!helper.folderExists(helper.TS_DEFINITIONS_DEPENDENCIES_PATH)) {
+                        fs.mkdirSync(helper.TS_DEFINITIONS_DEPENDENCIES_PATH);
+                    }
+
+                    if (name in autoResolved && version == autoResolved[name].version) {
+                        // on créé un lien symbolique !!
+                        return new promise(function(resolve, reject) {
+                            // en mode resolver : on supprime / recréé systématiquement
+                            if (helper.folderExists(targetPath)) helper.removeDir(targetPath);
+
+                            lnk.sync(autoResolved[name].dir, helper.TS_DEFINITIONS_DEPENDENCIES_PATH);
+                            resolve();
+                        });
+                    } else {
+
+                        // si la dépendance est déjà présente, on saute sauf si c'est un lien symbolique > on supprime
+                        if (helper.folderExists(targetPath)) {
+                            if (helper.isSymlink(targetPath)) helper.removeDir(targetPath);
+                            else return new promise(function(resolve, reject) { resolve(); })
+                        }
+
+                        // on l'installe manuellement
+                        return helper.installAppDependency(npm, name, version, path.join(helper.TS_DEFINITIONS_DEPENDENCIES_PATH, name), autoResolved);
+                    }
+                });
+            });
+            myPromise.catch(function(err) {
+                helper.error("Erreur durant l'installation des dépendances de définition typescript : " + err)
+            });
+            myPromise.then(function(resolve) { done(); });
         }
 
         function installAppDependencies(done) {
@@ -224,15 +287,19 @@ module.exports = {
                 helper.removeDir(path.join(project.dir, helper.NODE_MODULES_APP, name));
             });
 
+            var myPromise = new promise(function(resolve, reject) { resolve(); });
+
             // suppression des dépendances à mettre à jour
             helper.each(toUpdate, function(version, name) {
-                var modulePath = path.join(project.dir, helper.NODE_MODULES_APP, name);
-                helper.info("Suppression de la dépendance installée '" + name + "@" + version + "' car à mettre à jour en version '" + dependencies[name] + "'");
-                helper.removeDir(modulePath);
-                helper.installAppDependency(npm, name, dependencies[name], path.join(helper.NODE_MODULES_APP, name), autoResolved);
+                myPromise = myPromise.then(function(resolve, reject) {
+                    var modulePath = path.join(project.dir, helper.NODE_MODULES_APP, name);
+                    helper.info("Suppression de la dépendance installée '" + name + "@" + version + "' car à mettre à jour en version '" + dependencies[name] + "'");
+                    helper.removeDir(modulePath);
+                    return helper.installAppDependency(npm, name, dependencies[name], path.join(helper.NODE_MODULES_APP, name), autoResolved);
+                });
             });
 
-            var myPromise = new promise(function(resolve, reject) { resolve(); })
+
             var idx = 0, nDeps = Object.keys(toInstall).length;
             // installation des nouvelles dépendances
             helper.each(toInstall, function(version, name) {
@@ -304,6 +371,7 @@ module.exports = {
         gulp.task("dependencies:clean-all",[], cleanNodeModules);
 
         gulp.task("dependencies:check-app", [], checkAppDependencies);
+        gulp.task("dependencies:check-ts-definition", [], checkTsDefinitionDependencies);
 
         gulp.task("dependencies:clean-fix", [], cleanFixedDependencies);
 
@@ -311,8 +379,9 @@ module.exports = {
 
         gulp.task("dependencies:fix-app", ["dependencies:change-app"], fixAppDependencies);
 
+        gulp.task("dependencies:install-ts-definition", ["dependencies:check-ts-definition"], installTsDefinitionDependencies);
         gulp.task("dependencies:install-app", ["dependencies:fix-app"], installAppDependencies);
-        gulp.task("dependencies:install", ["dependencies:install-app"/*, "dependencies:install-test"*/]);
+        gulp.task("dependencies:install", ["dependencies:install-ts-definition", "dependencies:install-app"]);
         gulp.task("install", ["dependencies:install"]);
 
         // Publishing tasks

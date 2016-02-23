@@ -5,6 +5,7 @@ var _ = require("lodash");
 var path = require("path");
 var jsonLoaderName = require.resolve("json-loader");
 var jsxLoaderName = require.resolve("jsx-loader");
+var HornetModulesInDirectoriesPlugin = require("./hornetModulesInDirectoriesPlugin");
 
 module.exports = {
     browser: configBrowser
@@ -30,7 +31,7 @@ var reportFileSizePlugin = {
 };
 
 
-function configBrowser(project, conf) {
+function configBrowser(project, conf, debug) {
     var componentsDir = path.join("..", conf.src);
     var componentsSuffix = "-page.jsx";
     var componentsText = "// WEBPACK_AUTO_GENERATE_CLIENT_ROUTING";
@@ -87,7 +88,12 @@ function configBrowser(project, conf) {
                     test: preLoadersTestRegex,
                     loader: customPreLoadersDir + "webpack-component-loader-processor?sourcesDir=" + routesDir
                     + "&fileSuffix=" + routesSuffix + "&replaceText=" + routesText
-                }]
+                },
+                {
+                    test : /\.js$/,
+                    loader: "source-map"
+                }
+            ]
         },
         resolve: {
             root: project.dir,
@@ -95,13 +101,38 @@ function configBrowser(project, conf) {
             // you can now require("file") instead of require("file.jsx")
             extensions: ["", ".js", ".json", ".jsx"]
         },
+        resolveLoader: {
+            modulesDirectories: [path.join(__dirname, "../../node_modules"), path.resolve(path.join(project.dir, helper.NODE_MODULES_TEST))]
+        },
         devtool: "#source-map",
         plugins: [commonsPlugin, new webpack.NoErrorsPlugin()/*, new webpack.EnvironmentPlugin(["NODE_ENV"])*/],
         minifiedPlugin: new webpack.optimize.UglifyJsPlugin({
             compress: {
                 warnings: false
             }
-        })
+        }),
+        debug: debug,
+        stats: {
+            colors: true,
+            hash: true,
+            version: true,
+            timings: true,
+            publicPath: true,
+            assets: true,
+            chunks: debug || false,
+            errors: true,
+            errorDetails: true,
+            warnings: debug || false,
+            reasons: debug || false,
+            chunkOrigins: debug || false,
+            chunkModules: false,
+            modules: debug || false,
+            children: false,
+            cached: false,
+            cachedAssets: false,
+            source: false,
+            modulesSort: "id"
+        }
     };
 
 
@@ -114,6 +145,10 @@ function configBrowser(project, conf) {
     // on déclare les répertoires perso à webpack
     configuration.resolve["modulesDirectories"] = modulesDirectories;
 
+    // resolver hornet afin de sécuriser les require du style require("src/monModule")
+    configuration.plugins.splice(0, 0, new webpack.ResolverPlugin([new HornetModulesInDirectoriesPlugin("module", modulesDirectories)]));
+
+    //configuration.plugins.splice(1, 0, new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /fr|en/));
     //A priori provoque plus de bugs qu"il n"en résoud
     //configuration.plugins.push(new webpack.optimize.DedupePlugin());
 

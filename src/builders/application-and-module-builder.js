@@ -66,7 +66,7 @@ module.exports = {
         buildConf();
 
         // initialisation de la conf webpack
-        conf.webPackConfiguration = require("../webpack/default-webpack-config.js").browser(project, conf);
+        conf.webPackConfiguration = require("../webpack/default-webpack-config.js").browser(project, conf, helper.isDebug());
 
         //
         // Gestion du clean des target
@@ -137,18 +137,6 @@ module.exports = {
                     .pipe(istanbul(conf.istanbulOpt))
                     .pipe(istanbul.hookRequire()) // Force `require` to return covered files
             );
-            //gulp.src(conf.instrumentableSources, {
-            //    read: true,
-            //    base: conf.instrumentableSourcesBase
-            //})
-            //     // transpilation des fichiers React JSX
-            //    .pipe(react({harmony: true}))
-            //    .pipe(gulp.dest(conf.testWorkDir))
-            //     // instrumentation du code
-            //    .pipe(istanbul(conf.istanbulOpt))
-            //    .pipe(istanbul.hookRequire()) // Force `require` to return covered files
-            //    .on('end', function () {  done() })
-            //    .pipe(new (require('stream').Stream)(), {end: false})
         }
 
         function runTests(done) {
@@ -186,20 +174,6 @@ module.exports = {
             );
         }
 
-        //
-        // Gestion de la transpilation des fichiers TypeScript
-        //
-        var tsProject = gulpTypescript.createProject({
-            target: "ES5",
-            module: "commonjs",
-            declaration: true,
-            noExternalResolve: false,
-            //sourceRoot: conf.targetTS,
-            sortOutput: true,
-            jsx: 'react',
-            moduleResolution: 'classic',
-            experimentalDecorators: true
-        });
 
         function buildTypeScript(doneFn) {
             if (helper.isIDE()) {
@@ -208,17 +182,19 @@ module.exports = {
                 doneFn();
                 return;
             }
-            helper.debug("Compilation des sources ts depuis les directories : ", conf.sourcesTS);
-
-            var base = conf.sourcesTSBase;
-            var tsResult = gulp.src(conf.sourcesTS, {
-                base: base
+            if (!helper.fileExists(path.join(project.dir, "tsconfig.json"))) {
+                return doneFn(new Error("Le fichier 'tsconfig.json' est introuvable dans le répertoire '" + project.dir + "'"));
+            }
+            var tsProject = gulpTypescript.createProject(path.join(project.dir, "tsconfig.json"), {
+                declaration: true,
+                typescript: require("typescript") // permet de forcer la version de typescript déclarée dans le builder plutôt que celle du plugin gulp-typescript
             });
 
             // Activation de la génération des sources maps
-            tsResult = tsResult.pipe(sourcemaps.init());
+            var tsResult = gulp.src(["**/*.ts", "**/*.tsx", "!node_modules/**/*", "definition-ts/**/*.d.ts"])
+                .pipe(sourcemaps.init());
 
-            // Activation de la génération typeScript
+            // Activation de la compilation typeScript
             tsResult = tsResult.pipe(gulpTypescript(tsProject));
 
             // Gestion des erreurs
@@ -277,7 +253,7 @@ module.exports = {
                     var newbase = file.oldBase || path.join(file.base, path.dirname(file.relative));
                     //var newrelative = file.oldRelative || path.basename(file.relative);
 
-                    var isMap = _.endsWith(file.relative, '.js.map');
+                    var isMap = _.endsWith(file.relative, ".js.map");
                     var firstPass = !(file.oldBase); // premier passage
                     if (isMap) {
                         newbase = defaultMapBase;
@@ -285,7 +261,7 @@ module.exports = {
                         // ne conserve dans l'attribut 'file.sourceMap.sources' que les noms des fichier,
                         // à la place du chemin relatif
                         var newSources = file.sourceMap.sources.map(function (sourceMapFile) {
-                            return sourceMapFile.split('/').pop(); // extraction du nom de fichier
+                            return sourceMapFile.split("/").pop(); // extraction du nom de fichier
                         });
                         file.sourceMap.sources = newSources;
                     }
@@ -319,7 +295,8 @@ module.exports = {
                 gulp.src(conf.sourcesDTS)
                     .pipe(modularizeDTS())
                     .pipe(concat(conf.generatedTypings.file))
-                    .pipe(postProcessDTS())
+                    .pipe(absolutizeModuleRequire())
+                    //.pipe(postProcessDTS())
                     .pipe(gulp.dest(dest))
             );
         }
@@ -530,18 +507,17 @@ module.exports = {
                 conf.webPackConfiguration.plugins.push(conf.webPackConfiguration.minifiedPlugin);
             }
 
-            if(conf.webPackConfiguration.resolve.modulesDirectories && _.isArray(conf.webPackConfiguration.resolve.modulesDirectories)) {
+            if (conf.webPackConfiguration.resolve.modulesDirectories && _.isArray(conf.webPackConfiguration.resolve.modulesDirectories)) {
                 conf.webPackConfiguration.resolve.modulesDirectories.forEach(function (dir) {
                     helper.warn("WEBPACK MODULE RESOLVER > répertoire déclaré :", dir);
                 });
             }
 
-            if(conf.webPackConfiguration.module.noParse && _.isArray(conf.webPackConfiguration.module.noParse)) {
+            if (conf.webPackConfiguration.module.noParse && _.isArray(conf.webPackConfiguration.module.noParse)) {
                 conf.webPackConfiguration.module.noParse.forEach(function (regexp) {
                     helper.warn("WEBPACK MODULE RESOLVER > exclusions de :", regexp.toString());
                 });
             }
-
 
             // Lancement de webpack
             helper.stream(
@@ -549,7 +525,9 @@ module.exports = {
                     if (!watchMode) done();
                 },
                 gulp.src(conf.targetClientJs)//
-                    .pipe(gulpWebpack(conf.webPackConfiguration, webpack))//
+                    .pipe(gulpWebpack(conf.webPackConfiguration, webpack, function(err, stats) {
+                        gutil.log(stats.toString(conf.webPackConfiguration.stats));
+                    }))//
                     .pipe(gulpEol("\n"))
                     .pipe(gulp.dest(path.join(conf.static, conf.js)))
             );
@@ -582,14 +560,28 @@ module.exports = {
         }
 
         //
-        // Gestion du jsHint (qualité de code)
+        // Gestion du tslint (qualité de code)
         //
         function lintTaskFn(done) {
+            var lintRulesPath = "../conf/tslint.json";
+            if(helper.getLintRules()){
+                if(path.isAbsolute(helper.getLintRules())){
+                    lintRulesPath = helper.getLintRules();
+                }else{
+                    lintRulesPath = path.normalize(path.join(project.dir, helper.getLintRules()));
+                }
+            }
+
             helper.stream(
                 done,
-                gulp.src(conf.sourcesTS)//
-                    .pipe(gulpTsLint(require("../conf/ts-lint.json")))//
-                    .pipe(gulpTsLint.report("prose", {
+                gulp.src(conf.sourcesTS)
+                    .pipe(gulpTsLint(
+                        {
+                            rulesDirectory: path.join(__dirname, "../../node_modules/tslint-microsoft-contrib"),
+                            configuration: require(lintRulesPath)
+                        })
+                    )
+                    .pipe(gulpTsLint.report(helper.getLintReport(), {
                         emitError: false
                     }))
             );
@@ -697,6 +689,7 @@ module.exports = {
         }
 
         function modulePublishTaskFn(done) {
+            var vfs = require("vinyl-fs");
             helper.stream(
                 function () {
                     helper.npmPublish(npm, "./tmpPublish", function (err) {
@@ -704,7 +697,8 @@ module.exports = {
                         done(err);
                     });
                 },
-                gulp.src(["**/*", "!node_modules/**/*", "!istanbul/**/*"])
+                // vfs au lieu de gulp car bug sur les liens symboliques avec gulp >= 3.8.0
+                vfs.src(["**/*", "definition-ts/**/*", "!node_modules/**/*", "!istanbul/**/*"])
                     .pipe(absolutizeModuleRequire())
                     .pipe(gulp.dest("./tmpPublish"))
             );
@@ -714,6 +708,7 @@ module.exports = {
         function absolutizeModuleRequire() {
             // require('src/aaa/bbb') > require('hornet-js-core/src/aaa/bbb')
             var regexRequire = /require\(["'](src\/[\w\-\/]*)["']\)/;
+            var regexImportExportFrom = /(import|export)[\s]*(.*)[\s]*from[\s]*["'](src\/[\w\-\/]*)["']/;
 
             return through.obj(function (file, enc, cb) {
                 if (file.isNull()) {
@@ -727,13 +722,16 @@ module.exports = {
                 }
 
                 try {
-                    var content = file.contents.toString().replace(/declare /g, '').replace(/\r\n/g, '\n'),
-                        lines = content.split('\n');
+                    var content = file.contents.toString()/*.replace(/declare /g, '')*/.replace(/\r\n/g, "\n"),
+                        lines = content.split("\n");
 
-                    // remplacement des require("src/...") par require("<moduleName>/src/...")
+                    // remplacement des require("src/...") par require("<moduleName>/src/...") OU
+                    // remplacement des import ... from "src/..." par import ... from "<moduleName>/src/..." OU
+                    // remplacement des export from "src/..." par export from "<moduleName>/src/..." OU
                     lines = _.map(lines, function (line) {
                         var processedLine = line,
-                            matches = regexRequire.exec(line);
+                            matches = regexRequire.exec(line),
+                            matches2 = regexImportExportFrom.exec(line);
 
                         if (matches) {
                             var required = matches[1];
@@ -741,6 +739,15 @@ module.exports = {
                                 required = project.name + "/" + required;
                                 processedLine = line.replace(regexRequire, "require(\"" + required + "\")");
                             }
+                        } else if (matches2) {
+                            var requiredType = matches2[1],
+                                required = matches2[2],
+                                requiredSrc = matches2[3];
+                            if (helper.fileExists(path.join(project.dir, requiredSrc + ".js")) || helper.fileExists(path.join(project.dir, requiredSrc + ".jsx"))) {
+                                requiredSrc = project.name + "/" + requiredSrc;
+                                processedLine = line.replace(regexImportExportFrom, requiredType + " " + required + " from \"" + requiredSrc + "\"");
+                            }
+
                         }
                         return processedLine;
                     });
@@ -773,8 +780,8 @@ module.exports = {
                 }
 
                 try {
-                    var content = file.contents.toString().replace(/declare /g, '').replace(/\r\n/g, '\n'),
-                        lines = content.split('\n');
+                    var content = file.contents.toString().replace(/declare /g, "").replace(/\r\n/g, "\n"),
+                        lines = content.split("\n");
 
                     // remplacement des require("src/...") par require("../...")
                     lines = _.map(lines, function (line) {
@@ -788,7 +795,7 @@ module.exports = {
                             var isJs = false;
                             if (isJs = helper.fileExists(path.join(project.dir, required + ".js")) || helper.fileExists(path.join(project.dir, required + ".jsx"))) {
                                 var sr = required;
-                                required = "./" + path.relative(fileDir, path.join(project.dir, required + (isJs ? ".js" : ".jsx"))).replace(/\.[^.$]+$/, '').replace(/\\/g, '/');
+                                required = "./" + path.relative(fileDir, path.join(project.dir, required + (isJs ? ".js" : ".jsx"))).replace(/\.[^.$]+$/, "").replace(/\\/g, "/");
                                 //console.log("file = " , fileDir, ", require1 = ", sr, ", require2 = ", required)
                                 processedLine = line.replace(regexRequire, (line.indexOf("proxyquire") == -1 ? "require" : "proxyquire") + "(\"" + required + "\"");
                             }
@@ -815,11 +822,11 @@ module.exports = {
         gulp.task("clean:test", cleanTestTaskFn);
         gulp.task("clean", ["clean:test"], cleanTaskFn);
 
-        gulp.task("compile:ts", ["clean"], buildTypeScript);
-        gulp.task("compile-no-clean:ts", [], buildTypeScript);
+        gulp.task("compile:ts", ["clean", "dependencies:install-ts-definition"], buildTypeScript);
+        gulp.task("compile-no-clean:ts", ["dependencies:install-ts-definition"], buildTypeScript);
 
         if (project.type === "application") {
-            gulp.task("compile", ["dependencies:install", "compile:ts"]);
+            gulp.task("compile", ["compile:ts"]);
 
         } else {
             gulp.task("compile:dts", ["compile:ts"], buildTypeScriptDefinition);
@@ -877,8 +884,8 @@ module.exports = {
             gulp.task("watch:client", ["watch:ts"], watchClientTaskFn);
             gulp.task("watch:client-prod", ["watch:ts"], watchClientProdTaskFn);
 
-            gulp.task("watch", ["compile", "watch:client", "watch:serveur"]);
-            gulp.task("watch-prod", ["compile", "watch:client-prod", "watch:serveur-prod"]);
+            gulp.task("watch", ["dependencies:install", "compile", "watch:client", "watch:serveur"]);
+            gulp.task("watch-prod", ["dependencies:install", "compile", "watch:client-prod", "watch:serveur-prod"]);
 
             // raccourcis
             gulp.task("ws", ["watch:serveur"]);
@@ -897,12 +904,11 @@ module.exports = {
          * Fonction permettant d'enrichir l'objet de configuration
          */
         function buildConf() {
-            conf.sourcesDTS = ["*.d.ts", "**/*.d.ts"].map(prepend(conf.src));
+            conf.sourcesDTS = ["**/*.d.ts"].map(prepend(conf.src));
 
-            var sourcesAndTestsDts = _.flatten(["*.d.ts", "**/*.d.ts"].map(prepend(conf.src, conf.test)));
+            var sourcesAndTestsDts = _.flatten(["**/*.d.ts"].map(prepend(conf.src, conf.test)));
 
-            conf.sourcesTS = _.flatten(["*.ts", "**/*.ts","*.tsx", "**/*.tsx"].map(prepend(conf.src, conf.test))).concat(sourcesAndTestsDts.map(prepend("!"))).concat("index.ts");
-            conf.sourcesTSBase = "." + path.sep;
+            conf.sourcesTS = _.flatten(["**/*.ts", "**/*.tsx"].map(prepend(conf.src, conf.test))).concat("index.ts");
             conf.targetTS = "." + path.sep;
 
             var extensionsToClean = [];
@@ -910,20 +916,19 @@ module.exports = {
                 extensionsToClean = [];
                 conf.postTSClean = [];
             } else {
-                extensionsToClean = ["*.js*", "**/*.js*", "*.d.ts", "**/*.d.ts"]
-                    .concat("index.js").concat("index.js.map");
+                extensionsToClean = ["**/*.js*", "**/*.d.ts"].concat("index.js").concat("index.js.map");
                 conf.postTSClean = sourcesAndTestsDts;
             }
 
             conf.testSourcesBase = conf.testWorkDir;
-            conf.testSources = ["*{-spec,-test}.{js,jsx}", "**/*{-spec,-test}.{js,jsx}"]
+            conf.testSources = ["**/*{-spec,-test}.{js,jsx}"]
                 .map(prepend(path.join(conf.testSourcesBase, conf.test)));
 
-            conf.allSources = _.flatten(["*.*js*", "**/*.*js*", "!*.js.map", "!**/*.js.map"].map(prepend(conf.src, conf.test))).concat("index.js");
+            conf.allSources = _.flatten(["**/*.*js*", "!**/*.js.map"].map(prepend(conf.src, conf.test))).concat("index.js");
 
             // Fichiers JS à instrumenter pour la mesure de la couverture de code
             conf.instrumentableSourcesBase = conf.testSourcesBase;
-            conf.instrumentableSources = ["*.{js,jsx}", "**/*.{js,jsx}"].map(prepend(path.join(conf.instrumentableSourcesBase, conf.src)));
+            conf.instrumentableSources = ["**/*.{js,jsx}"].map(prepend(path.join(conf.instrumentableSourcesBase, conf.src)));
 
             // Build webpack
             conf.targetClientJs = path.join(conf.src, conf.clientJs);
@@ -936,16 +941,17 @@ module.exports = {
                         path.join(conf.static, conf.js)
                     ])
                     // sauf les fichiers JS "forkés", les JSX, les fichiers JSON
-                    .concat(["extended/*.js", "*.json", "**/*.json", "*.jsx", "**/*.jsx"].map(prepend("!" + conf.src)));
+                    .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(prepend("!" + conf.src)));
 
             conf.cleanTestElements = [
                 testWorkDir,
                 "target"
             ]
                 .concat(extensionsToClean.map(prepend(conf.test)))
-                .concat(["extended/*.js", "*.json", "**/*.json", "*.jsx", "**/*.jsx"].map(prepend("!" + conf.test)));
+                .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(prepend("!" + conf.test)));
 
-            conf.complementarySpaSources = ["*.json"].map(prepend(path.join(conf.src, "resources")));
+            conf.complementarySpaSources = ["*.json"].map(prepend(path.join(conf.src, "resources")))
+                .concat(["*.json"].map(prepend(conf.config)));
 
             conf.istanbulOpt["coverageVariable"] = conf.istanbul["coverageVariable"] = "___" + project.name.replace(/-/g, "_") + "___";
 

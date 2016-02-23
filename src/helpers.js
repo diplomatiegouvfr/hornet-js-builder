@@ -8,6 +8,7 @@ var path = require("path");
 var semver = require("semver");
 var promise = require("promise");
 var eventStream = require("event-stream");
+var JSON5 = require("json5");
 
 var Helper = function () {
 };
@@ -20,16 +21,34 @@ var slice = ArrayProto.slice, //
     nativeMap = ArrayProto.map, //
     nativeForEach = ArrayProto.forEach;
 
-
 // Variables statiques stockant la valeur du répertoire d"installation des dépendances nodejs
 Helper.NODE_MODULES = "node_modules";
 Helper.NODE_MODULES_APP = path.join(Helper.NODE_MODULES, "app");
 Helper.NODE_MODULES_TEST = path.join(Helper.NODE_MODULES, "buildntest");
+Helper.TS_DEFINITIONS_DEPENDENCIES_PATH = "definition-ts";
 
 // Variables statiques stockant le nom des clés des dépendances du package.json
+Helper.TS_DEFINITIONS_DEPENDENCIES = "tsDefinitionDependencies";
 Helper.APP_DEPENDENCIES = "appDependencies";
 Helper.TEST_DEPENDENCIES = "buildAndTestDependencies";
 Helper.HB_JSON_KEY= "____HORNET-BUILDER____DO_NOT_MODIFY_THIS_OBJECT____";
+
+Helper.allowJSON5 = function() {
+    if (!JSON["__oldParse"]) {
+        // autorise les : require("monFichierJson") avec extension .json5
+        require("json5/lib/require");
+
+        // surcharge JSON.parse
+        JSON["__oldParse"] = JSON.parse;
+        JSON.parse = function () {
+            try {
+                return JSON["__oldParse"].apply(JSON, arguments);
+            } catch (e) {
+                return JSON5.parse.apply(JSON5, arguments);
+            }
+        };
+    }
+}
 
 // Getter & Setter pour les modes du builder (options)
 Helper.setDebug = function(value) {
@@ -38,7 +57,7 @@ Helper.setDebug = function(value) {
     }
 };
 Helper.isDebug = function() {
-    return process.env.IS_DEBUG_ENABLED;
+    return process.env.IS_DEBUG_ENABLED || false;
 };
 
 Helper.setForce = function(value) {
@@ -47,16 +66,24 @@ Helper.setForce = function(value) {
     }
 };
 Helper.isForce = function() {
-    return process.env.IS_FORCE_ENABLED;
+    return process.env.IS_FORCE_ENABLED || false;
 };
 
 Helper.setRegistry = function(url) {
     if (!_.isUndefined(url)) {
-        process.env.HB_REGISTRY = url;
+        process.env.HB_RETRIEVE_REGISTRY = process.env.HB_PUBLISH_REGISTRY = url;
+    }
+};
+Helper.setPublishRegistry = function(url) {
+    if (!_.isUndefined(url)) {
+        process.env.HB_PUBLISH_REGISTRY = url;
     }
 };
 Helper.getRegistry = function() {
-    return process.env.HB_REGISTRY;
+    return process.env.HB_RETRIEVE_REGISTRY;
+};
+Helper.getPublishRegistry = function() {
+    return process.env.HB_PUBLISH_REGISTRY;
 };
 
 Helper.setSkipTests = function(value) {
@@ -65,7 +92,7 @@ Helper.setSkipTests = function(value) {
     }
 };
 Helper.isSkipTests = function() {
-    return process.env.HB_SKIP_TESTS;
+    return process.env.HB_SKIP_TESTS || false;
 };
 
 Helper.setSkipMinified = function(value) {
@@ -74,7 +101,7 @@ Helper.setSkipMinified = function(value) {
     }
 };
 Helper.isSkipMinified = function() {
-    return process.env.HB_SKIP_MINIFIED;
+    return process.env.HB_SKIP_MINIFIED || false;
 };
 
 Helper.setIDE = function(value) {
@@ -83,7 +110,7 @@ Helper.setIDE = function(value) {
     }
 };
 Helper.isIDE = function() {
-    return process.env.HB_IDE;
+    return process.env.HB_IDE || false;
 };
 
 Helper.setShowWebPackFiles = function(value) {
@@ -92,7 +119,7 @@ Helper.setShowWebPackFiles = function(value) {
     }
 };
 Helper.isShowWebPackFiles = function() {
-    return process.env.HB_SHOW_WEBPACK_FILES;
+    return process.env.HB_SHOW_WEBPACK_FILES || false;
 };
 Helper.setDebugPort = function(port) {
     if (!_.isUndefined(port)) {
@@ -103,6 +130,26 @@ Helper.getDebugPort = function() {
     return parseInt(process.env.HB_DEBUG_PORT);
 };
 
+Helper.setLintRules = function(rules) {
+    if (!_.isUndefined(rules)) {
+        process.env.HB_LINT_RULES = rules;
+    }
+};
+
+Helper.getLintRules = function() {
+    return process.env.HB_LINT_RULES;
+};
+
+Helper.setLintReport = function(report) {
+    if (!_.isUndefined(report)) {
+        process.env.HB_LINT_REPORT = report;
+    }
+};
+
+Helper.getLintReport = function() {
+    return process.env.HB_LINT_REPORT || "prose";
+};
+
 Helper.logBuilderModes = function() {
     Helper.debug("Mode DEBUG [ON]");
     Helper.debug("Mode IDE:", (Helper.isIDE() ? "[ON]" : "[OFF]"));
@@ -110,6 +157,8 @@ Helper.logBuilderModes = function() {
     Helper.debug("Mode ShowWebPackFiles:", (Helper.isShowWebPackFiles() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode SkipTests:", (Helper.isSkipTests() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode SkipMinified:", (Helper.isSkipMinified() ? "[ON]" : "[OFF]"));
+    Helper.debug("Mode LintRules:", Helper.getLintRules());
+    Helper.debug("Mode LintReport:", Helper.getLintReport());
 };
 
 
@@ -204,7 +253,7 @@ Helper.processLogArgs = function (args) {
 //
 Helper.folderExists = function (path) {
     try {
-        var stat = fs.statSync(path)
+        var stat = fs.statSync(path);
     } catch (_) {
         return false
     }
@@ -213,12 +262,22 @@ Helper.folderExists = function (path) {
 
 Helper.fileExists = function (path) {
     try {
-        var stat = fs.statSync(path)
+        var stat = fs.statSync(path);
     } catch (_) {
         return false
     }
     return stat.isFile()
 };
+
+Helper.isSymlink = function (path) {
+    try {
+        var stat = fs.lstatSync(path);
+    } catch (_) {
+        return false
+    }
+    return stat.isSymbolicLink();
+};
+
 
 /**
  * Lit un repertoire de manière récursive en applicant le callback sur chaque fichier
@@ -560,8 +619,8 @@ Helper.installAppDependency = function(npm, dependencyName, dependencyVersion, t
         var group = up ? null : npm.config.get("group");
         npm.commands.cache.unpack(dependencyName, dependencyVersion, targetDir, null, null, user, group, function (err) {
             if (err) {
-                Helper.error("Erreur durant l'installation de la dépendance '" + dependencyName + "@" + dependencyVersion + "' dans le répertoire '" + targetDir + "'");
-                reject();
+                Helper.error("Erreur durant l'installation de la dépendance '" + dependencyName + "@" + dependencyVersion + "' dans le répertoire '" + targetDir + "' : ", err);
+                reject(err);
             }
             else resolve()
         });
@@ -586,7 +645,7 @@ Helper.installTestDependency = function(npm, dependencyName, dependencyVersion, 
         };
         npm.commands.install(tempDir, [dependencyName + "@" + dependencyVersion], function (err, result) {
             if (err) {
-                Helper.error("Erreur durant l'installation de la dépendance '" + dependencyName + "@" + dependencyVersion + "' dans le répertoire temporaire '" + tempDir + "'");
+                Helper.error("Erreur durant l'installation de la dépendance '" + dependencyName + "@" + dependencyVersion + "' dans le répertoire temporaire '" + tempDir + "' : ", err);
                 reject(err);
             } else {
                 if (!Helper.folderExists(path.join(tempDir, Helper.NODE_MODULES, dependencyName, Helper.NODE_MODULES))) {
@@ -795,8 +854,11 @@ Helper.stream = function(done, streams) {
 
 
 Helper.npmPublish = function(npm, rootPath, done) {
+    var oldRegistry = npm.config.get("registry");
+    if (Helper.getPublishRegistry()) npm.config.set("registry", Helper.getPublishRegistry());
     npm.config.set("force", "true");
     npm.commands.publish([rootPath], function (err) {
+        npm.config.set("registry", oldRegistry);
         npm.config.set("force", "false");
         if (err) {
             Helper.error("Erreur 'publish' : ", err);
@@ -806,8 +868,11 @@ Helper.npmPublish = function(npm, rootPath, done) {
 };
 
 Helper.npmUnpublish = function(npm, name, version, done) {
+    var oldRegistry = npm.config.get("registry");
+    if (Helper.getPublishRegistry()) npm.config.set("registry", Helper.getPublishRegistry());
     npm.config.set("force", "true");
     npm.commands.unpublish([name+"@"+version], function (err) {
+        npm.config.set("registry", oldRegistry);
         npm.config.set("force", "false");
         if (err) {
             Helper.error("Erreur 'unpublish' :", err);
@@ -942,7 +1007,7 @@ function installBuildAndTestDependencies(project, npm, done) {
         Helper.removeDir(path.join(project.dir, Helper.NODE_MODULES_TEST, name));
     });
 
-    var tempDir = path.join(Helper.findCacheFolder(), '__tmp');
+    var tempDir = path.join(Helper.findCacheFolder(), "__tmp");
     if (Helper.folderExists(tempDir)) {
         Helper.removeDir(tempDir);
         fs.mkdirSync(tempDir);

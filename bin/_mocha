@@ -14,6 +14,7 @@ function resolveModules(cdir) {
         moduleResolver.addModuleDirectory(path.normalize(currentDir));
         moduleResolver.addModuleDirectory(path.normalize(path.join(currentDir, helper.NODE_MODULES_APP)));
         moduleResolver.addModuleDirectory(path.normalize(path.join(currentDir, helper.NODE_MODULES_TEST)));
+        moduleResolver.addModuleDirectory(path.normalize(path.join(currentDir, "..", "hornet-js-utils")));
     } else {
         var ncdir = path.normalize(path.join(currentDir, ".."))
         if (ncdir !== currentDir) {
