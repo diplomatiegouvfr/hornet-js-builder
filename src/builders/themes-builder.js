@@ -1,4 +1,7 @@
 "use strict";
+
+var npm = require("npm");
+
 module.exports = {
     gulpTasks: function (gulp, project, conf, helper) {
         var path = require("path");
@@ -10,9 +13,10 @@ module.exports = {
         var concat = require("gulp-concat");
 
         var defaultConf = {
+            src: "src",
             themeName: "theme",
             cssSources: { src: ["src/**/*.css"], targetDir: "css", targetFilename: "theme" },
-            packageSources: [{ src: "src/**/*.*", targetDir: "" }, { src: "!src/**/*.css", targetDir: "" }],
+            packageSources: [ {src: "package.json", targetDir: "" }, { src: "src/**/*.*", targetDir: "" }, { src: "!src/**/*.css", targetDir: "" }],
             zipName: project.name + "-" + project.version + ".zip",
             packageDir: ""
         };
@@ -76,6 +80,7 @@ module.exports = {
 
         function preparePackage(done) {
             var streamsArgs = [done];
+            
             conf.packageSources.forEach(function (packageSource) {
                 streamsArgs.push(
                     gulp.src(packageSource.src)
@@ -130,6 +135,8 @@ module.exports = {
         gulp.task("css:prepare-package", ["css:minify"], preparePackage);
         gulp.task("css:package", ["css:clean", "css:prepare-package"], zipPackage);
         gulp.task("css:clean", clean);
+        gulp.task("clean", clean);
+        gulp.task("clean-all", ["clean", "dependencies:clean-all"]);
 
         // alias
         gulp.task("package", ["css:package"]);
@@ -143,5 +150,7 @@ module.exports = {
 
         // default
         gulp.task("default", ["package"]);
+        gulp.task("default", ["package"]);
+        gulp.task("publish", function(done) { helper.npmPublish(npm, targetDir + "/package", done); });
     }
 };

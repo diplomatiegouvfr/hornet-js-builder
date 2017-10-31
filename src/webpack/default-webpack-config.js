@@ -5,7 +5,12 @@ var _ = require("lodash");
 var path = require("path");
 var jsonLoaderName = require.resolve("json-loader");
 var jsxLoaderName = require.resolve("jsx-loader");
-var HornetModulesInDirectoriesPlugin = require("./hornetModulesInDirectoriesPlugin");
+var HornetModulesInDirectoriesPlugin = require("./hornet-modules-in-directories-plugin");
+var fs = require("fs");
+const configParts = require('../builders/configuration/webpack/config-parts');
+const State = require("../builders/state");
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+
 
 module.exports = {
     browser: configBrowser
@@ -32,13 +37,18 @@ var reportFileSizePlugin = {
 
 
 function configBrowser(project, conf, debug) {
-    var componentsDir = path.join("..", conf.src);
+    var componentsDirs = arrayToString("sourcesDirs", conf.componentsDirs);
     var componentsSuffix = "-page.jsx";
     var componentsText = "// WEBPACK_AUTO_GENERATE_CLIENT_ROUTING";
 
-    var routesDir = "." + path.sep + "routes";
+    var routesDirs = arrayToString("sourcesDirs", conf.routesDirs);
     var routesSuffix = "-routes.js";
     var routesText = "// WEBPACK_AUTO_GENERATE_CLIENT_ROUTE_LOADING";
+
+    let contextRoot;
+    if (require(project.configJsonPath)) {
+        contextRoot = require(project.configJsonPath).contextPath;
+    }
 
     var commonsPluginOptions = {
         name: "client",
@@ -50,9 +60,9 @@ function configBrowser(project, conf, debug) {
 
     var commonsPlugin = new webpack.optimize.CommonsChunkPlugin(commonsPluginOptions);
 
-    var jsonLoaderDir = helper.getStringBefore(jsonLoaderName, "json-loader") + path.sep;
+    var jsonLoaderDir = helper.getStringBefore(jsonLoaderName, "json-loader") ;
     helper.debug("jsonLoaderDir:", jsonLoaderDir);
-    var jsxLoaderDir = helper.getStringBefore(jsxLoaderName, "jsx-loader") + path.sep;
+    var jsxLoaderDir = helper.getStringBefore(jsxLoaderName, "jsx-loader") ;
     helper.debug("jsxLoaderDir:", jsxLoaderDir);
 
     var preLoadersTestRegex = new RegExp(conf.clientJs + "$");
@@ -60,58 +70,81 @@ function configBrowser(project, conf, debug) {
     var customPreLoadersDir = path.resolve(__dirname, "..", "webpack") + path.sep;
     helper.debug("customPreLoadersDir:", customPreLoadersDir);
 
+    var webpackPlugin = [/*commonsPlugin,*/ new webpack.NoErrorsPlugin()/*, new webpack.EnvironmentPlugin(["NODE_ENV"])*/, new ExtractTextPlugin('../css/[name].css')]
+
+    if (helper.isWebpackVisualizer()) {
+        helper.info("Ajout de l'analyse des chunks webpack '--webpackVisualizer' a été utilisée");
+        var Visualizer = require("webpack-visualizer-plugin");
+        webpackPlugin.push(new Visualizer({
+            filename: "./dev/webpack-visualizer.html"
+        }));
+    }
+
+    let staticUrlImg = "/" + (contextRoot || project.name) + "/static-" + project.version + "/";
+    // if(process.env.NODE_ENV != "production") {
+    //     staticUrlImg = "/" + (contextRoot || project.name) + "/static/";
+    // }
+
+
     var configuration = {
         entry: {
             client: "./" + conf.targetClientJs
         },
         output: {
-            publicPath: "./static/" + conf.js + "/",
-            filename: "[name].js"
+            path: path.join(project.dir, "static") ,
+            publicPath: "./static/" ,
+            filename: conf.js + "/[name].js"
         },
         module: {
-            loaders: [{
-                test: /(\.jsx$|rc-calendar)/,
-                loader:  jsxLoaderDir + "jsx-loader?harmony"
-            }, {
-                test: /\.json$/,
-                loader: jsonLoaderDir + "json-loader"
-            }],
-            preLoaders: [
+            rules: [
+                {
+                    test: /(\.jsx$|rc-calendar)/,
+                    loader:  jsxLoaderDir + "jsx-loader?harmony"
+                }, {
+                    test: /\.json$/,
+                    loader: jsonLoaderDir + "json-loader"
+                },
                 {
                     // Permet d"ajouter le chargement asynchrone des composants dans client.js
                     test: preLoadersTestRegex,
-                    loader: customPreLoadersDir + "webpack-component-loader-processor?sourcesDir=" + componentsDir
+                    enforce: "pre",
+                    loader: customPreLoadersDir + "webpack-component-loader-processor?" + componentsDirs
                     + "&fileSuffix=" + componentsSuffix + "&replaceText=" + componentsText
                 },
                 {
                     // Permet d"ajouter le chargement asynchrone des routes dans client.js
                     test: preLoadersTestRegex,
-                    loader: customPreLoadersDir + "webpack-component-loader-processor?sourcesDir=" + routesDir
+                    enforce: "pre",
+                    loader: customPreLoadersDir + "webpack-component-loader-processor?" + routesDirs
                     + "&fileSuffix=" + routesSuffix + "&replaceText=" + routesText
                 },
                 {
-                    test : /\.js$/,
-                    loader: "source-map"
+                    enforce: 'pre',
+                    test: /\.js$/,
+                    loader: "source-map-loader"
+                }, {
+                    test: /\.css$/,
+                    //use: [ 'style-loader', 'css-loader' ]
+                    use: ExtractTextPlugin.extract({
+                        fallback: "style-loader",
+                        use: "css-loader"
+                    })
+                }, {
+                    test: /\.(jpe?g|gif|png)$/,
+                    loader: "file-loader?name=img/[name].[ext]&publicPath=" + staticUrlImg
                 }
             ]
         },
         resolve: {
-            root: project.dir,
-            fallback: [path.join(project.dir, helper.NODE_MODULES)],
             // you can now require("file") instead of require("file.jsx")
-            extensions: ["", ".js", ".json", ".jsx"]
+            extensions: [".js", ".json", ".jsx", ".tsx", ".css"],
+            mainFields: ["webpack", "browser", "web", "browserify", "main", "module"]
         },
         resolveLoader: {
-            modulesDirectories: [path.join(__dirname, "../../node_modules"), path.resolve(path.join(project.dir, helper.NODE_MODULES_TEST))]
+            modules: [path.join(__dirname, "../../node_modules"), path.resolve(path.join(project.dir, helper.NODE_MODULES_BUILD))]
         },
-        devtool: "#source-map",
-        plugins: [commonsPlugin, new webpack.NoErrorsPlugin()/*, new webpack.EnvironmentPlugin(["NODE_ENV"])*/],
-        minifiedPlugin: new webpack.optimize.UglifyJsPlugin({
-            compress: {
-                warnings: false
-            }
-        }),
-        debug: debug,
+        devtool: "source-map",
+        plugins: webpackPlugin,
         stats: {
             colors: true,
             hash: true,
@@ -138,25 +171,30 @@ function configBrowser(project, conf, debug) {
 
     // Webpack modules resolver
     var modulesDirectories = helper.getExternalModuleDirectories(project);
+    modulesDirectories.push(project.dir);
     modulesDirectories.push(path.resolve(path.join(project.dir, helper.NODE_MODULES_APP)));
     modulesDirectories.push(path.resolve(path.join(project.dir, helper.NODE_MODULES)));
     modulesDirectories.push(helper.NODE_MODULES);
+    let parentBuilderFile = path.join(project.dir, "../", helper.BUILDER_FILE)
+    if (fs.existsSync(parentBuilderFile)) {
+        let parentBuilderJs = require(parentBuilderFile);
+        if (parentBuilderJs.type === helper.TYPE.PARENT) {
+            modulesDirectories.push(path.join(project.dir, "../"));
+        }    
+    }
 
     // on déclare les répertoires perso à webpack
-    configuration.resolve["modulesDirectories"] = modulesDirectories;
+    configuration.resolve["modules"] = modulesDirectories;// WP2
 
     // resolver hornet afin de sécuriser les require du style require("src/monModule")
-    configuration.plugins.splice(0, 0, new webpack.ResolverPlugin([new HornetModulesInDirectoriesPlugin("module", modulesDirectories)]));
-
-    //configuration.plugins.splice(1, 0, new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /fr|en/));
-    //A priori provoque plus de bugs qu"il n"en résoud
-    //configuration.plugins.push(new webpack.optimize.DedupePlugin());
+    //WP 2 configuration.plugins.splice(0, 0, [new HornetModulesInDirectoriesPlugin("module", modulesDirectories)]);
 
     if (conf.webPackLogAddedFiles === true) {
-        configuration.module.preLoaders.push(
+        configuration.module.rules.push(
             {
                 // Permet de logger tous les fichiers ajoutés
-                test: /.*/,
+                test: /\.js$/,
+                enforce: "pre",
                 loader: customPreLoadersDir + "webpack-duplicate-file-logger-processor"
             });
     }
@@ -167,4 +205,21 @@ function configBrowser(project, conf, debug) {
 
     helper.debug("Configuration de webpack:", configuration);
     return configuration;
+}
+
+function arrayToString(tabName, array) {
+
+    let tabValue = "";
+
+    array.forEach((elt) => {
+        tabValue += tabName + "[]=" + elt + ","
+    });
+
+    if(tabValue.length == 0) {
+        tabValue = tabName + "[]";
+    } else {
+        tabValue = tabValue.substr(0, tabValue.length -1);
+    }
+
+    return tabValue;
 }

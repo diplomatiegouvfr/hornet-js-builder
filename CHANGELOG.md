@@ -1,3 +1,54 @@
+# Hornet JS Builder 1.5.0
+- Correction pre et post tache depuis un parent
+- Typescript 2.5 et prise en compte du tsconfig.json pour les sources de compilation
+- Dependance externes et parent pour les tests
+- Ajout tache analyse webpack
+
+# Hornet JS Builder 1.4.2
+- Externalisation template KarmaJs
+- Ajout gestion dll webpack
+- Ajout install specifique
+
+# Hornet JS Builder 1.4.1
+- Ajout tache de versionning
+- Ajout tache template
+- Ajout type application-server
+- fixe problème resolver avec parent multi type
+- fixe problème multi application dans parent
+
+# Hornet JS Builder 1.4.0
+
+- Webpack 2
+- Support KarmaJs
+- Typescript 2.2.2 et possibilité de préciser la version
+- Filtre sur ressources client (module externe et noParse)
+- Correction séparation des dépendances de builds, tests, compile 
+
+# Hornet JS Builder 1.3.0
+
+- Refactoring des sources
+- Support Docker
+- Typescript 2.1.5 et possibilité de préciser la version
+- Filtre sur ressources client
+- Personnalisation des routes
+- Externalisation possible de la configuration webpack
+- Dépendance thème embarqué dans package.json 
+- Séparation des dépendances de builds, tests, compile 
+- Package zip pour la deploiement continue
+- Optimisation sur la récupération des dépendances et la construction
+
+# Hornet JS Builder 1.2.0
+
+- 0057102: [hornet] Ajout de la version dans le calcul des dépendances et l'affichage (heurtemattes) - traité.
+- 0057253: [hornet] Evolution typescript 1.8 (heurtemattes) - traité.
+- 0058092: [hornet] Utilisation du clean-fix (heurtemattes) - traité.
+- 0058001: [hornet] Webpackstream : gestion d'erreur uglify (heurtemattes) - traité.
+- 0058087: [hornet] Suppression du check des buildntest à chaque exécution de tâche (heurtemattes) - traité.
+- 0058086: [hornet] Ajout de la tâche clean-all (heurtemattes) - traité.
+- 0058085: [hornet] Aide sur les tasks du builder (heurtemattes) - traité.
+- 0058000: [hornet] Optimisation builder : prepare-package:minified en double (heurtemattes) - traité.
+
+
 # Hornet JS Builder 1.1.0
 
 - 0055704: [hornet] Qualimétrie : support de tslint-microsoft-contrib (heurtemattes) - traité.
@@ -80,7 +131,7 @@
 - 51791  -  DEV_APT_HAN  -  En tant que Developpeur je peux utiliser React pour le template de page
 - 51792  -  DEV_DEV_DTS  -  En tant que Developpeur je peux mettre des point d'arret dans les TS 
 - 51793  -  DEV_DEV_SCO  -  En tant que Developpeur je peux Lancer les application sans ligne de commande
-- 51794  -  DEV_TEM_TJS  -  En tant que Developpeur je peux Constuire une application Node JS basée sur yeoman (thème default)
+- 51794  -  DEV_TEM_TJS  -  En tant que Developpeur je peux Constuire une application Node JS basée sur yeoman (thème Intranet)
 - 51795  -  DEV_TEM_TJA  -  En tant que Developpeur je peux Constuire une application Service basée sur Maven (Archetype)
 - 51796  -  UTI_APT_ECS  -  En tant que Utilisateur je peux Exporter les données du tableau partenaire au format CSV
 - 51797  -  UTI_APT_EXL  -  En tant que Utilisateur je peux Exporter les données du tableau partenaire au format EXL

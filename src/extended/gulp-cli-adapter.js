@@ -31,6 +31,8 @@ module.exports = function (gulp) {
         // Enrobe la fonction de déclaration des tache pour automatiser l'utilisation de run-sequence et gérer le cas du parent-builder
         var oldTaskFn = gulp.task;
         gulp.task = function(taskName, deps, cb) {
+
+            
             cb = _.isArray(deps) ? cb : deps;
             cb = _.isFunction(cb) ? cb : function(done){done();};
             deps = _.isArray(deps) ? deps : [];
@@ -72,44 +74,90 @@ module.exports = function (gulp) {
             } else {
                 oldTaskFn.call(gulp, taskName, deps, function(done) {
                     process.chdir(currentDir);
-                    try {
-                        tasksHistory[taskName].fn(done);
-                    } catch (err) {
-                        done(err);
+                    
+                        
+                    if ( _.isArray(tasksHistory[taskName].deps) &&  tasksHistory[taskName].deps.length > 0 ) {
+                            var arr = tasksHistory[taskName].deps.slice(0);
+                            helper.checkTasksExistence(gulp, arr);
+                            arr.push(function(err) {
+                                if (err) {
+                                    done(err);
+                                } else {
+                                    tasksHistory[taskName].fn(done);
+                                }
+                            });
+                            try {
+                                runSequence.apply(this, arr);
+                            } catch (err) {
+                                done(err);
+                            }
+                    } else {
+                        try {
+                            tasksHistory[taskName].fn(done);
+                        } catch (err) {
+                            done(err);
+                        }
                     }
+
+
+
                 });
             }
         };
 
         function createPrePostTaskFn(taskName) {
+            let name = taskName;
+            let subName = "";
+            let subModule = helper.getCurrentSubModule();
+            let deps = tasksHistory[name].deps;
+            if (subModule) {
+                name += ("/" + subModule.name);
+                subName = "/" + subModule.name;
+                deps = tasksHistory[name].deps.map(removeSuffixeModule(subName))
+            }
+
             var gulpTask = gulp.tasks[taskName];
             var preTaskName = "pre-" + taskName;
             var doTaskName = "do-" + taskName;
             var postTaskName = "post-" + taskName;
 
+
+
             if (_.isUndefined(gulpTask)) {
-                throw new Error("La tâche '" + taskName + "' n'existe pas");
+                throw new Error("La tâche '" + name + "' n'existe pas");
             }
 
-            if (_.isUndefined(gulp.tasks[preTaskName]) && _.isUndefined(gulp.tasks[doTaskName]) && _.isUndefined(gulp.tasks[postTaskName])) {
+            if (_.isUndefined(gulp.tasks[preTaskName+subName]) && _.isUndefined(gulp.tasks[doTaskName+subName]) && _.isUndefined(gulp.tasks[postTaskName+subName])) {
                 // Génération de la tâche 'post'
-                gulp.task(postTaskName, [], function(){});
+                gulp.task(postTaskName, [], function(done){return done()});
 
                 // Génération de la tâche 'do' qui a la fonction d'origine
-                gulp.task(doTaskName, tasksHistory[taskName].fn);
+                gulp.task(doTaskName, tasksHistory[name].fn);
 
                 // Génération de la tâche 'pre'
-                gulp.task(preTaskName, [], function(){});
+                gulp.task(preTaskName, [], function(done){return done()});
 
                 // Modification de la tâche d'origine, ordre : [pre-, deps originales ... , tache originale, post-]
-                gulp.task(taskName, [preTaskName].concat(tasksHistory[taskName].deps).concat([doTaskName, postTaskName]));
+                gulp.task(taskName, [preTaskName].concat(deps).concat([doTaskName, postTaskName]));
+            }
+        }
+
+        function removeSuffixeModule(suffixe) {
+            return (dep) => {
+                if (dep.endsWith(suffixe)) {
+                    return dep.substring(0, dep.indexOf(suffixe));
+                }
+                return dep;
             }
         }
 
         function rewriteTaskFn(gulp, taskName, taskFn) {
+            let subModule = helper.getCurrentSubModule();
+            if (subModule) {
+                taskName += ("/" + subModule.name);
+            }
             gulp.tasks[taskName].fn = taskFn || function () {}; // no-op;
         }
-
         gulp.beforeTask = function (taskName, taskFn) {
             createPrePostTaskFn(taskName);
             rewriteTaskFn(gulp, "pre-" + taskName, taskFn);
@@ -128,7 +176,7 @@ module.exports = function (gulp) {
                 throw new Error("La tâche '" + taskName + "' n'existe pas");
             }
             if (_.isUndefined(gulp.tasks[moduleSubTaskName]) || _.isUndefined(tasksHistory[moduleSubTaskName])) {
-                throw new Error("La tâche '" + moduleSubTaskName + "' n'existe pas");
+                throw new Error("La sous-tâche '" + moduleSubTaskName + "' n'existe pas");
             }
             idx = _.isUndefined(idx) ? tasksHistory[moduleTaskName].deps.length : idx;
             tasksHistory[moduleTaskName].deps.splice(idx, 0, moduleSubTaskName);
