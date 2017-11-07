@@ -219,7 +219,7 @@ Le projet peut également avoir ses propres fichiers de définition en plus de c
     "hornet-js-core": "5.1.X",
     "hornet-js-utils": "5.1.X",
     "hornet-js-passport": "5.1.X",
-    "hornet-themes-intranet": "5.1.X",
+    "hornet-themes": "5.1.X",
     "jsonwebtoken": "7.3.0",
     "connect-flash": "0.1.1",
     "passport": "0.2.1",
