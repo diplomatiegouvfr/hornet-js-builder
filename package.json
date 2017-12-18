@@ -1,6 +1,6 @@
 {
   "name": "hornet-js-builder",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "license": "CECILL-2.1",
   "description": "Builder/loader des Applications Hornet, Wrapper NPM permettant de fixer les versions des dépendances",
   "dependencies": {
@@ -87,6 +87,9 @@
   "bin": {
     "hornetbuilder": "./bin/builder-cli.js",
     "hb": "./bin/builder-cli.js"
+  },
+  "scripts": {
+    "version": "echo $npm_package_version"
   },
   "author": "MEAE - Ministère de l'Europe et des Affaires étrangères",
   "devDependencies": {}

@@ -993,8 +993,10 @@ Helper.readInstalledDependencies = function (nodeModulesPath) {
     if (Helper.folderExists(nodeModulesPath)) {
         var files = fs.readdirSync(nodeModulesPath);
         Helper.each(files, function (file) {
-            var json = require(path.join(nodeModulesPath, file, "package.json"));
-            installed[json.name] = json.version;
+            if (nodeModulesPath.indexOf("@") >= 0) {
+                var json = require(path.join(nodeModulesPath, file, "package.json"));
+                installed[json.name] = json.version;
+            }
         });
     }
     return installed;

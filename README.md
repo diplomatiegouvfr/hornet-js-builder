@@ -123,7 +123,7 @@ $ hb --help
 | -D, --docker [options]' | Exécute les commandes du Builder dans le container Docker nodeJS |
 | --show-webpack-files | Active le listing des fichiers embarqués par webpack lors de la construction du bundle de fichiers clients. Note: Les fichiers sont triés par taille croissante |
 | --webpackVisualizer | Visualisation de la répartition des sources projets et node modules dans un chart, /static/dev/webpack-visualizer.html |
-| -i, --ide | Indique que c'est l'IDE qui gère la compilation des fichiers .ts, .d.ts et .map. Dans ce mode la compilation des fichiers TypeScripts est désactivée ainsi que les watchers associés. De même, la tâche clean ne supprime plus ces fichiers. <br /> Cette option doit être utilisée dès lors qu'une IDE est lancé sur les projets |
+| -i, --ide | Indique que c'est l'IDE qui gère la compilation des fichiers .ts, .d.ts et .map. Dans ce mode la compilation des fichiers TypeScripts est désactivée ainsi que les watchers associés. De même, la tâche clean ne supprime plus ces fichiers. <br /> Cette option doit être utilisée dès lors qu'un IDE est lancé sur les projets |
 | -r, --registry <URL> | Permet d'utiliser un repository spécifique. Par défaut le repository défini dans le fichier `.npmrc` est utilisé |
 | --publish-registry <URL> | Permet de spécifier un repository npm spécifique pour la publication autre que celui par défaut. Par défaut le repository défini dans le fichier `.npmrc` est utilisé |
 | -f, --force | Permet de forcer la mise à jour des dépendances |
@@ -219,7 +219,7 @@ Le projet peut également avoir ses propres fichiers de définition en plus de c
     "hornet-js-core": "5.1.X",
     "hornet-js-utils": "5.1.X",
     "hornet-js-passport": "5.1.X",
-    "hornet-themes": "5.1.X",
+    "hornet-themes-intranet": "5.1.X",
     "jsonwebtoken": "7.3.0",
     "connect-flash": "0.1.1",
     "passport": "0.2.1",
@@ -264,7 +264,6 @@ ex :
     "noResolve": true
   },
   "exclude": [
-    "node_modules",
     "node_modules",
     "static"
   ]
@@ -326,7 +325,7 @@ module.exports = {
 };
 ```
 
-* La clé `type` indique au builder le type de projet actuel. Pour une application le type doit toujours être `application`
+* La clé `type` indique au builder le type de projet actuel. Pour une application le type doit toujours être `application` (types possibles : "parent", "application", "application-server", "module", "theme", "custom").
 * La fonction `gulpTasks` permet :
     * d'ajouter de nouvelles tâches gulp au moyen du paramètre `gulp`
     * de modifier la configuration par défaut du builder (ajouter un répertoire de sources, modifier la conf webpack, ...)
@@ -335,8 +334,8 @@ module.exports = {
 * L'objet `externalModules` permet de déclarer des dépendances à partir de répertoires externes
 * L'objet `config` permet de surcharger la configuration du builder dans chaque application
     * `routesDirs` permet de spécifier les répertoires des routes pour le code splitting automatique
-    * `clientExclude` est un raccourci pour modifier la conf webpack et rajoutes des __externals__
-    * `clientNoParse` est un raccourci pour modifier la conf webpack et rajoutes des __module.noParse__
+    * `clientExclude` est un raccourci pour modifier la conf webpack et rajouter des __externals__
+    * `clientNoParse` est un raccourci pour modifier la conf webpack et rajouter des __module.noParse__
     * `typescript.bin` permet de préciser une autre version de typescript pour la transpilation que celle utiliser ambarquée par le builder
     * `webpack` permet de configurer WebPack pour des projet ayant besoin de loader particulier...
     * `karma` permet de configurer karma (autre navigateur...)
@@ -381,6 +380,8 @@ $ hb maNouvelleTache
 ```
 
 ### Objet de configuration du builder
+
+La configuration par défaut du builder est la suivante:
 
 ```javascript
 var defaultConf = {
@@ -452,8 +453,8 @@ var defaultConf = {
 
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
-| compile:ts | Transpile les sources TS en Javascript.<br />S'exécute uniquement si l'option "-i" (--ide) n'est pas utilisée | clean |
-| compile | Transpile les sources TS en Javascript. | dependencies:install<br />compile:ts |
+| compile:ts | Transpile les sources TS en Javascript.<br />S'exécute uniquement si l'option "-i" (--ide) n'est pas utilisée.| clean |
+| compile | Transpile les sources TS en Javascript. <br /> Cette tâche exécutera un dependencies:install en plus de la tâche clean de la commande compile:ts | dependencies:install<br />compile:ts |
 
 ### Les tâches de test
 
@@ -689,7 +690,7 @@ template: [
     
 ```
 
-Dans cet exemple, le tempplating suivant est lancé :
+Dans cet exemple, le templating suivant est lancé :
 
 1. Sur le répertoire "./template/error" et autant de fois que d'item dans l'attribut context (2). Les fichiers seront suffixés par l'attibut suffixe de chaque contexte (_404, _500) et générés dans le répertoire **error** (attibut *dest*) dans **static/html** du projet.
 2. Sur le répertoire "./template" (valeur par défaut)

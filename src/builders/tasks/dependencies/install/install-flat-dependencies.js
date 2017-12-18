@@ -11,6 +11,12 @@ class InstallTDependencies extends InstallDependencies {
 
     task(gulp, helper, conf, project) {
         return (done) => {
+
+            if (State.testDependenciesInstalled && State.testDependenciesInstalled[project.name]) {
+                helper.info("Dépendances de test déjà installées");
+                return done();
+            }
+
             var root = project.packageJson;
             var dependencies = helper.getFinalDependencies(State.report, root);
             var toRemove = {}, toInstall = {}, toUpdate = {};
@@ -103,8 +109,12 @@ class InstallTDependencies extends InstallDependencies {
                 if (helper.folderExists(path.join(project.dir, helper.NODE_MODULES_TEST, helper.NODE_MODULES))) {
                     helper.removeDir(path.join(project.dir, helper.NODE_MODULES_TEST, helper.NODE_MODULES));
                 }
+                if (!State.testDependenciesInstalled) {
+                    State.testDependenciesInstalled = {};
+                }
+                State.testDependenciesInstalled[project.name] = true;
                 done();
-             });
+            });
         }
     }
 }

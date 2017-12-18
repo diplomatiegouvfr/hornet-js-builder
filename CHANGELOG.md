@@ -1,3 +1,8 @@
+# Hornet JS Builder 1.5.1
+- Correction de l'installation de dépendances sujettes au scope
+- Ajout tache de merge de rapport de test (mocha / karma)
+- Evol pour perfs installation des dépendances de test
+
 # Hornet JS Builder 1.5.0
 - Correction pre et post tache depuis un parent
 - Typescript 2.5 et prise en compte du tsconfig.json pour les sources de compilation

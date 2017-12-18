@@ -22,7 +22,7 @@ State.appDependenciesChanged = true;
  * Marqueur de changement des dépendances de test (pour opimiser les temps)
  * @static
  */
-State.testDependenciesChanged = true;
+State.testDependenciesInstalled = {};
 
 /**
  * Dépendances externes trouvées

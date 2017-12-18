@@ -2,7 +2,6 @@ const debug = require("debug")("run-test");
 
 const path = require("path");
 const mocha = require("gulp-mocha");
-const istanbul = require("gulp-istanbul");
 const chalk = require("chalk");
 const Server = require('karma').Server;
 const Config = require('karma').Config;
@@ -27,7 +26,7 @@ class RunTestKarma extends Task {
         this.config = {
             basePath: project.dir,
             files: [
-                (helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || 'tests.webpack.js'
+                (helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || "tests.webpack.js"//, "src/**/*.js" pour rapport à vide
             ],
             browsers: ["Firefox"],
             port: 9876,
@@ -35,71 +34,61 @@ class RunTestKarma extends Task {
             singleRun: !helper.getFile(),
             // level of logging
             // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
-            logLevel: constants.LOG_INFO,
+            logLevel: constants.LOG_ERROR,
             plugins: [
-                'karma-requirejs',
-                'karma-mocha',
-                'karma-chrome-launcher',
-                'karma-firefox-launcher',
-                'karma-ie-launcher',
-                'karma-mocha-reporter',
-                'karma-html-reporter',
-                //"karma-json-reporter",
-                'karma-coverage',
-                'karma-sourcemap-loader',
-                'karma-webpack',
-                'karma-commonjs'
+                "karma-requirejs",
+                "karma-mocha",
+                "karma-chrome-launcher",
+                "karma-firefox-launcher",
+                "karma-ie-launcher",
+                "karma-mocha-reporter",
+                "karma-html-reporter",
+                "karma-coverage",
+                "karma-sourcemap-loader",
+                "karma-webpack",
+                "karma-commonjs"
             ],
-            frameworks: ['mocha'],
+            frameworks: ["mocha"],
             client: {
                 mocha: {
+                    //grep: "*.karma.js",
                     timeout: 15000,
                     allowUncaught: true,
                 }
             },
             preprocessors: {
-                //'**/src/**/*.js': ['coverage']
+                //"src/**/*.js": ['coverage'], // inutil si loader webpack
+                "*.js": ["webpack"]
             },
             // list of files to exclude
             exclude: [],
             // test results reporter to use
             // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
-            reporters: ["mocha", "coverage", "html" /*, "json"*/],
-            htmlReporter: {
-                outputDir: "./test_report/karma/html", // where to put the reports
-                templatePath: null, // set if you moved jasmine_template.html
-                focusOnFailures: false, // reports show failures on start
-                urlFriendlyName: true, // simply replaces spaces with _ for files/dirs
-                reportName: 'report', // report summary filename; browser info by default
-                // experimental
-                preserveDescribeNesting: true, // folded suites stay folded
-                foldAll: false, // reports start folded (only with preserveDescribeNesting)
-            },
-            // reporter options
-            mochaReporter: {
-                output: "full"
-            },
+            reporters: ["mocha", "coverage", "html" ],
             coverageReporter: {
                 dir: "./test_report/karma",
+                //includeAllSources: true,
                 reporters: [{
                     type: "html",
                     subdir: "./html"
                 },
                     {
                         type: "cobertura",
-                        subdir: "./cobertura"
+                        subdir: "."
                     },
                     {
                         type: "json",
                         subdir: ".",
                         file: "coverage_karma.json"
+                    },{
+                        type: "lcov",
+                        subdir: "./lcov",
+                        file: "lcov.info"
+                    },
+                    {
+                        type: "text",
                     }
                 ]
-                /*,
-                                jsonReporter: {
-                                    stdout: true,
-                                    outputFile: 'coverage_karma.json' // defaults to none 
-                                }*/
             },
             webpack: {
                 devtool: "inline-source-map"
@@ -124,15 +113,14 @@ class RunTestKarma extends Task {
             }
         }
 
-        this.config.preprocessors[(helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || "tests.webpack.js"] = ["webpack", "sourcemap"];
+        //this.config.preprocessors[(helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || "tests.webpack.js"] = ["webpack", "sourcemap"];
     }
 
     task(gulp, helper, conf, project) {
         return (done) => {
             this.config = _.merge(this.config, conf.karma);
 
-            this.config.webpack = merge(this.webpackConf(helper, conf, project), this.config.webpack);
-
+            this.config.webpack = merge(conf.webpack, merge(this.webpackConf(helper, conf, project), this.config.webpack));
             if (helper.isSkipTests()) {
                 helper.info("Exécution des tests annulée car l'option '--skipTests' a été utilisée");
                 return done();
@@ -158,7 +146,7 @@ class RunTestKarma extends Task {
 
         let preLoadersTestRegex = new RegExp(conf.clientJs + "$");
 
-        let customPreLoadersDir = path.resolve(__dirname, "..", "webpack") + path.sep;
+        let customPreLoadersDir = path.resolve(__dirname, "../../..", "webpack") + path.sep;
 
         let configuration = {
             module: {
@@ -191,10 +179,13 @@ class RunTestKarma extends Task {
                     }, {
                         test: /\.(jpe?g|gif|png)$/,
                         loader: 'file-loader?name=img/[name].[ext]&publicPath=static/'
-                    }, // instrumentation du code du projet 
+                    }, // instrumentation du code du projet en utilisant le me instrumenter que pour test:mocha
                     {
                         test: new RegExp(".*\/" + project.name + "\/.+\.js$"),
-                        loader: 'istanbul-instrumenter-loader'
+                        exclude: [new RegExp(".*\/" + helper.NODE_MODULES + "\/.+$"), new RegExp("tests.webpack.js$")],
+                        use: {
+                            loader: path.resolve(customPreLoadersDir, 'instanbul-webpack-loader.js'),
+                        }
                     }
                 ]
             },
@@ -212,10 +203,10 @@ class RunTestKarma extends Task {
             resolveLoader: {
                 modules: [path.join(__dirname, "../../../../node_modules"), path.resolve(path.join(project.dir, helper.NODE_MODULES_TEST))]
             },
-            devtool: "source-map",
-            plugins: [new webpack.NoErrorsPlugin(), new ExtractTextPlugin('../css/[name].css'), new webpack.ContextReplacementPlugin(/.appender/, /console/)],
+            devtool: "eval-source-map",
+            plugins: [new webpack.NoEmitOnErrorsPlugin(), new ExtractTextPlugin('../css/[name].css'), new webpack.ContextReplacementPlugin(/.appender/, /console/)],
             stats: {
-                colors: true,
+                colors: false,
                 hash: true,
                 version: true,
                 timings: true,
@@ -230,10 +221,17 @@ class RunTestKarma extends Task {
                 chunkModules: false,
                 modules: false,
                 children: false,
-                cached: false,
                 cachedAssets: false,
                 source: false,
-                modulesSort: "id"
+                modulesSort: "id",
+                performance: true,
+                cached: true,
+            },
+            performance: {
+                hints: false,
+                assetFilter: function(assetFilename) {
+                    return assetFilename.endsWith(".js");
+                }
             }
         };
 

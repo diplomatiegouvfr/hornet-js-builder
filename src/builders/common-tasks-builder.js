@@ -28,9 +28,9 @@ module.exports = {
         // Dependencies tasks
         new CleanTask("dependencies:clean","", ["dependencies:clean-test", "dependencies:clean-build"], gulp, helper, conf, project, helper.NODE_MODULES_APP);
         new CleanTask("dependencies:clean-build","", [], gulp, helper, conf, project, helper.NODE_MODULES_BUILD);
-        new CleanTask("dependencies:clean-test", "", [], gulp, helper, conf, project, helper.NODE_MODULES_TEST);
+        new CleanTask("dependencies:clean-test", "", [], gulp, helper, conf, project, [helper.NODE_MODULES_TEST, "test_report"]);
         new CleanTask("dependencies:clean-definition","", [], gulp, helper, conf, project, helper.TS_DEFINITIONS_DEPENDENCIES_PATH);
-        new CleanTask("dependencies:clean-all","", ["dependencies:clean-definition", "dependencies:clean-fix"], gulp, helper, conf, project, helper.NODE_MODULES);
+        new CleanTask("dependencies:clean-all","", ["dependencies:clean-definition", "dependencies:clean-fix"], gulp, helper, conf, project, [helper.NODE_MODULES, "test_report"]);
         new CleanDockerContainer("dependencies:clean-docker", "", [], gulp, helper, conf, project);
 
         new InitReportDependencies("dependencies:init", "", [], gulp, helper, conf, project, helper.APP_DEPENDENCIES);

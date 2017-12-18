@@ -36,12 +36,12 @@ commander
     .option("-p, --debugPort <port>", "Indique le port utilisé par node pour permettre la connexion d'un debugger externe")
     .option("--lintRules <path>", "Indique un fichier de rules 'tslint.json' autre que celui utilisé par le builder")
     .option("--lintReport <format>", "Indique le format de sortie pour tslint : prose (défaut), json, verbose, full, msbuild")
-//    .option("-m, --module <module>", "Indique le module pour lequel on souhaite avoir les informations de dépendances")
+    //    .option("-m, --module <module>", "Indique le module pour lequel on souhaite avoir les informations de dépendances")
     .option("--file <file>", "Indique le chemin d'un fichier")
     .option("--dev", "active le mode developpement")
     .option("--offline", "active le mode offline pour la récupération des dépendances, ex : coupure réseau. Prerequis avoir les node_modules, ajouter fetch-retries=0 dans .npmrc")
-//    .option("--release <final / snapshot>", "version ou suffixe si commence par '-' ou '.'", /^(final|snapshot)$/i)     
-    .option("--versionFix [versionFix]", "version ou suffixe si commence par '-', '.' ou si null", (value) => {console.log(value);return value ? value.replace(/'/g, "") : "auto"})      
+    //    .option("--release <final / snapshot>", "version ou suffixe si commence par '-' ou '.'", /^(final|snapshot)$/i)     
+    .option("--versionFix [versionFix]", "version ou suffixe si commence par '-', '.' ou si null", (value) => { console.log(value); return value ? value.replace(/'/g, "") : "auto" })
     .parse(process.argv);
 
 helper.setForce(commander.force);
@@ -67,7 +67,14 @@ helper.setRelease(commander.release);
 helper.setVersion(commander.versionFix);
 
 helper.setCommandArgs(process.argv);
-
+console.log("  _    _                       _          _      \n" +
+    " | |  | |                     | |        (_)     \n" +
+    " | |__| | ___  _ __ _ __   ___| |_ ______ _ ___  \n" +
+    " |  __  |/ _ \\| '__| '_ \\ / _ \\ __|______| / __| \n" +
+    " | |  | | (_) | |  | | | |  __/ |_       | \\__ \\ \n" +
+    " |_|  |_|\\___/|_|  |_| |_|\\___|\\__|      | |___/ \n" +
+    "                                        _/ |     \n" +
+    "                                       |__/      \n")
 
 helper.info(chalk.cyan("Démarrage de hornet-js-builder dans ", processDir));
 helper.logBuilderModes();
@@ -75,7 +82,7 @@ helper.logBuilderModes();
 helper.allowJSON5();
 
 let config = {
-    loglevel : "warn"
+    loglevel: "warn"
 };
 
 npm.load(config, function (err, npmLoaded) {

@@ -85,10 +85,11 @@ module.exports = {
         // Exécution des tests
         new CleanTask("clean-test:mocha", "", [], gulp, helper, conf, project, conf.istanbul.reportOpts.dir);
         new CleanTask("clean-test:karma", "", [], gulp, helper, conf, project, conf.karma.reportOpts.dir);
+        new CleanTask("clean-test:merge", "", [], gulp, helper, conf, project, conf.merge.reportOpts.dir);
         new PrepareTestSources("prepare:testSources", "", ["compile"], gulp, helper, conf, project);
         new InstrumentSourcesTest("test:instrument", "", ["prepare:testSources"], gulp, helper, conf, project);
         //new RunTestsInclusion("test", "", ["clean:test", "test:mocha", "test:karma"], gulp, helper, conf, project);
-        gulp.task("test", ["clean:test", "test:mocha", "test:karma"/*, "test-merge-report"*/])
+        gulp.task("test", ["clean:test", "test:mocha", "test:karma", "test:merge-report"])
         new RunTestMocha("test:mocha", "", ["clean-test:mocha", "dependencies:install", "test:instrument"], gulp, helper, conf, project);
 
         if (helper.getFile()) {
@@ -97,7 +98,7 @@ module.exports = {
             new RunTestKarma("test:karma", "", ["clean-test:karma", "dependencies:install", "compile"], gulp, helper, conf, project);
         }
 
-        new MergeReportsTests("test-merge-report", "", [], gulp, helper, conf, project);
+        new MergeReportsTests("test:merge-report", "", ["clean-test:merge"], gulp, helper, conf, project);
 
         //Packaging
         if (project.type === helper.TYPE.APPLICATION) {

@@ -1,0 +1,6 @@
+test
+istanbul
+.gitignore
+.svn
+node_modules
+target

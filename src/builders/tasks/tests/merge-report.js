@@ -12,37 +12,37 @@ class MergeReportsTests extends Task {
 
     task(gulp, helper, conf, project) {
         return (done) => {
-            
-            
-            /*forEach(files, function (file) {
-                var json = fs.readFileSync(file);
-                map.merge(JSON.parse(json));
-            });
-            var output = path.resolve(options.out);
-            mkdirp.sync(path.dirname(output));
-            fs.writeFileSync(output, JSON.stringify(map));*/
-            
             return  helper.stream(done, 
                 gulp.src("**/coverage_*.json", {
                     base: conf.testReportDir, read: true
                 })
                 // Ecriture des rapports de couverture de code
-                .pipe( this.mergeReports(helper)).on("_result", (argu) => {
-                    helper.info(argu);
+                .pipe( this.mergeReports(helper, conf)).on("finish", (err) => {
+                    if(err) helper.error("Erreur durant le merge des rapports de couverture : " + err);
                 }));
         }
     }
 
-    mergeReports(helper) {
+    mergeReports(helper, conf) {
 
-        var collector = new istanbul.Collector(),
-        reporter = new istanbul.Reporter();
-        //var map = istanbul.createCoverageMap({});
+        var collector = new istanbul.Collector();
+        var Report = istanbul.Report;
+
+        var reporters = conf.merge.reporters.map(function (reporter) {
+            let reportOpts = conf.merge.reportOpts[reporter] || {};
+            return Report.create(reporter, reportOpts);
+          });
 
         function merge(file, encoding, done) {
-
             if (file.isBuffer()) {
-                collector.add(JSON.parse(file.contents.toString('utf-8')));
+                let instruResult = JSON.parse(file.contents.toString('utf-8'));
+                for(let file in instruResult) {
+                    let newResult = instruResult[file];
+                    newResult.path = newResult.path.replace("/istanbul/", "/");
+                    delete instruResult[file];
+                    instruResult[file.replace("/istanbul/", "/")] = newResult;
+                }
+                collector.add(instruResult);
             }
             if (file.isStream()) {
                 this.emit('error', new Error("Stream not supported in merge report"));
@@ -53,11 +53,13 @@ class MergeReportsTests extends Task {
         }
 
         function flush(done) {
-            reporter.add('text');
-            reporter.write(collector, false, function () {
-                helper.info('All reports generated');
-            });
-            this.emit("_result", {merge: "ok"});
+            reporters.forEach(function (reporter) {
+                reporter.writeReport(collector, true, function () {
+                    helper.info('report generated', reporter);
+                });
+              });
+            
+            this.emit("finish");
             done();
         }
 

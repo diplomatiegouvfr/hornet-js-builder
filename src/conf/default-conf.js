@@ -30,19 +30,31 @@ const defaultConf = {
     },
     istanbul: {
         dir: path.join(testWorkDir, "coverage"),
-        reporters: [/*"lcov",*/ "text", "text-summary", "cobertura", "json", "html"],
+        reporters: ["lcov", "text", "text-summary", "cobertura", "json", "html"],
         reportOpts: {
             dir: path.join(testReportDir, "mocha"),
-            html: {dir: path.join(testReportDir, "mocha", "html"), file: "lcov.info"},
-            json: {dir: path.join(testReportDir, "mocha"), file: "coverage_mocha.json"}
+            lcov: {dir: path.join(testReportDir, "mocha", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "mocha", "html")},
+            json: {dir: path.join(testReportDir, "mocha"), file: "coverage_mocha.json"},
+            cobertura: {dir: path.join(testReportDir, "mocha")}
         }
     },
     karma: {
         reporters: ["mocha", "coverage"],
         reportOpts: {
             dir: path.join(testReportDir, "karma"),
-            html: {dir: path.join(testReportDir, "karma", "html"), file: 'lcov.info'},
+            lcov: {dir: path.join(testReportDir, "karma", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "karma", "html")},
             json: {dir: path.join(testReportDir, "karma"), file: "converage_karma.json"}
+        }
+    },merge: {
+        reporters: ["lcov", "text", "text-summary", "cobertura", "json", "html"],
+        reportOpts: {
+            dir: path.join(testReportDir, "merge"),
+            lcov: {dir: path.join(testReportDir, "merge", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "merge", "html")},
+            json: {dir: path.join(testReportDir, "merge"), file: "coverage_mocha.json"},
+            cobertura: {dir: path.join(testReportDir, "merge")}
         }
     },
     istanbulOpt: {
@@ -126,6 +138,7 @@ function buildConf(project, conf, helper) {
         .concat(["*.json"].map(prepend(conf.config)));
 
     conf.istanbulOpt["coverageVariable"] = conf.istanbul["coverageVariable"] = "___" + project.name.replace(/-/g, "_") + "___";
+    conf.istanbulOpt.includeUntested = true;
 
     helper.debug("Configuration du applicationAndModuleBuilder:", conf);
 
