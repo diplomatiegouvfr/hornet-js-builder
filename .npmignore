@@ -4,3 +4,5 @@ istanbul
 .svn
 node_modules
 target
+npm-debug.log
+*.zip

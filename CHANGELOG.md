@@ -1,3 +1,15 @@
+# Hornet JS Builder 1.5.2
+- Filter sur prepare package spa
+- Tolérance à la compilation webpack sur karma
+- Correction sur le chargement du default uniquement sur type application
+- Amélioration des clean et fix @types
+- Maj Chalk
+- Clean du theme
+- MAJ Clé sonar
+- Dependency:set fix les versions de dépendance
+- Ajout d'un message d'erreur sur argument non présent en fix version
+- Création tâche CommunityThemeInclusion 
+
 # Hornet JS Builder 1.5.1
 - Correction de l'installation de dépendances sujettes au scope
 - Ajout tache de merge de rapport de test (mocha / karma)

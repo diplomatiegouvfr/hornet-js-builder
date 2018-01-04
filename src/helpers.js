@@ -35,7 +35,8 @@ Helper.TYPE = {
     APPLICATION_SERVER: "application-server",
     MODULE: "module",
     THEME: "theme",
-    CUSTOM: "custom"
+    CUSTOM: "custom",
+    COMPOSANT: "composant"
 }
 
 Helper.RELEASE_TYPE = {
@@ -133,6 +134,7 @@ Helper.setList = function (value) {
             + "\n " + chalk.blue.bold("dependencies:install-app             ") + " | Installe les dépendances applicatives | dependencies:fix-app"
             + "\n " + chalk.blue.bold("dependencies:install-test            ") + " | Installe les dépendances de test"
             + "\n " + chalk.blue.bold("dependencies:install-app-themes      ") + " | Installe des dépendances de thème embarqué"
+            + "\n " + chalk.blue.bold("dependencies:install-community-themes") + " | Installe des dépendances de thème liés à hornet-js-community"
             + "\n " + chalk.blue.bold("dependencies:install                 ") + " | Installe les dépendances applicatives et les fichiers de définitions | dependencies:install-ts-definition, dependencies:install-buildntest, dependencies:install-app"
             + "\n " + chalk.blue.bold("install                              ") + " | Alias de 'dependencies:install' | dependencies:install"
 
@@ -156,11 +158,13 @@ Helper.setList = function (value) {
 
             + "\n\n Tâches de construction"
             + "\n " + chalk.blue.bold("prepare-package                      ") + " | Lance WebPack pour la construction du js client  (mode debug)"
+            + "\n " + chalk.blue.bold("prepare-package-spa                  ") + " | Lance WebPack pour la construction du js client  (mode spa)"
             + "\n " + chalk.blue.bold("prepare-package:minified             ") + " | Lance WebPack avec la minification pour la construction du js client"
             + "\n " + chalk.blue.bold("prepare-package:spa                  ") + " | Prépare les fichiers à packager pour un projet en FullSpa"
             + "\n " + chalk.blue.bold("package-zip-static                   ") + " | Construit le livrable statique | prepare-package:minified"
             + "\n " + chalk.blue.bold("package-zip-dynamic                  ") + " | Construit le livrable dynamique | prepare-package:minified"
             + "\n " + chalk.blue.bold("package                              ") + " | Lance les tests puis construit tous les livrables | test, package-zip-static et package-zip-dynamic"
+            + "\n " + chalk.blue.bold("package:spa                          ") + " | Lance les tests puis construit tous les livrables spa | "
 
 
             + "\n\n Tâches de watch"
@@ -355,6 +359,16 @@ Helper.getVersion = function () {
     return process.env.VERSION;
 };
 
+Helper.setDependency = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.DEPENDENCY = value;
+    }
+};
+
+Helper.getDependency = function () {
+    return process.env.DEPENDENCY;
+};
+
 
 
 Helper.logBuilderModes = function () {
@@ -437,7 +451,7 @@ Helper.info = function () {
 };
 
 Helper.warn = function () {
-    var argsWithColors = chalk.bgYellow.apply(chalk, ["[WARN]"].concat(Helper.processLogArgs(arguments)));
+    var argsWithColors = chalk.black.bgYellow.apply(chalk, ["[WARN]"].concat(Helper.processLogArgs(arguments)));
     gutil.log.call(gutil, argsWithColors);
 };
 
@@ -993,7 +1007,7 @@ Helper.readInstalledDependencies = function (nodeModulesPath) {
     if (Helper.folderExists(nodeModulesPath)) {
         var files = fs.readdirSync(nodeModulesPath);
         Helper.each(files, function (file) {
-            if (nodeModulesPath.indexOf("@") >= 0) {
+            if (nodeModulesPath.indexOf("@") == -1 && file.indexOf("@") == -1) {
                 var json = require(path.join(nodeModulesPath, file, "package.json"));
                 installed[json.name] = json.version;
             }
@@ -1018,6 +1032,11 @@ Helper.getInstalledTestDependencies = function (rootPath, resolvedFromParent) {
     Object.keys(resolvedFromParent).forEach(function (name) {
         installed[name] = resolvedFromParent[name].version;
     });
+    return installed;
+};
+
+Helper.getInstalledTestBuildDependencies = function (rootPath, resolvedFromParent) {
+    var installed = Helper.readInstalledDependencies(path.join(rootPath, resolvedFromParent));
     return installed;
 };
 
@@ -1169,6 +1188,10 @@ Helper.getProject = function (dir) {
     moduleResolver.addModuleDirectory(path.normalize(path.join(dir, Helper.NODE_MODULES_BUILD)));
     
     let packageJson = require(packageJsonPath);
+    let configProject = {};
+    if(builderJsType === "application"){
+        configProject = require(configProjectPath);
+    }
     //retour arrière sur commit 187090, impossible à utiliser dans le cas ou le builder.js contient des requires
     //let builderJs = require(builderJsPath);
 
@@ -1181,6 +1204,7 @@ Helper.getProject = function (dir) {
         type: builderJsType,
         dir: dir,
         packageJson: packageJson,
+        configJson: configProject,
         configJsonPath: configProjectPath,
         packageJsonPath: packageJsonPath,
         builderJs: builderJsPath
@@ -1306,7 +1330,6 @@ Helper.checkOrInstallBuildDependencies = function (project, npm, cb) {
         return Helper.installBuildOrTestDependencies(project, npm, Helper.BUILD_DEPENDENCIES, Helper.NODE_MODULES_BUILD, cb);
     } else {
         return Promise.resolve(true).then(() => {
-            project.builderJs = require(project.builderJs);
             cb()
         });
     }
@@ -1328,7 +1351,7 @@ Helper.checkBuildAndTestDependencies = function(project) {
 
 Helper.detectBuildOrTestDependenciesChanges = function (project, dependenciesKey, nodeModulePath) {
     var root = project.packageJson;
-    var installedTestDependencies = Helper.getInstalledTestDependencies(project.dir, nodeModulePath);
+    var installedTestDependencies = Helper.getInstalledTestBuildDependencies(project.dir, nodeModulePath);
     var diff = false;
     if (!(dependenciesKey in root) || Object.keys(root[dependenciesKey]).length == 0) {
 
@@ -1376,7 +1399,7 @@ Helper.installBuildOrTestDependencies = function(project, npm, dependenciesKey, 
     var toRemove = {}, toInstall = {}, toUpdate = {};
 
     // on analyse ce qu'il y a à supprimer / installer
-    var installedDependencies = Helper.getInstalledTestDependencies(project.dir, nodeModulePath);
+    var installedDependencies = Helper.getInstalledTestBuildDependencies(project.dir, nodeModulePath);
     Helper.each(installedDependencies, function (version, name) {
         if (!(name in dependencies)) {
             toRemove[name] = version;

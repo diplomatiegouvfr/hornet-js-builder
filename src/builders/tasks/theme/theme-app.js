@@ -48,7 +48,7 @@ class ThemeInclusion extends Task {
                             });
                     } else {
                         helper.error("Le répertoire "+ directoryToMove+ " n'existe pas ");
-                        done();
+                        process.exit(1);
                     }
                 } else {
                     done();

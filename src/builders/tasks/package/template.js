@@ -13,7 +13,7 @@ class Template extends Task {
 
 
         this.launchDir = conf.template.dir || project.dir + "/template";
-        this.targetDir = path.join(project.dir,conf.static, "html") ;
+        this.targetDir = path.join(project.dir,conf.static, conf.templateDir) ;
         this.templateContext = {project: { name: project.name, version: project.version, static: "static-" + project.version + "/"}};
         
     }

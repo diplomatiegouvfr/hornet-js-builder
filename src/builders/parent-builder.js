@@ -6,6 +6,7 @@ var _ = require("lodash");
 const State = require("./state");
 
 const FixVersion = require("./tasks/version/fix-version");
+const FixDependencyVersion = require("./tasks/version/fix-dependency-version");
 
 /**
  * Builder ajoutant les tâches gulp nécessaires à la construction d'un module de type 'parent'
@@ -18,6 +19,7 @@ const FixVersion = require("./tasks/version/fix-version");
 module.exports = {
     gulpTasks: function (gulp, project, conf, helper, loadedCb) {
         new FixVersion("versions:set/" + helper.TYPE.PARENT, "", [], gulp, helper, conf, project);
+        new FixDependencyVersion("dependency:set/" + helper.TYPE.PARENT, "", [], gulp, helper, conf, project);
 
         /* dependance entre des types applications et des types modules */
         var taskDeps = {};

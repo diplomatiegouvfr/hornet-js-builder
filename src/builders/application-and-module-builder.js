@@ -22,6 +22,7 @@ const PreparePackageSpa = require("./tasks/package/prepare-package-spa");
 const PreparePackage = require("./tasks/package/prepare-package");
 const PrepareClean = require("./tasks/package/prepare-clean");
 const ThemeInclusion = require("./tasks/theme/theme-app");
+const CommunityThemeInclusion = require("./tasks/theme/theme-community");
 const ZipTask = require("./tasks/zip/zip");
 const ZipStaticTask = require("./tasks/zip/zip-static");
 const ZipDynamicTask = require("./tasks/zip/zip-dynamic");
@@ -32,7 +33,7 @@ const WatchDTypeScript = require("./tasks/watch/watch-d-typescript");
 const BuildDockerImages = require("./tasks/docker/build-docker-images");
 const PublishDockerImages = require("./tasks/docker/publish-docker-images");
 const ModulePublish = require("./tasks/publish/module-publish");
-const PrepareTemplate = require("./tasks/depaut/prepare-template")
+const PrepareTemplate = require("./tasks/depaut/prepare-template");
 const RunTestKarma = require('./tasks/tests/run-test-karma');
 const RunTestMocha = require('./tasks/tests/run-test-mocha');
 const MergeReportsTests = require('./tasks/tests/merge-report');
@@ -62,11 +63,14 @@ module.exports = {
         //
         // Les micros étapes Gulp
         //
+        new CleanTask("clean:build", "", [], gulp, helper, conf, project, conf.cleanBuildElements);
         new CleanTask("clean:test", "", [], gulp, helper, conf, project, conf.cleanTestElements);
         new CleanTask("clean:static", "", [], gulp, helper, conf, project, conf.cleanStaticElements);
+        new CleanTask("clean:Theme", "", [], gulp, helper, conf, project, conf.cleanThemeElements);
         new CleanTask("clean:src", "", [], gulp, helper, conf, project, conf.cleanElements);
+        new CleanTask("clean:template", "", [], gulp, helper, conf, project, conf.cleanTemplateElements);
         gulp.task("clean", ["clean:src", "clean:test"]);
-        gulp.task("clean-all", ["clean", "dependencies:clean-all"]);
+        gulp.task("clean-all", ["clean", "clean:build", "dependencies:clean-all", "clean:static", "clean:template"]);
 
         new CompileTypeScript("compile:ts", "", ["clean", "dependencies:install-ts-definition"], gulp, helper, conf, project);
         new CompileTypeScript("compile-no-clean:ts", "", ["dependencies:install-ts-definition"], gulp, helper, conf, project);
@@ -103,7 +107,7 @@ module.exports = {
         //Packaging
         if (project.type === helper.TYPE.APPLICATION) {
             new PreparePackageClient("prepare-package:minified", "", [], gulp, helper, conf, project, false, false);
-            new PreparePackageSpa("prepare-package:spa", "", [/*"compile"*/], gulp, helper, conf, project);
+            new PreparePackageSpa("prepare-package:spa", "", [], gulp, helper, conf, project);
             new PreparePackageClient("prepare-package-client", "", [], gulp, helper, conf, project, true, false);
             new PreparePackageDll("prepare-package-dll", "", [], gulp, helper, conf, project, true, false);
             new PreparePackage("prepare-all-package", "", ["prepare-clean"], gulp, helper, conf, project);
@@ -118,6 +122,7 @@ module.exports = {
             //new ZipTask("prepare-package-zip-dynamic", "", [], gulp, helper, conf, project, false);
 
             gulp.task("prepare-package", ["prepare-package:minified", "prepare-all-package"]);
+            gulp.task("prepare-package-spa", ["prepare-package:spa", "prepare-package"]);
 
             gulp.task("package-zip-static", ["prepare-package:minified", "zip-static"]);
             gulp.task("package-zip-dynamic", ["prepare-package:minified", "zip-dynamic"]);
@@ -128,11 +133,14 @@ module.exports = {
                 new PublishDockerImages("publish", "", [], gulp, helper, conf, project);
 
             } else {
-                gulp.task("package", ["compile", "test", "template-html", "prepare-package:minified", "prepare-all-package", "zip-static", "zip-dynamic", "prepare-template"]);
+                gulp.task("package", ["compile", "test", "template-html", "prepare-package",  "zip-static", "zip-dynamic", "prepare-template"]);
+                gulp.task("package:spa", ["compile", "test", "template-html", "prepare-package-spa", "zip-static", "zip-dynamic", "prepare-template"]);
             }
 
             // inclusion des themes en static applicatif
             new ThemeInclusion("dependencies:install-app-themes", "dependencies:install", [], gulp, helper, conf, project);
+            new CommunityThemeInclusion("dependencies:install-community-themes", "dependencies:install", [], gulp, helper, conf, project);
+
         } else if (project.type === helper.TYPE.APPLICATION_SERVER) {
             new PreparePackage("prepare-all-package", "", ["prepare-clean"], gulp, helper, conf, project);
             new PrepareClean("prepare-clean", "", [], gulp, helper, conf, project);

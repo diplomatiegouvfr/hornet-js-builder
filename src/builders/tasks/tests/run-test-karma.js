@@ -126,8 +126,8 @@ class RunTestKarma extends Task {
                 return done();
             }
 
-            new Server(this.config, () => {
-                    done()
+            new Server(this.config, (exitCode) => {
+                    done();
                 }
             ).start();
         }
@@ -204,7 +204,7 @@ class RunTestKarma extends Task {
                 modules: [path.join(__dirname, "../../../../node_modules"), path.resolve(path.join(project.dir, helper.NODE_MODULES_TEST))]
             },
             devtool: "eval-source-map",
-            plugins: [new webpack.NoEmitOnErrorsPlugin(), new ExtractTextPlugin('../css/[name].css'), new webpack.ContextReplacementPlugin(/.appender/, /console/)],
+            plugins: [new ExtractTextPlugin('../css/[name].css'), new webpack.ContextReplacementPlugin(/.appender/, /console/)],
             stats: {
                 colors: false,
                 hash: true,

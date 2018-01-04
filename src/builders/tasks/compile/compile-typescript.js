@@ -28,7 +28,7 @@ class CompileTypeScript extends Task {
                 typescript: require((conf.typescript && conf.typescript.bin) || "typescript") // permet de forcer la version de typescript déclarée dans le builder plutôt que celle du plugin gulp-typescript
             }
 
-            if (project.type === helper.TYPE.MODULE) {
+            if (project.type === helper.TYPE.MODULE || project.type === helper.TYPE.COMPOSANT) {
                 configTS.declaration = true;
             }
 

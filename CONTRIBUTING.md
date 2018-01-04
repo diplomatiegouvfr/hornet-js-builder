@@ -44,14 +44,14 @@ C'est l'équipe projet du `Pôle Architecture` du MEAE qui valide et merge les c
 
 ## Fork
 
-Réaliser le Fork depuis l'interface github sur le projet `hornet-js`
+Réaliser le Fork depuis l'interface github sur le projet `hornet-js-builder`
 
 ## Travailler sur le fork
 
 Clone du fork de l'espace perso : username, ex :
 
 ```
-git clone https://github.com/diplomatiegouvfr/hornet-js.git
+git clone https://github.com/diplomatiegouvfr/hornet-js-builder.git
 ```
 
 Création d'une feature branch en local

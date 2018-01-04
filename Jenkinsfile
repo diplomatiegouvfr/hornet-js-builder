@@ -15,7 +15,7 @@ pipeline {
         VERSION_SNAPSHOT="${VERSION_RELEASE}-${BUILD_TIMESTAMP}"
 
         // Publication
-        ARTIFACTORY_URL = ""
+        ARTIFACTORY_URL = "http://artifactory.app.diplomatie.gouv.fr/artifactory-dev"
         REPOSITORY_GROUP="hornet"
         REPOSITORY_SNAPSHOT = "${REPOSITORY_GROUP}-snapshot"
         REPOSITORY_RELEASE = "${REPOSITORY_GROUP}-release"
@@ -23,8 +23,8 @@ pipeline {
         REPOSITORY_NPM_RELEASE = "${REPOSITORY_GROUP}-npm-release"
 
         // Qualité
-        SONAR_HOST = ""
-        SONAR_AUTH_TOKEN = ""
+        SONAR_HOST = "http://sonar01-nosaml.devng.diplomatie.gouv.fr/sonar"
+        SONAR_CREDENTIALS_KEY = "hornet_cq_at_sonar01"
         SONAR_SCANNER_CLI = "3.0.3.778"
     }
 
@@ -181,6 +181,9 @@ pipeline {
         }
 
         stage("Quality") {
+            environment {
+                SONAR_CREDENTIALS = credentials("${SONAR_CREDENTIALS_KEY}")
+            }
             when {
                 anyOf {
                     branch "develop"
@@ -195,7 +198,7 @@ pipeline {
                 sh '''
                     echo "
                     sonar.host.url=${SONAR_HOST}
-                    sonar.login=${SONAR_AUTH_TOKEN}
+                    sonar.login=${SONAR_CREDENTIALS_PSW}
                     sonar.projectKey=${MODULE_GROUP}:${MODULE_ID}
                     sonar.projectName=${MODULE_ID}
                     sonar.projectVersion=${VERSION_SNAPSHOT}

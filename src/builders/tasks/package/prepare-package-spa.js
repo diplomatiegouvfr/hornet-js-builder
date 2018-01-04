@@ -17,6 +17,17 @@ class PreparePackageSpa extends Task {
                 Array.prototype.push.apply(conf.complementarySpaSources, conf.spaResources);
             }
 
+            if (conf.spaFilter && _.isArray(conf.spaFilter)) {
+                let resultFilter;
+                conf.spaFilter.map((filter) => {
+                    let reg = new RegExp(filter);
+                    resultFilter = conf.complementarySpaSources.filter(word => {
+                        return reg.test(word);
+                    });
+                });
+                conf.complementarySpaSources = resultFilter;
+            }  
+
             helper.stream(
                 done,
                 gulp.src(conf.complementarySpaSources, {

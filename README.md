@@ -259,11 +259,24 @@ ex :
     "module": "commonjs",
     "moduleResolution": "classic",
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "jsx": "react",
     "sourceMap": true,
-    "noResolve": true
+    "noResolve": true,
+    "importHelpers": true,
+    "baseUrl": "./",
+    "paths": {
+      "tslib": [
+        "definition-ts/hornet-js-ts-typings/tslib/tslib.d.ts"
+      ]
+    }
   },
+  "include": [
+    "./**/*.ts*",
+    "./definition-ts/**/*.d.ts"
+  ],
   "exclude": [
+    "istanbul",
     "node_modules",
     "static"
   ]
@@ -274,7 +287,105 @@ ex :
 
 Les projets doivent comporter à la racine un fichier `builder.js` afin de déterminer le type de l'application : `application`, `module`, ... ainsi que les différentes tâches à éxécuter nécessaire à la construction.
 
-Ce fichier doit comporter au minimum le code suivant:
+Ce fichier doit comporter au minimum le code suivant pour hornet.js:
+
+```javascript
+module.exports = {
+    type: "application",
+    authorizedPrerelease: "true",
+
+    gulpTasks: function (gulp, project, conf, helper) {
+        //Add task if needed
+        /*gulp.beforeTask("compile", function () {
+         helper.info("Exemple before compile task");
+         });
+
+         gulp.afterTask("compile", function () {
+         helper.info("Exemple after compile task");
+         });*/
+
+        // Cas PARTICULIER de l'application tuto pour pouvoir la générer en mode SPA et ISOMORPHIC sur la PIC
+        // => on force la tâche prepare-package:spa tout le temps
+        // si mode fullSpa : on redéfini les tâches 'watch' & 'watch-prod' pour y inclure la tâche "prepare-package-spa"
+        //gulp.task("watch", ["compile", "prepare-package:spa", "watch:client"]);
+        //gulp.task("watch-prod", ["compile", "prepare-package:spa", "watch:client-prod"]);
+        gulp.addTaskDependency("package-zip-static", "prepare-package:spa");
+        // conf.template.messages = require("applitutoriel-js-common/src/resources/messages.json")
+        conf.template.forEach((elt, idx) => {
+            if (conf.template[idx].context.forEach) {
+                conf.template[idx].context.forEach((elt, idx2) => {
+                    conf.template[idx].context[idx2].messages = {"applicationTitle": "Application TUTORIEL"};
+                });
+            } else {
+                conf.template[idx].context.messages = {"applicationTitle": "Application TUTORIEL"};
+            }
+        });
+
+    },
+    externalModules: {
+        enabled: false,
+        directories: [
+        ]
+    },
+    config: {
+        routesDirs: ["." + path.sep + "routes"],
+
+        // Exemple d'exclusion de fichiers/répertoires local à l'application et de modules
+        // Cet exemple n'est pas forcement cohérent puisque le client.js n'est pas dépendant des middlewares
+        // Il est là à titre d'exemple uniquement
+
+        clientExclude: {
+            dirs: [
+                path.join("src", "services", "data"),
+                "src/middleware",
+                "nodemailer",
+                "applitutoriel-js-common/src/actions"],
+            filters: [
+                path.join("src", "services", "data") + "/.*-data-\.*",
+                ".*/src/actions/.*",
+                "^config/*"
+            ],
+            modules: [
+                "config",
+                "continuation-local-storage",
+                "carbone",
+                "pdfmake",
+                "pdfmake/src/printer",
+                "pdfkit",
+                "nodemailer",
+                "fontkit"
+            ]
+        },
+        clientContext: [
+            [/moment[\/\\]locale$/, /fr|en/],
+            [/intl[\/\\]locale-data[\/\\]jsonp$/, /fr|en/],
+            [/.appender/, /console/]
+        ],
+        typescript: { //bin: "~/Dev/node-v4.5.0-linux-x64/lib/node_modules/typescript"
+        },
+        template: [
+            {
+                context: [{
+                    error: "404",
+                    suffixe: "_404",
+                    message: "Oops! Nous ne trouvons pas ce que vous cherchez!"
+                }, {error: "500", suffixe: "_500", message: "Oops! Une erreur est survenue!"}],
+                dir: "./template/error",
+                dest: "/error"
+            }, {
+                context: {message: "test template"}
+            }
+        ],
+        spaResources: [path.join("..", "applitutoriel-js-common", "src", "resources") + "**/*.json"],
+        dev: {
+            dllEntry: {vendor: ["ajv", "react-dom", "react", "bluebird", "moment", "intl", "moment-timezone", "lodash"]}
+        }
+    }
+};
+
+```
+
+Ce fichier doit comporter au minimum le code suivant pour hornet.js-lite:
 
 ```javascript
 module.exports = {
@@ -282,6 +393,19 @@ module.exports = {
 
     gulpTasks: function (gulp, project, conf, helper) {
 
+        helper.excludeNodeModulesFromWebpack(
+            ["config", "continuation-local-storage", "sequelize", "pdfmake", "carbone", "csv-parser", "nodemailer"],
+            conf.webPackConfiguration
+        );
+        conf.template.forEach((elt, idx) => {
+            if (conf.template[idx].context.forEach) {
+                conf.template[idx].context.forEach((elt, idx2) => {
+                conf.template[idx].context[idx2].messages =  {"applicationTitle": "Application TUTORIEL"};
+                });
+            } else {
+                conf.template[idx].context.messages =  {"applicationTitle": "Application TUTORIEL"};
+            }
+        });
     },
 
     externalModules: {
@@ -289,37 +413,59 @@ module.exports = {
         directories: [
         ]
     },
-    config : {
-        routesDirs: [
-            "." + path.sep + "routes",
-            "." + path.sep + "routes-bis"
-        ],
+    
+    config: {
+        routesDirs: ["." + path.sep + "routes"],
+        ressources: ["database/**/*"],
+        // Exemple d'exclusion de fichiers/répertoires local à l'application et de modules
+        // Cet exemple n'est pas forcement cohérent puisque le client.js n'est pas dépendant des middlewares
+        // Il est là à titre d'exemple uniquement
         clientExclude: {
             dirs: [
-                path.join("src","services","back"),
-                "config",
-                "src/middleware"],
+                path.join("src", "services", "data"),
+                path.join("src", "dao"),
+                "src/middleware",
+                "nodemailer"],
             filters: [
-                path.join("src","services","data")+"/.*-data\.*"
+                path.join("src", "services", "data") + "/.*-data-\.*"
             ],
             modules: [
+                "hornet-js-database",
                 "config",
-                 "continuation-local-storage",
-                 "pdfmake"
+                "continuation-local-storage",
+                "sequelize",
+                "pdfmake",
+                "carbone",
+                "csv-parser",
+                "nodemailer",
+                "tls"
             ]
         },
-        clientNoParse : []
-        typescript : { 
-            bin: "~/Dev/node-v6.9.0-linux-x64/lib/node_modules/typescript" // permet de spécifier une version de typescript autre que builder
-        },
-        webpack: {
-          // permet de surcharger la configration webpack pour des besoins spécifiques
+        clientContext: [
+            [/moment[\/\\]locale$/, /fr|en/],
+            [/intl[\/\\]locale-data[\/\\]jsonp$/, /fr|en/],
+            [/.appender/, /console/]
+        ],
+        typescript: { //bin: "~/Dev/node-v4.5.0-linux-x64/lib/node_modules/typescript"
         },
         karma: {
-          // permet de surcharger la configuration karmaJs pour des besoins spécifiques
+            template: {
+                debug: "./test/template/debug.html",
+                context: "./test/template/context.html",
+                clientContext: "./test/template/client_with_context.html"
+            }
         },
-        template: {
-            // permet de surcharger la configuration de la tâche de templating html
+        template: [
+            {
+                context: [{error: "404", suffixe: "_404", message: "Oops! Nous ne trouvons pas ce que vous cherchez!"}, {error: "500", suffixe: "_500", message: "Oops! Une erreur est survenue!"}],
+                dir: "./template/error",
+                dest: "/error"
+            }, {
+                context: {message: "test template"}
+            }
+        ]
+        dev: {
+            dllEntry: {vendor: ["hornet-js-react-components", "hornet-js-components", "hornet-js-utils"]}//"ajv", "d3", "react-dom", "react", "bluebird", "moment", "intl", "moment-timezone", "lodash"
         }
     }
 };
@@ -343,11 +489,12 @@ module.exports = {
     * `dllEntry` permet de préciser des dll webpack (gain de temps de construction des chunck)
     * `template` permet de configurer la tâche de templating html
         * `dir` répertoire des templates (par défault 'template')
-        * `context` objet disponible pour le templating, par défaut :
-ou tableau de :
-        * `dir` répertoire des templates (par défault 'template')
-        * `context` objet disponible pour le templating, par défaut :
-
+        * `context` objet disponible pour le templating
+        * `dest` répertoire de destination         
+    * `clientContext` Filtre les modules ex moment et intl : [/moment[\/\\]locale$/, /fr|en/], [intl[\/\\]locale-data[\/\\]jsonp$/, /fr|en/] 
+    * `spaFilter` Filtre les ressources pour le packaging spa, copie des fichiers ressource dans /static
+    * `dev` Expérimentation du builder
+        * `dllEntry` optimisation de chargement des librairies en dev
 * `context` contiendra par défaut :
         
 ```javascript
@@ -384,44 +531,71 @@ $ hb maNouvelleTache
 La configuration par défaut du builder est la suivante:
 
 ```javascript
-var defaultConf = {
-    src: "src", // répertoire des sources
-    test: "test", // répertoire des tests
-    static: "static", // répertoire des statics pour la génération des chuncks
+const testReportDir = "test_report";
+const testWorkDir = "istanbul";
+const defaultConf = {
+    src: "src",
+    test: "test",
+    static: "static",
     js: "js",
-    config: "./config", // répertoire du fichier de configuration de l'application
+    config: "./config",
     generatedTypings: {
         dir: ".",
         file: "definition.d.ts"
     },
-    clientJs: "client.js",// point d'entrée pour Webpack
-    routesDirs: ["." + path.sep + "routes"],// répertoire des routes (fichiers avec suffixe '-routes.js')
-    componentsDirs: [path.join("..", "src")],// répertoire des pages React (fichiers avec suffixe '-page.jsx')
-    testWorkDir: "istanbul",// répertoire de travail pour les tests (transpilation, rapports...)
-    mocha: { // configuration pour mocha (rapport de test (passants / non passants)
+    clientJs: "client.js",
+    routesDirs: ["." + path.sep + "routes"],
+    componentsDirs: [path.join("..", "src")],
+    buildWorkDir: "target",
+    testReportDir: testReportDir,
+    testWorkDir: testWorkDir,
+    templateDir: "html",
+    mocha: {
         reporter: process.env.NODE_ENV === "integration" ? "xunit" : "spec",
         reporterOptions: {
             output: "test-results.xml"
         }
         //,"grep": "Router constructor"
     },
-    istanbul: { // configuration pour istanbul (rapport de taux de couverture des tests
+    istanbul: {
         dir: path.join(testWorkDir, "coverage"),
-        reporters: ["lcov", "text", "text-summary", "cobertura"],
-        reportOpts: {dir: path.join(testWorkDir, "reports")}
+        reporters: ["lcov", "text", "text-summary", "cobertura", "json", "html"],
+        reportOpts: {
+            dir: path.join(testReportDir, "mocha"),
+            lcov: {dir: path.join(testReportDir, "mocha", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "mocha", "html")},
+            json: {dir: path.join(testReportDir, "mocha"), file: "coverage_mocha.json"},
+            cobertura: {dir: path.join(testReportDir, "mocha")}
+        }
+    },
+    karma: {
+        reporters: ["mocha", "coverage"],
+        reportOpts: {
+            dir: path.join(testReportDir, "karma"),
+            lcov: {dir: path.join(testReportDir, "karma", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "karma", "html")},
+            json: {dir: path.join(testReportDir, "karma"), file: "converage_karma.json"}
+        }
+    },merge: {
+        reporters: ["lcov", "text", "text-summary", "cobertura", "json", "html"],
+        reportOpts: {
+            dir: path.join(testReportDir, "merge"),
+            lcov: {dir: path.join(testReportDir, "merge", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "merge", "html")},
+            json: {dir: path.join(testReportDir, "merge"), file: "coverage_mocha.json"},
+            cobertura: {dir: path.join(testReportDir, "merge")}
+        }
     },
     istanbulOpt: {
         includeUntested: true
     },
-    webPackConfiguration: { // configuration pour webpack
-        module: []
+    webPackConfiguration: {
+        module: {}
     },
     webPackMinChunks: 3,
-    webPackLogAddedFiles: true,
     template: {
         context: {}
-    }    
-};
+    }
 ```
 ## Les tâches fournies par hornetbuilder
 
@@ -446,6 +620,7 @@ var defaultConf = {
 | dependencies:install | Installe les dépendances applicatives et les fichiers de définitions | dependencies:install-ts-definition et dependencies:install-app |
 | install | Alias de "dependencies:install" | dependencies:install |
 | versions:set | permet de changer la version du projet | |
+| dependency:set | permet de changer la version d'un module de dépendance du projet | |
 
 ### Les tâches de compilation
 
@@ -743,6 +918,16 @@ $ hb versions:set --versionFix=\'-123\'
 ```
 
 Modifie la version du projet en suffixant par  **'-123'**, il faut echapper les caractères **`**.
+
+### Changement de version d'une dépendance
+
+```shell
+
+$ hb dependency:set --versionFix=1.2.3 --dependencyVersionFix=monpackage
+```
+
+Reprend les principes de `versions:set` mais sur les dépendances d'un projet.
+
 
 ## Licence
 

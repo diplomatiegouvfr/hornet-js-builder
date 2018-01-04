@@ -13,7 +13,7 @@ class FixVersion extends Task {
             let timestamp = new Date();
             if (helper.getVersion()) {
                 State.version = helper.getVersion() != "auto" ? helper.getVersion() : ("-" + timestamp.getFullYear() + (timestamp.getMonth() + 1) + timestamp.getDay() + timestamp.getHours() + timestamp.getMinutes() + timestamp.getSeconds());
-                console.log("State.version " + State.version);
+                helper.info("State.version " + State.version);
             }
         }
     }
@@ -22,15 +22,16 @@ class FixVersion extends Task {
         return (done) => {
 
             if(!State.version) {
+                helper.error("Erreur pas de version fix précisée, utiliser l'argument '--versionFix' !!");
                 return done();
             }
             
-            helper.debug("modification de la version en : " + project.packageJson.version);
+            helper.debug("FixVersion: " + project.packageJson.name, "@" , project.packageJson.version);
 
-            this.replaceInDependencies(project, helper.APP_DEPENDENCIES);
-            this.replaceInDependencies(project, helper.TEST_DEPENDENCIES);
-            this.replaceInDependencies(project, helper.BUILD_DEPENDENCIES);
-            this.replaceInDependencies(project, helper.TS_DEFINITIONS_DEPENDENCIES);
+            this.replaceInModules(project, helper.APP_DEPENDENCIES, helper);
+            this.replaceInModules(project, helper.TEST_DEPENDENCIES, helper);
+            this.replaceInModules(project, helper.BUILD_DEPENDENCIES), helper;
+            this.replaceInModules(project, helper.TS_DEFINITIONS_DEPENDENCIES, helper);
 
             project.packageJson.version = this.getVersion(project);
             project.version = project.packageJson.version;
@@ -45,10 +46,15 @@ class FixVersion extends Task {
         }
     }
 
-    replaceInDependencies(project, KeyDependencies) {
+    replaceInModules(project, KeyDependencies, helper) {
         if (State.moduleList && project.packageJson[KeyDependencies]) {
             Object.keys(State.moduleList).forEach(projectName =>  {
                 if (project.packageJson[KeyDependencies][projectName]) {
+                    let version = this.getVersion(State.moduleList[projectName]);
+
+                    helper.debug("ReplaceInModules " + project.packageJson.name, "@",project.packageJson.version,
+                        ", KeyDependencies : ",KeyDependencies, ", projectName : ", projectName, ", version : ", project.packageJson[KeyDependencies][projectName], "=>", version);
+
                     project.packageJson[KeyDependencies][projectName] = this.getVersion(State.moduleList[projectName]);
                 }
             });

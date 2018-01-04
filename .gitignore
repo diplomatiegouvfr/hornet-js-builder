@@ -1,4 +1,3 @@
-config
 test
 istanbul
 .svn
@@ -6,5 +5,5 @@ istanbul
 node_modules
 target
 definition-ts
-builder.js
-tsconfig.json
+npm-debug.log
+.vscode

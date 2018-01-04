@@ -41,7 +41,8 @@ commander
     .option("--dev", "active le mode developpement")
     .option("--offline", "active le mode offline pour la récupération des dépendances, ex : coupure réseau. Prerequis avoir les node_modules, ajouter fetch-retries=0 dans .npmrc")
     //    .option("--release <final / snapshot>", "version ou suffixe si commence par '-' ou '.'", /^(final|snapshot)$/i)     
-    .option("--versionFix [versionFix]", "version ou suffixe si commence par '-', '.' ou si null", (value) => { console.log(value); return value ? value.replace(/'/g, "") : "auto" })
+    .option("--versionFix <versionFix>", "version ou suffixe si commence par '-', '.' ou si null", (value) => { console.log(value); return value ? value.replace(/'/g, "") : "auto" })
+    .option("--dependencyVersionFix <dependency>", "Fix une version pour une dépendance")
     .parse(process.argv);
 
 helper.setForce(commander.force);
@@ -65,16 +66,17 @@ helper.setDevMode(commander.dev);
 helper.setOfflineMode(commander.offline);
 helper.setRelease(commander.release);
 helper.setVersion(commander.versionFix);
+helper.setDependency(commander.dependencyVersionFix);
 
 helper.setCommandArgs(process.argv);
-console.log("  _    _                       _          _      \n" +
-    " | |  | |                     | |        (_)     \n" +
-    " | |__| | ___  _ __ _ __   ___| |_ ______ _ ___  \n" +
-    " |  __  |/ _ \\| '__| '_ \\ / _ \\ __|______| / __| \n" +
-    " | |  | | (_) | |  | | | |  __/ |_       | \\__ \\ \n" +
-    " |_|  |_|\\___/|_|  |_| |_|\\___|\\__|      | |___/ \n" +
-    "                                        _/ |     \n" +
-    "                                       |__/      \n")
+console.log("  _    _                       _       _      \n" +
+    " | |  | |                     | |     (_)     \n" +
+    " | |__| | ___  _ __ _ __   ___| |_     _ ___  \n" +
+    " |  __  |/ _ \\| '__| '_ \\ / _ \\ __|   | / __| \n" +
+    " | |  | | (_) | |  | | | |  __/ |_  _ | \\_ \\ \n" +
+    " |_|  |_|\\___/|_|  |_| |_|\\___|\\__|(_)| |___/ \n" +
+    "                                     _/ |     \n" +
+    "                                    |__/      \n")
 
 helper.info(chalk.cyan("Démarrage de hornet-js-builder dans ", processDir));
 helper.logBuilderModes();

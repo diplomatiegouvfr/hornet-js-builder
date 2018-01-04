@@ -19,8 +19,10 @@ const defaultConf = {
     clientJs: "client.js",
     routesDirs: ["." + path.sep + "routes"],
     componentsDirs: [path.join("..", "src")],
+    buildWorkDir: "target",
     testReportDir: testReportDir,
     testWorkDir: testWorkDir,
+    templateDir: "html",
     mocha: {
         reporter: process.env.NODE_ENV === "integration" ? "xunit" : "spec",
         reporterOptions: {
@@ -117,25 +119,30 @@ function buildConf(project, conf, helper) {
     // Gestion du clean
     conf.cleanElements =
         extensionsToClean.map(prepend(conf.src))
-            .concat([
-                conf.mocha.reporterOptions.output
-            ])
             // sauf les fichiers JS "forkés", les JSX, les fichiers JSON
             .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(prepend("!" + conf.src)));
 
-
     // Gestion du clean
     conf.cleanStaticElements = [path.join(conf.static, conf.js)];
+    conf.cleanThemeElements = []
+    if(project.configJson["themeName"]){
+        conf.cleanThemeElements.push(path.join(conf.static, project.configJson["themeName"]));
+    }
 
+    conf.cleanBuildElements = [conf.buildWorkDir];
     conf.cleanTestElements = [
         conf.testWorkDir,
-        "target"
+        conf.testReportDir,
+        "karma_html"
     ]
         .concat(extensionsToClean.map(prepend(conf.test)))
         .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(prepend("!" + conf.test)));
 
+    conf.cleanTemplateElements = [path.join(conf.static, conf.templateDir)];
+
     conf.complementarySpaSources = ["*.json"].map(prepend(path.join(conf.src, "resources")))
         .concat(["*.json"].map(prepend(conf.config)));
+
 
     conf.istanbulOpt["coverageVariable"] = conf.istanbul["coverageVariable"] = "___" + project.name.replace(/-/g, "_") + "___";
     conf.istanbulOpt.includeUntested = true;
