@@ -55,8 +55,19 @@ const defaultConf = {
             dir: path.join(testReportDir, "merge"),
             lcov: {dir: path.join(testReportDir, "merge", "lcov"), file: "lcov.info"},
             html: {dir: path.join(testReportDir, "merge", "html")},
-            json: {dir: path.join(testReportDir, "merge"), file: "coverage_mocha.json"},
+            json: {dir: path.join(testReportDir, "merge"), file: "coverage.json"},
             cobertura: {dir: path.join(testReportDir, "merge")}
+        }
+    },remap: {
+        reporters: ["lcovonly", "text", "text-summary", "cobertura", "json", "html"],
+        reportOpts: {
+            dir: path.join(testReportDir, "remap"),
+            lcovonly: {dir: path.join(testReportDir, "remap", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "remap", "html")},
+            json: {dir: path.join(testReportDir, "remap"), file: "coverage.json"},
+            cobertura: {dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml"},
+            text: {dir: path.join(testReportDir, "remap"), file: "coverage.txt"},
+            "text-summary": {dir: path.join(testReportDir, "remap"), file: "coverage_summary.txt"}
         }
     },
     istanbulOpt: {

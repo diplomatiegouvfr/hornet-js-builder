@@ -37,6 +37,7 @@ const PrepareTemplate = require("./tasks/depaut/prepare-template");
 const RunTestKarma = require('./tasks/tests/run-test-karma');
 const RunTestMocha = require('./tasks/tests/run-test-mocha');
 const MergeReportsTests = require('./tasks/tests/merge-report');
+const RemapReportsTests = require('./tasks/tests/remap-report');
 const Template = require('./tasks/package/template');
 
 const Utils = require("./tasks/utils");
@@ -90,6 +91,7 @@ module.exports = {
         new CleanTask("clean-test:mocha", "", [], gulp, helper, conf, project, conf.istanbul.reportOpts.dir);
         new CleanTask("clean-test:karma", "", [], gulp, helper, conf, project, conf.karma.reportOpts.dir);
         new CleanTask("clean-test:merge", "", [], gulp, helper, conf, project, conf.merge.reportOpts.dir);
+        new CleanTask("clean-test:remap", "", [], gulp, helper, conf, project, conf.remap.reportOpts.dir);
         new PrepareTestSources("prepare:testSources", "", ["compile"], gulp, helper, conf, project);
         new InstrumentSourcesTest("test:instrument", "", ["prepare:testSources"], gulp, helper, conf, project);
         //new RunTestsInclusion("test", "", ["clean:test", "test:mocha", "test:karma"], gulp, helper, conf, project);
@@ -103,6 +105,7 @@ module.exports = {
         }
 
         new MergeReportsTests("test:merge-report", "", ["clean-test:merge"], gulp, helper, conf, project);
+        new RemapReportsTests("test:remap-reports", "", [/*"clean-test:remap"*/], gulp, helper, conf, project);
 
         //Packaging
         if (project.type === helper.TYPE.APPLICATION) {

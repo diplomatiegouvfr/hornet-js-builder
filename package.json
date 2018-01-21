@@ -59,6 +59,7 @@
     "npm": "3.10.10",
     "object-hash": "1.1.4",
     "pretty-hrtime": "1.0.2",
+    "remap-istanbul": "^0.10.0",
     "requirejs": "2.3.3",
     "rimraf": "2.5.4",
     "run-sequence": "1.2.2",
