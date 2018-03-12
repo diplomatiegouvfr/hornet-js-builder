@@ -1,12 +1,9 @@
-const debug = require("debug")("run-test");
-
 const path = require("path");
 const mocha = require("gulp-mocha");
 const chalk = require("chalk");
 const Server = require('karma').Server;
 const Config = require('karma').Config;
 const constants = require('karma').constants;
-const Task = require("../task");
 const State = require("../../state");
 const _ = require("lodash");
 
@@ -18,20 +15,31 @@ const merge = require("webpack-merge");
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 const getKarmaConf = require("../../configuration/karma/karma.conf");
+const PreparePackageClient = require("../package/prepare-package-client");
 
-class RunTestKarma extends Task {
+class RunTestKarma extends PreparePackageClient {
 
     constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project) {
         super(name, taskDepend, taskDependencies, gulp, helper, conf, project);
         this.config = {
             basePath: project.dir,
             files: [
-                (helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || "tests.webpack.js"//, "src/**/*.js" pour rapport à vide
+                (helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || "tests.webpack.js",//, "src/**/*.js" pour rapport à vide
             ],
-            browsers: ["Firefox"],
+            customLaunchers: {
+                'PhantomJS_custom': {
+                    base: 'PhantomJS',
+                    debug: true,
+                }
+            },
+            browsers: ["PhantomJS"],
             port: 9876,
             colors: true,
             singleRun: !helper.getFile(),
+            autoWatch: helper.getFile() ? true : false,
+            customLaunchers: {
+
+            },
             // level of logging
             // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
             logLevel: constants.LOG_ERROR,
@@ -39,8 +47,10 @@ class RunTestKarma extends Task {
                 "karma-requirejs",
                 "karma-mocha",
                 "karma-chrome-launcher",
+                "karma-phantomjs-launcher",
                 "karma-firefox-launcher",
                 "karma-ie-launcher",
+                "karma-junit-reporter",
                 "karma-mocha-reporter",
                 "karma-html-reporter",
                 "karma-coverage",
@@ -57,14 +67,20 @@ class RunTestKarma extends Task {
                 }
             },
             preprocessors: {
-                //"src/**/*.js": ['coverage'], // inutil si loader webpack
-                "*.js": ["webpack"]
+                // "src/**/*.js": ['coverage'], // inutil si loader webpack
+                "*.js": ["webpack", "sourcemap"]
             },
             // list of files to exclude
             exclude: [],
             // test results reporter to use
             // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
-            reporters: ["mocha", "coverage", "html" ],
+            reporters: ["mocha", "coverage", "html", "junit"],
+            junitReporter: {
+                outputFile: path.join(conf.karma.reportOpts.dir, "test-results.xml"),
+                useBrowserName: false,
+                suite: project.name,
+                xmlVersion: 1
+            },
             coverageReporter: {
                 dir: "./test_report/karma",
                 //includeAllSources: true,
@@ -72,22 +88,22 @@ class RunTestKarma extends Task {
                     type: "html",
                     subdir: "./html"
                 },
-                    {
-                        type: "cobertura",
-                        subdir: "."
-                    },
-                    {
-                        type: "json",
-                        subdir: ".",
-                        file: "coverage_karma.json"
-                    },{
-                        type: "lcov",
-                        subdir: "./lcov",
-                        file: "lcov.info"
-                    },
-                    {
-                        type: "text",
-                    }
+                {
+                    type: "cobertura",
+                    subdir: "."
+                },
+                {
+                    type: "json",
+                    subdir: ".",
+                    file: "coverage_karma.json"
+                }, {
+                    type: "lcov",
+                    subdir: "./lcov",
+                    file: "lcov.info"
+                },
+                {
+                    type: "text",
+                }
                 ]
             },
             webpack: {
@@ -113,27 +129,35 @@ class RunTestKarma extends Task {
             }
         }
 
-        //this.config.preprocessors[(helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || "tests.webpack.js"] = ["webpack", "sourcemap"];
+        if (helper.getFile()) {
+            this.config.preprocessors[(helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js"))] = ["webpack", "sourcemap"];
+        }
     }
 
     task(gulp, helper, conf, project) {
         return (done) => {
             this.config = _.merge(this.config, conf.karma);
 
-            this.config.webpack = merge(conf.webpack, merge(this.webpackConf(helper, conf, project), this.config.webpack));
+            if (this.config.browsers && this.config.browsers[0] == "PhantomJS") {
+                this.config.files.unshift(path.join(__dirname, "../../../../node_modules", "babel-polyfill", "dist", "polyfill.min.js"))
+            }
+
+            this.config.webpack = merge(conf.webpack, merge(this.webpackConf(helper, conf, project, this.config), this.config.webpack));
             if (helper.isSkipTests()) {
                 helper.info("Exécution des tests annulée car l'option '--skipTests' a été utilisée");
                 return done();
             }
 
+            helper.debug("configuration webpack", this.config.webpack);
+
             new Server(this.config, (exitCode) => {
-                    done();
-                }
+                done();
+            }
             ).start();
         }
     }
 
-    webpackConf(helper, conf, project) {
+    webpackConf(helper, conf, project, confKarma) {
 
         let routesDirs = this.arrayToString("sourcesDirs", conf.routesDirs);
         let routesSuffix = "-routes.js";
@@ -157,36 +181,29 @@ class RunTestKarma extends Task {
                     test: /\.json$/,
                     loader: jsonLoaderDir + "json-loader"
                 },
-                    {
-                        // Permet d"ajouter le chargement asynchrone des routes dans client.js
-                        test: preLoadersTestRegex,
-                        enforce: "pre",
-                        loader: customPreLoadersDir + "webpack-component-loader-processor?" + routesDirs +
-                        "&fileSuffix=" + routesSuffix + "&replaceText=" + routesText
-                    },
-                    {
-                        enforce: 'pre',
-                        test: /\.js$/,
-                        loader: "source-map-loader",
-                        exclude: [path.resolve(project.dir, helper.NODE_MODULES_APP)]
-                    }, {
-                        test: /\.css$/,
-                        //use: [ 'style-loader', 'css-loader' ]
-                        use: ExtractTextPlugin.extract({
-                            fallback: "style-loader",
-                            use: "css-loader"
-                        })
-                    }, {
-                        test: /\.(jpe?g|gif|png)$/,
-                        loader: 'file-loader?name=img/[name].[ext]&publicPath=static/'
-                    }, // instrumentation du code du projet en utilisant le me instrumenter que pour test:mocha
-                    {
-                        test: new RegExp(".*\/" + project.name + "\/.+\.js$"),
-                        exclude: [new RegExp(".*\/" + helper.NODE_MODULES + "\/.+$"), new RegExp("tests.webpack.js$")],
-                        use: {
-                            loader: path.resolve(customPreLoadersDir, 'instanbul-webpack-loader.js'),
-                        }
-                    }
+                {
+                    // Permet d"ajouter le chargement asynchrone des routes dans client.js
+                    test: preLoadersTestRegex,
+                    enforce: "pre",
+                    loader: customPreLoadersDir + "webpack-component-loader-processor?" + routesDirs +
+                    "&fileSuffix=" + routesSuffix + "&replaceText=" + routesText
+                },
+                {
+                    enforce: 'pre',
+                    test: /\.js$/,
+                    loader: "source-map-loader",
+                    exclude: [path.resolve(project.dir, helper.NODE_MODULES_APP)]
+                }, {
+                    test: /\.css$/,
+                    //use: [ 'style-loader', 'css-loader' ]
+                    use: ExtractTextPlugin.extract({
+                        fallback: "style-loader",
+                        use: "css-loader"
+                    })
+                }, {
+                    test: /\.(jpe?g|gif|png)$/,
+                    loader: 'file-loader?name=img/[name].[ext]&publicPath=static/'
+                }
                 ]
             },
             resolve: {
@@ -194,17 +211,14 @@ class RunTestKarma extends Task {
                 mainFields: ["webpack", "browser", "web", "browserify", "main", "module"]
             },
             externals: {
-                "net": "''",
-                "fs": "''",
-                "dns": "''",
-                "continuation-local-storage": "''",
-                "config": "''"
             },
             resolveLoader: {
                 modules: [path.join(__dirname, "../../../../node_modules"), path.resolve(path.join(project.dir, helper.NODE_MODULES_TEST))]
             },
             devtool: "eval-source-map",
-            plugins: [new ExtractTextPlugin('../css/[name].css'), new webpack.ContextReplacementPlugin(/.appender/, /console/)],
+            plugins: [
+                new ExtractTextPlugin('../css/[name].css')
+            ],
             stats: {
                 colors: false,
                 hash: true,
@@ -229,11 +243,50 @@ class RunTestKarma extends Task {
             },
             performance: {
                 hints: false,
-                assetFilter: function(assetFilename) {
+                assetFilter: function (assetFilename) {
                     return assetFilename.endsWith(".js");
                 }
             }
         };
+
+        if (!helper.getFile()) {
+            configuration.module.rules.push(// instrumentation du code du projet en utilisant le me instrumenter que pour test:mocha
+                {
+                    test: new RegExp(".*\/" + project.name + "\/.+\.js$"),
+                    exclude: [new RegExp(".*\/" + helper.NODE_MODULES + "\/.+$"), new RegExp("tests.webpack.js$")],
+                    use: {
+                        loader: path.resolve(customPreLoadersDir, 'instanbul-webpack-loader.js'),
+                    }
+                });
+        }
+
+        if (confKarma.browsers && confKarma.browsers[0] == "PhantomJS") {
+            configuration.module.rules.push({
+                test: /\.js$/,
+                include: [/node_modules\/.*\/log4js\//, /node_modules\/.*\/async-listener\//],
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: [path.join(__dirname, "../../../../node_modules", "babel-preset-env")]
+                    }
+                }
+            });
+        }
+
+
+        // ajout des ContextReplacementPlugin
+        this.buildClientContext(conf.karma, configuration);
+
+        // ajout des externals
+        this.buildExternal(conf.karma, configuration, helper);
+
+        if (helper.isWebpackVisualizer()) {
+            helper.info("Ajout de l'analyse des chunks webpack '--webpackVisualizer' a été utilisée");
+            const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+            configuration.plugins.push(new BundleAnalyzerPlugin({
+                reportFilename: path.resolve(path.join(project.dir, "dev", "webpack-visualizer.html")), analyzerMode: "static", openAnalyzer: false
+            }));
+        }
 
         // Webpack modules resolver
         let modulesDirectories = helper.getExternalModuleDirectories(project);
@@ -249,9 +302,10 @@ class RunTestKarma extends Task {
                 modulesDirectories.push(path.join(project.dir, ".."));
             }
         }
+        configuration.resolve["modules"] = modulesDirectories;// WP2
 
         // on déclare les répertoires perso à webpack
-        configuration.resolve["modules"] = modulesDirectories;
+        configuration.resolve["alias"] = { "./appenders/console": path.resolve(path.join(project.dir, helper.NODE_MODULES_APP, "log4js", "lib", "appenders", "console.js")) };
 
         return configuration;
     }

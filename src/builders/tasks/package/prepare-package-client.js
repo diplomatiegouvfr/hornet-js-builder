@@ -28,60 +28,7 @@ class PreparePackageClient extends Task {
             }
             conf.webPackConfiguration = merge(confWebPack, conf.webPackConfiguration);
 
-            if (!conf.externals) {
-                conf.externals = [];
-            }
-
-            if (conf.clientExclude) {
-                
-                if (conf.clientExclude.dirs && _.isArray(conf.clientExclude.dirs)) {
-                    let externals = {};
-                    conf.clientExclude.dirs.forEach((excludeDir)=> {
-                        conf.externals.push(new RegExp(excludeDir + "/.*"));
-                    });
-                }
-
-                if (conf.clientExclude.filters && _.isArray(conf.clientExclude.filters)) {
-                    let externals = {};
-                    conf.clientExclude.filters.forEach((excludeFilter)=> {
-                        conf.externals.push(new RegExp(excludeFilter));
-                    });
-                }  
-
-                if (conf.clientExclude.modules && _.isArray(conf.clientExclude.modules)) {
-                    let externals = {};
-                    conf.clientExclude.modules.forEach((excludeModules)=> {
-                        conf.externals.push(excludeModules);
-                    });
-                }  
-
-                if (conf.clientNoParse && _.isArray(conf.clientNoParse)) {
-                    conf.webPackConfiguration = merge( conf.webPackConfiguration, { module: {noParse: conf.clientNoParse} });
-                }
-            } else {
-                conf.externals.push(new RegExp(".*/src/services/data/.*"));
-                conf.externals.push(new RegExp(".*/src/services/*-data.*"));
-            }
-
-            Array.prototype.push.apply(conf.externals, ["net", "fs", "dns"]);
-
-            conf.webPackConfiguration.externals = (context, request, callback) => {
-
-                for(let i = 0; i < conf.externals.length; i++) {
-                    let extern = conf.externals[i];
-                    if (extern.test) { // c'est une regexp'
-                        if (extern.test(request)) {
-                            helper.debug("Externals exclude : " +  request);
-                            return callback(null, "{}");
-                        } 
-                    } else if (request == extern) {
-                        helper.debug("Externals exclude : " +  request);
-                        return callback(null, "{}");
-                    }
-                }
-
-                return callback();
-            }
+            this.buildExternal(conf, conf.webPackConfiguration, helper);
 
             // Configuration dynamique de webpack
             if (!this.debugMode) {
@@ -102,18 +49,14 @@ class PreparePackageClient extends Task {
             }
 
             // Activation du context
-            if (conf.clientContext && _.isArray(conf.clientContext)) {
-                conf.clientContext.forEach((contextElt) => {
-                    conf.webPackConfiguration.plugins.splice(1, 0, new webpack.ContextReplacementPlugin(...contextElt)); 
-                });
-            }
+            this.buildClientContext(conf, conf.webPackConfiguration);
 
             if (helper.isDevMode()) {
                 if (conf.dev && conf.dev.dllEntry){
                     for(let dll in conf.dev.dllEntry) {
                         conf.webPackConfiguration.plugins.splice(1, 0, new webpack.DllReferencePlugin({
                             context: path.join(project.dir, "node_modules", "app"),
-                            manifest: require(path.join(project.dir, dll + "-manifest.json")),
+                            manifest: require(path.join(project.dir, conf.static, conf.js, conf.dll, dll + "-manifest.json")),
                         }));
                     }
 
@@ -143,6 +86,79 @@ class PreparePackageClient extends Task {
             });
 
             if (this.watchMode) done();
+        }
+    }
+
+    /**
+     * Contruit la configuration externals pour webpack
+     * @param {*} conf - L'object de configuration du builder.js
+     * @param {*} webPackConfiguration - L'object de configuration webpack à enrichir
+     */
+    buildExternal(conf, webPackConfiguration, helper) {
+        if (!conf.externals) {
+            conf.externals = [];
+        }
+
+        if (conf.clientExclude) {
+            
+            if (conf.clientExclude.dirs && _.isArray(conf.clientExclude.dirs)) {
+                conf.clientExclude.dirs.forEach((excludeDir)=> {
+                    conf.externals.push(new RegExp(excludeDir + "/.*"));
+                });
+            }
+
+            if (conf.clientExclude.filters && _.isArray(conf.clientExclude.filters)) {
+                conf.clientExclude.filters.forEach((excludeFilter)=> {
+                    conf.externals.push(new RegExp(excludeFilter));
+                });
+            }  
+
+            if (conf.clientExclude.modules && _.isArray(conf.clientExclude.modules)) {
+                conf.clientExclude.modules.forEach((excludeModules)=> {
+                    conf.externals.push(excludeModules);
+                });
+            }  
+
+            if (conf.clientNoParse && _.isArray(conf.clientNoParse)) {
+                conf.webPackConfiguration = merge( conf.webPackConfiguration, { module: {noParse: conf.clientNoParse} });
+            }
+        } else {
+            conf.externals.push(new RegExp(".*/src/services/data/.*"));
+            conf.externals.push(new RegExp(".*/src/services/*-data.*"));
+        }
+
+        Array.prototype.push.apply(conf.externals, ["net", "fs", "dns"]);
+
+        webPackConfiguration.externals = (context, request, callback) => {
+            
+            for(let i = 0; i < conf.externals.length; i++) {
+                let extern = conf.externals[i];
+                if (extern.test) { // c'est une regexp'
+                    if (extern.test(request)) {
+                        helper.debug("Externals exclude : " +  request);
+                        return callback(null, "{}");
+                    } 
+                } else if (request == extern) {
+                    helper.debug("Externals exclude : " +  request);
+                    return callback(null, "{}");
+                }
+            }
+
+            return callback();
+        }
+    }
+
+    /**
+     * Rajoute des intances de ContextReplacementPlugin dans la configuration webpack
+     * @param {*} conf - L'object de configuration du builder.js
+     * @param {*} webPackConfiguration - L'object de configuration webpack à enrichir
+     */
+    buildClientContext(conf, webPackConfiguration) {
+        // Activation du context
+        if (conf.clientContext && _.isArray(conf.clientContext)) {
+            conf.clientContext.forEach((contextElt) => {
+                webPackConfiguration.plugins.splice(1, 0, new webpack.ContextReplacementPlugin(...contextElt)); 
+            });
         }
     }
 }

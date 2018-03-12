@@ -14,6 +14,7 @@ var parentBuilder = require("./builders/parent-builder");
 var themesBuilder = require("./builders/themes-builder");
 var commonTaskBuilder = require("./builders/common-tasks-builder");
 var applicationAndModuleBuilder = require("./builders/application-and-module-builder.js");
+const State = require("./builders/state");
 
 module.exports = function (project, done) {
 
@@ -52,6 +53,7 @@ module.exports = function (project, done) {
         // on charge les tâche gulp prédéfinies par hornet-js-builder
         commonTaskBuilder.gulpTasks(gulp, project, conf, helper);
         if (project.type === helper.TYPE.PARENT) {
+            State.parentBuilder.externalModules = project.builderJs.externalModules;
             applicationAndModuleBuilder.gulpTasks(gulp, project, conf, helper);
             parentBuilder.gulpTasks(gulp, project, conf, helper, callProjectBuilderAndGulpTasks);
 

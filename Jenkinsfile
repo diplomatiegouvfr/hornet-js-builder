@@ -5,14 +5,15 @@ pipeline {
 
     environment {
         // Projet
-        MODULE_GROUP="hornet-js"
+        MODULE_GROUP="fr.gouv.diplomatie.hornet"
+        MODULE_GROUP_PUB="fr/gouv/diplomatie/hornet"
         MODULE_ID="hornet-js-builder"
 
-        BUILD_TIMESTAMP=sh(script: 'date +%Y%m%d%H%M%S', returnStdout:true).trim()
+        BUILD_TIMESTAMP=sh(script: 'date +%Y%m%d.%H%M%S', returnStdout:true).trim()
         VERSION_PACKAGE=sh(script:"npm run version --silent", returnStdout:true).trim()
 
         VERSION_RELEASE="${VERSION_PACKAGE}"
-        VERSION_SNAPSHOT="${VERSION_RELEASE}-${BUILD_TIMESTAMP}"
+        VERSION_SNAPSHOT="${VERSION_RELEASE}-${BUILD_TIMESTAMP}-${BUILD_NUMBER}"
 
         // Publication
         ARTIFACTORY_URL = "http://artifactory.app.diplomatie.gouv.fr/artifactory-dev"
@@ -73,15 +74,26 @@ pipeline {
                 branch "develop"
             }
             steps {
-                sh "mv ${MODULE_ID}.zip ${MODULE_ID}-${VERSION_SNAPSHOT}.zip"
+                sh '''
+                    mkdir target
+                    echo "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>${MODULE_GROUP}</groupId>
+    <artifactId>${MODULE_ID}</artifactId>
+    <version>${VERSION_RELEASE}-SNAPSHOT</version>
+</project>" > ./target/${MODULE_ID}-${VERSION_SNAPSHOT}.pom
+                    mv ${MODULE_ID}.zip ./target/${MODULE_ID}-${VERSION_SNAPSHOT}.zip
+                '''
                 withCredentials([usernamePassword(credentialsId: "hornet_ci_at_artifactory", passwordVariable: "pwd_ci", usernameVariable: "user_ci")]) {
                     script {
                         def artifactory = Artifactory.newServer url: "${ARTIFACTORY_URL}", username: "${user_ci}", password: "${pwd_ci}"
                         def uploadSpec = """{
                             "files": [
                             {
-                                "pattern": "*.zip",
-                                "target": "${REPOSITORY_SNAPSHOT}/${MODULE_GROUP}/${MODULE_ID}/${VERSION_SNAPSHOT}/"
+                                "pattern": "target/*.*",
+                                "target": "${REPOSITORY_SNAPSHOT}/${MODULE_GROUP_PUB}/${MODULE_ID}/${VERSION_RELEASE}-SNAPSHOT/",
+                                "recursive": false
 
                             }
                         ]
@@ -130,15 +142,26 @@ pipeline {
                 branch "master"
             }
             steps {
-                sh "mv ${MODULE_ID}.zip ${MODULE_ID}-${VERSION_RELEASE}.zip"
+                sh '''
+                    mkdir target
+                    echo "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>${MODULE_GROUP}</groupId>
+    <artifactId>${MODULE_ID}</artifactId>
+    <version>${VERSION_RELEASE}</version>
+</project>" > ./target/${MODULE_ID}-${VERSION_RELEASE}.pom
+                    mv ${MODULE_ID}.zip ./target/${MODULE_ID}-${VERSION_RELEASE}.zip
+                '''
                 withCredentials([usernamePassword(credentialsId: "hornet_ci_at_artifactory", passwordVariable: "pwd_ci", usernameVariable: "user_ci")]) {
                     script {
                         def artifactory = Artifactory.newServer url: "${ARTIFACTORY_URL}", username: "${user_ci}", password: "${pwd_ci}"
                         def uploadSpec = """{
                             "files": [
                             {
-                                "pattern": "*.zip",
-                                "target": "${REPOSITORY_RELEASE}/${MODULE_GROUP}/${MODULE_ID}/${VERSION_RELEASE}/"
+                                "pattern": "target/*.*",
+                                "target": "${REPOSITORY_RELEASE}/${MODULE_GROUP_PUB}/${MODULE_ID}/${VERSION_RELEASE}/",
+                                "recursive": false
 
                             }
                         ]

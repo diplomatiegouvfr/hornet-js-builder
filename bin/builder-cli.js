@@ -28,20 +28,22 @@ commander
     .option("-i, --ide", "Indique que c'est l'IDE qui compile les TS, dans ce cas la compilation TS est désactivée ainsi que les watchers associés")
     .option("-r, --registry <url>", "L'url du repository global : servant à la récupération des dépendances et à la publication")
     .option("--publish-registry <url>", "L'url du repository servant uniquement à la publication (tasks 'publish' & 'unpublish'")
-
     .option("-f, --force", "Forcer la mise à jour des dépendances")
     .option("--ignoreApp", "ne prend pas la version de dépendance applicative, mais la plus récente")
     .option("--skipTests", "Permet de ne pas exécuter les tests")
+    .option("--stopOnError", "Permet de stopper toutes les tâches sur une erreur")    
     .option("--skipMinified", "Permet de ne pas minifier les chuncks")
+    .option("--noWarn", "Permet de ne pas afficher les warnings")
     .option("-p, --debugPort <port>", "Indique le port utilisé par node pour permettre la connexion d'un debugger externe")
     .option("--lintRules <path>", "Indique un fichier de rules 'tslint.json' autre que celui utilisé par le builder")
     .option("--lintReport <format>", "Indique le format de sortie pour tslint : prose (défaut), json, verbose, full, msbuild")
-    //    .option("-m, --module <module>", "Indique le module pour lequel on souhaite avoir les informations de dépendances")
+    .option("-m, --module <module>", "Indique le module pour lequel on souhaite avoir une recherche de version")
     .option("--file <file>", "Indique le chemin d'un fichier")
     .option("--dev", "active le mode developpement")
     .option("--offline", "active le mode offline pour la récupération des dépendances, ex : coupure réseau. Prerequis avoir les node_modules, ajouter fetch-retries=0 dans .npmrc")
     //    .option("--release <final / snapshot>", "version ou suffixe si commence par '-' ou '.'", /^(final|snapshot)$/i)     
     .option("--versionFix <versionFix>", "version ou suffixe si commence par '-', '.' ou si null", (value) => { console.log(value); return value ? value.replace(/'/g, "") : "auto" })
+    .option("--versionSearch <versionSearch>", "préfixe de la dernière version", (value) => { console.log(value); return value ? value.replace(/'/g, "") : "auto" })
     .option("--dependencyVersionFix <dependency>", "Fix une version pour une dépendance")
     .parse(process.argv);
 
@@ -53,6 +55,7 @@ helper.setRegistry(commander.registry);
 helper.setPublishRegistry(commander.publishRegistry);
 helper.setSkipTests(commander.skipTests);
 helper.setSkipMinified(commander.skipMinified);
+helper.setNoWarn(commander.noWarn);
 helper.setIDE(commander.ide);
 helper.setShowWebPackFiles(commander.showWebpackFiles);
 helper.setWebpackVisualizer(commander.webpackVisualizer);
@@ -66,10 +69,13 @@ helper.setDevMode(commander.dev);
 helper.setOfflineMode(commander.offline);
 helper.setRelease(commander.release);
 helper.setVersion(commander.versionFix);
+helper.setVersion(commander.versionSearch);
 helper.setDependency(commander.dependencyVersionFix);
+helper.setStopOnError(commander.stopOnError)
 
 helper.setCommandArgs(process.argv);
-console.log("  _    _                       _       _      \n" +
+helper.info("\n"+
+    "  _    _                       _       _      \n" +
     " | |  | |                     | |     (_)     \n" +
     " | |__| | ___  _ __ _ __   ___| |_     _ ___  \n" +
     " |  __  |/ _ \\| '__| '_ \\ / _ \\ __|   | / __| \n" +

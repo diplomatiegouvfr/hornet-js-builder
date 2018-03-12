@@ -11,7 +11,20 @@ Les versions de chaque dépendance déclarée doivent également être fixes (sa
 ### Depuis NPM
 
 ```shell
-$ npm install -g hornet-js-builder
+
+npm install -g hornet-js-builder
+
+```
+
+s'assurer que les liens symboliques `hornetbuilder` et `hb` ont bien été crées dans le répertoire "~/bin". Si ce n'est pas le cas:
+
+se positionner dans le répertoire "~/bin", puis:
+
+```shell
+
+ln -s ${cheminAccesHornetBuilderInstalléDansNode}/bin/builder-cli.js hb
+ln -s ${cheminAccesHornetBuilderInstalléDansNode}/bin/builder-cli.js hornetbuilder
+
 ```
 
 ### Depuis les sources
@@ -22,7 +35,7 @@ Installer `hornet-js-builder` de manière globale:
 - Lancer la commande
 
 ```shell
-$ npm install -g
+npm install -g
 ```
 
  ### Note
@@ -105,13 +118,13 @@ cd D:\dev\workspace\applitutoriel\applitutoriel-js
 - Taper la commande `hornetbuilder` (ou `hb`) suivi de la tâche à exécuter. Exemple:
 
 ```shell
-$ hb test
+hb test
 ```
 
 Une aide est fournie en tapant la commande
 
 ```shell
-$ hb --help
+hb --help
 ```
 
  Les options suivantes sont alors proposées:
@@ -129,7 +142,9 @@ $ hb --help
 | -f, --force | Permet de forcer la mise à jour des dépendances |
 | --ignoreApp | ne prend pas la version de dépendance applicative, mais la plus récente |
 | --skipTests | Permet de ne pas exécuter les tests si ceux-ci doivent être exécutés (ex: tâche `package`) |
+| --stopOnError | Permet de stopper toutes les tâches sur une erreur dans les tests |
 | --skipMinified | Permet de ne pas minifier les chuncks |
+| --noWarn | Permet de ne pas afficher les warning |
 | -p, --debugPort <port> | Indique le port utilisé par node pour permettre la connexion d'un debugger externe" |
 | --lintRules | Indique un fichier de rules `tslint.json` autre que celui utilisé par le builder |
 | --lintReport | Indique le format de sortie pour tslint : `prose` (défaut), `json`, `verbose`, `full`, `msbuild` |
@@ -137,6 +152,7 @@ $ hb --help
 | --dev | active le mode developpement | 
 | --offline | active le mode offline pour la récupération des dépendances, ex : coupure réseau. Prerequis avoir les node_modules, ajouter fetch-retries=0 dans .npmrc |
 | --versionFix | Indique la version ou suffixe si commence par '-', '.' ou si null calcule un suffixe avec timestamp. |      
+| --versionSearch | préfixe de la dernière version"|
 
 
 ## Configurer un projet pour utiliser hornetbuilder
@@ -523,7 +539,7 @@ Exemple:
 ```
 
 ```shell
-$ hb maNouvelleTache
+hb maNouvelleTache
 ```
 
 ### Objet de configuration du builder
@@ -641,17 +657,26 @@ const defaultConf = {
 | test:instrument | Défini les instruments de couverture de code sur les sources | prepare:testSources |
 | test | Exécute les tests unitaires et la mesure de couverture de code | dependencies:install<br />test:instrument |
 | test:karma | Exécute les tests basées sur KarmaJs | dependencies:install<br />compile |
+| test:mocha | Exécute les tests basées sur MochaJs | dependencies:install<br />compile |
+| test:merge-reports | Merge des rapports de test Mocha/Karma | clean-test:merge |
+| test:remap-reports | Remap des rapports mergés sur les sources TypeScript | clean-test:remap |
 
 
 ### Les tâches de nettoyage
 
 `hornetbuilder` fournit les tâches suivantes afin de nettoyer un projet :
 
-| Tâche | Rôle | Dépendances |
-| ----- | ---- | ----------- |
-| clean:test | Supprime le dossier istanbul ainsi que les fichiers générés (.js, .map et .d.ts dans le dossier de tests) | |
-| clean | Supprime les fichiers générés (.js, .map et .d.ts dans le dossier de sources) | clean:test |
-| clean-all | Supprime tous les fichiers et dépendances | clean, dependencies:clean-all |
+| Tâche | Rôle | Répertoire/fichier | Dépendances |
+| ----- | ---- | ----------| ----------- |
+| clean | Supprime les fichiers générés (.js, .map et .d.ts dans le dossier de sources) |  | "clean:src", "clean:test" |
+| clean:build | Supprime le répertoire de build | ./target | |
+| clean:test | Supprime le dossier istanbul ainsi que les fichiers générés (.js, .map et .d.ts dans le dossier de tests) | test, test_report, karma_html|  |
+| clean:static | Supprime les fichiers statics générés par webpack | ./static/js | |
+| clean:theme | Supprime le thème de l'application dans le répêrtoire static | ./static/themeName | |
+| clean:src | Supprime les fichiers généré dans le répertoire source ./src| extended/*.js", "**/*.json", "**/*.jsx | |
+| clean:template | Supprime les templates générées dans la partie static | ./static/templateDir  |
+| clean-all | Supprime tous les fichiers et dépendances | | "clean", "clean:build", "dependencies:clean-all", "clean:static", "clean:template" |
+
 
 ### Les tâches de construction des livrables
 
@@ -660,16 +685,26 @@ const defaultConf = {
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
 | prepare-package-dll | Lance WebPack pour la construction des dll's js client |  |
-| prepare-package | Lance WebPack pour la construction du js client  (mode debug) et copie les livrables dans le répertoire target | prepare-package:minified, prepare-all-package |
-| prepare-package:minified | Lance WebPack avec la minification pour la construction du js client | |
-| prepare-package:spa | Prépare les fichiers à packager pour un projet en FullSpa | |
+| prepare-package | Lance WebPack pour la construction du js client  en mode production et copie les livrables dans le répertoire target | prepare-package:minified, prepare-all-package |
+| prepare-package:dev | Lance WebPack pour la construction du js client  en mode debug et copie les livrables dans le répertoire target | prepare-package:minified, prepare-all-package |
+| prepare-package:minified | Lance WebPack avec la minification pour la construction du js client, mode Production par défaut | |
+| prepare-package-spa | Prépare les fichiers à packager pour un projet en FullSpa mode Production | |
+| prepare-package-spa:dev | Prépare les fichiers à packager pour un projet en FullSpa mode Dev | |
 | prepare-all-package |copie les livrables dans le répertoire target | |
-| prepare-zip-static | Construit le livrable statique | prepare-package:minified, zip-static |
-| prepare-zip-dynamic | Construit le livrable dynamique | prepare-package:minified, zip-dynamic |
+| template-html | Lance le templating html |  |
 | zip-static | Construit le livrable statique (zip) | |
 | zip-dynamic | Construit le livrable dynamique (zip) | |
-| package | Lance les tests puis construit tous les livrables | compile<br />test<br />template-html<br />package-zip-static<br />package-zip-dynamic |
-| template-html | Lance le templating html |  |
+| zip-environment | Construit le livrable environment (zip) | |
+| zip-database | Construit le livrable database (zip) | |
+| package-zip-static | Construit le livrable statique (zip) | prepare-package-client:minified, zip-static |
+| package-zip-dynamic | Construit le livrable dynamique (zip) | prepare-package-client:minified, zip-dynamic|
+| package-zip-static:dev | Construit le livrable statique (zip) | prepare-package-client:dev, zip-static |
+| package-zip-dynamic:dev | Construit le livrable dynamique (zip) | prepare-package-client:dev, zip-dynamic|
+| package | Package global de l'application en mode Production  | compile, test, template-html, prepare-package,  zip-static, zip-dynamic, zip-environment, zip, database |
+| package:dev | Package global de l'application en mode Dev | compile, test, template-html, prepare-package:dev,  zip-static, zip-dynamic, zip-environment, zip, database |
+| package-spa | Package SPA de l'application en mode Production  | compile, test, template-html, prepare-package-spa,  zip-static, zip-dynamic, zip-environment, zip, database |
+| package-spa:dev | Package SPA de l'application en mode Dev | compile, test, template-html, prepare-package-spa:dev,  zip-static, zip-dynamic, zip-environment, zip, database |
+
 
 ### Les tâches de watch
 
@@ -696,11 +731,11 @@ const defaultConf = {
 | lint | Lance le tslint sur les sources ts (qualité de code) | |
 
 ```shell
-$ hb lint
+hb lint
 ```
 
 ```shell
-$ hb lint --lintReport json
+hb lint --lintReport json
 ```
 
 ## Le cycle de vie d'un projet
@@ -721,7 +756,7 @@ Dès la première utilisation du builder sur un projet, il est possible d'utilis
 
 ```shell
 
-$ hb watch
+hb watch
 
 ```
 
@@ -729,7 +764,7 @@ Dans un ide qui compile automatiquement les fichiers typescript, il est recomman
 
 ```shell
 
-$ hb watch -i
+hb watch -i
 
 ```
 
@@ -737,7 +772,7 @@ ou bien :
 
 ```shell
 
-$ hb w -i
+hb w -i
 
 ```
 
@@ -747,19 +782,19 @@ Il est néanmoins possible de lancer indépendemment les différentes tâches :
 
 ```shell
 
-$ hb dependencies:install
+hb dependencies:install
 
 ```
 
 ```shell
 
-$ hb compile
+hb compile
 
 ```
 
 ```shell
 
-$ hb watch
+hb watch
 
 ```
 
@@ -769,7 +804,7 @@ $ hb watch
 
 ```shell
 
-$ hb test
+hb test
 
 ```
 
@@ -785,13 +820,13 @@ Les fichiers exécutés doivent se trouver dans le répertoire __./test__ et se 
 
 ```shell
 
-$ hb test:karma
+hb test:karma
 
 ```
 
 ```shell
 
-$ hb test:karma --file ./test/page/test.karma.js
+hb test:karma --file ./test/page/test.karma.js
 
 ```
 
@@ -844,7 +879,7 @@ les templates fournis nécessitent de démarrer un serveur de thèmes.
 #### Templating Html
 
 ```shell
-$ hb template-html
+hb template-html
 ```
 
 Lance le templating basé sur **EJS** et écrit les fichiers dans 'static/html' du projet.
@@ -875,7 +910,7 @@ Dans cet exemple, le templating suivant est lancé :
 
 ```shell
 
-$ hb package
+hb package
 
 ```
 
@@ -885,7 +920,7 @@ Construit les différents livrables et les place dans le répertoire `target` à
 
 ```shell
 
-$ hb publish --publish-registry <URL>
+hb publish --publish-registry <URL>
 
 ```
 
@@ -895,7 +930,7 @@ Publie le module sur un repository spécifique.
 
 ```shell
 
-$ hb versions:set --versionFix=1.2.3
+hb versions:set --versionFix=1.2.3
 
 ```
 
@@ -904,7 +939,7 @@ Modifie la version du projet ou des projets si on est sur un type parent en **'1
 
 ```shell
 
-$ hb versions:set --versionFix=
+hb versions:set --versionFix=
 
 ```
 
@@ -913,7 +948,7 @@ Modifie la version du projet en suffixant par un timestamp **'YYYYMMDDHHmmss'**.
 
 ```shell
 
-$ hb versions:set --versionFix=\'-123\'
+hb versions:set --versionFix=\'-123\'
 
 ```
 
@@ -923,11 +958,37 @@ Modifie la version du projet en suffixant par  **'-123'**, il faut echapper les 
 
 ```shell
 
-$ hb dependency:set --versionFix=1.2.3 --dependencyVersionFix=monpackage
+hb dependency:set --versionFix=1.2.3 --dependencyVersionFix=monpackage
+
 ```
 
 Reprend les principes de `versions:set` mais sur les dépendances d'un projet.
 
+### Changement de version d'une dépendance en snapshot
+
+```shell
+
+hb dependency:set-snapshot --dependencyVersionFix=monpackage --module=monpackage
+
+```
+
+### Recherche de dernière version d'une dépendance
+
+```shell
+
+hb versions:get --versionSearch=5.0.2 --module=hornet-js-core
+
+```
+
+Retourne la dernière version commencant par 5.0.2 du module hornet-js-core, exemple : 5.0.2-20180109183247. Si le module n'est pas renseigné, c'est sur le projet lui-même que la recherche est faite, et si `versionSearch` n'est pas renseigné c'est la dernière version qui est retournée (sans contrainte de préfixe)
+
+```shell
+
+hb versions:get --versionSearch=snapshot --module=hornet-js-core
+
+```
+
+Permet d'avoir la dernière version snapshot d'un module présent dans les dépendances du projet (appDependencies, buildDependencies, ...).
 
 ## Licence
 

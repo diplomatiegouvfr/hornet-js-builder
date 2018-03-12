@@ -92,7 +92,7 @@ function configBrowser(project, conf, debug) {
         },
         output: {
             path: path.join(project.dir, "static") ,
-            publicPath: "./static/" ,
+            publicPath: "./static-" + project.packageJson.version + "/",
             filename: conf.js + "/[name].js"
         },
         module: {

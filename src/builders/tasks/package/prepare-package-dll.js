@@ -21,16 +21,16 @@ class PreparePackageDll extends Task {
             entry: (conf.dev && conf.dev.dllEntry) || {},
             output: {
                 path: path.join(project.dir, conf.static) ,
-                filename: path.join(conf.js, "dll", "dll_[name].js"),
+                filename: path.join(conf.js, conf.dll, "dll_[name].js"),
                 library: "[name]_library",
                 //libraryTarget: "commonjs2", // remove for import script html
-                publicPath: "./" + conf.static + "/"
+                publicPath: "./static-" + project.packageJson.version + "/",
             },
             plugins: [
                 new webpack.DllPlugin({
                     context: path.join(project.dir, "node_modules", "app"),
                     name: "[name]_library",
-                    path: path.join(project.dir, "[name]-manifest.json")
+                    path: path.join(project.dir, conf.static, conf.js, conf.dll, "[name]-manifest.json")
                 })
             ]
 
@@ -44,6 +44,11 @@ class PreparePackageDll extends Task {
             if((!conf.dev || !conf.dev.dllEntry)) {
                 return done();
             }
+            
+            if(helper.folderExists(path.join(project.dir, conf.static, conf.js, conf.dll))){
+                helper.warn("Présence des dll vendor, pour les supprimer : 'hb clean:static-dll'");
+                return done();
+            }
 
             // initialisation de la conf webpack
             var confWebPack = require("../../../webpack/default-webpack-config.js").browser(project, conf, helper.isDebug());
@@ -53,7 +58,7 @@ class PreparePackageDll extends Task {
             confWebPack = merge(this.webpackConf, confWebPack);
             this.webpackConf = merge(confWebPack, conf.webPackConfiguration);
 
-            this.webpackConf = merge( this.webpackConf, { externals: {"net": "{}", "fs": "{}", "dns": "{}"}});
+            this.webpackConf = merge( this.webpackConf, { externals: {"net": "{}", "fs": "{}", "dns": "{}", "v8": "{}", "module": "{}"}});
 
             // Configuration dynamique de webpack
             if (!this.debugMode) {

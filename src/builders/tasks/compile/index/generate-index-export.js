@@ -1,5 +1,5 @@
 "use strict";
-const Utils = require("../utils");
+const Utils = require("../../utils");
 const path = require("path");
 const fs = require("fs");
 const through = require("through2");
@@ -8,9 +8,9 @@ const gutil = require("gulp-util");
 const _ = require("lodash");
 
 
-const Task = require("./../task");
+const Task = require("../../task");
 
-class CompileTypeScriptExport extends Task {
+class GenerateIndexExport extends Task {
 
     task(gulp, helper, conf, project) {
         return (doneFn) => {
@@ -33,7 +33,7 @@ class CompileTypeScriptExport extends Task {
                         }
                     });
                     lineReader.on("close", () => {
-                         fs.writeFile(path.join(project.dir, "index.ts"), moduleExports.join("\n"), (err) => {
+                         fs.writeFile(path.join(projectfile.dir, "index.ts"), moduleExports.join("\n"), (err) => {
                             if (err) {
                                 ok = false;
                                 helper.error("Erreur de mise à jour du fichier 'package.json' !!");
@@ -51,4 +51,4 @@ class CompileTypeScriptExport extends Task {
 }
 
 
-module.exports = CompileTypeScriptExport;
+module.exports = GenerateIndexExport;

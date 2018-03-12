@@ -5,15 +5,12 @@ const zip = require("gulp-zip");
 const State = require("./../../state");
 const fs = require('fs-extra');
 const npm = require("npm");
-const Zip = require("./zip");
+const Task = require("./../task");
 
-class ZipStaticTask extends Zip {
+class ZipStaticTask extends Task {
     constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project) {
         super(name, taskDepend, taskDependencies, gulp, helper, conf, project);
 
-        this.fileList.push(path.join("./" + conf.static + "/**/*"));
-        this.fileList.push("!**/*.map");
-        //this.fileList.push(path.join("./" + conf.static + "/js/*.map"));
         this.zipNameSuffixe = "-static";
     }
 
@@ -21,13 +18,13 @@ class ZipStaticTask extends Zip {
         
         let zipname = project.name + "-" + project.version;
         
-        return (cb) => {
+        return (done) => {
 
             return helper.stream(
-                cb,
-                gulp.src("./target/" + project.name + "/static/**/*", {base: "./target/" + project.name})
+                done,
+                gulp.src(path.join(conf.buildWorkDir, project.name, conf.static) + "/**/*", {base: path.join(conf.buildWorkDir, project.name) })
                     .pipe(zip(zipname + this.zipNameSuffixe + ".zip"))
-                    .pipe(gulp.dest("./target"))
+                    .pipe(gulp.dest(conf.buildWorkDir))
             );
         }
     }

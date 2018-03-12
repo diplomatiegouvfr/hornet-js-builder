@@ -9,7 +9,7 @@ const semver = require("semver");
 const eventStream = require("event-stream");
 const JSON5 = require("json5");
 const State = require("./builders/state");
-           
+
 
 var Helper = function () {
 };
@@ -231,6 +231,15 @@ Helper.isSkipMinified = function () {
     return process.env.HB_SKIP_MINIFIED || false;
 };
 
+Helper.setNoWarn = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.HB_NO_WARN = value;
+    }
+};
+Helper.isNoWarn = function () {
+    return process.env.HB_NO_WARN || false;
+};
+
 Helper.setIDE = function (value) {
     if (!_.isUndefined(value)) {
         process.env.HB_IDE = value;
@@ -250,7 +259,9 @@ Helper.isWebpackVisualizer = function () {
 };
 
 Helper.setModule = function (value) {
-    process.env.HB_MODULE = value;
+    if (!_.isUndefined(value)) {
+        process.env.HB_MODULE = value;
+    }
 };
 
 Helper.getModule = function () {
@@ -369,7 +380,15 @@ Helper.getDependency = function () {
     return process.env.DEPENDENCY;
 };
 
+Helper.setStopOnError = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.HB_STOP_ON_ERROR = value;
+    }
+}
 
+Helper.getStopOnError = function () {
+    return process.env.HB_STOP_ON_ERROR;
+};
 
 Helper.logBuilderModes = function () {
     Helper.debug("Mode DEBUG [ON]");
@@ -381,6 +400,7 @@ Helper.logBuilderModes = function () {
     Helper.debug("Mode ShowWebPackFiles:", (Helper.isShowWebPackFiles() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode SkipTests:", (Helper.isSkipTests() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode SkipMinified:", (Helper.isSkipMinified() ? "[ON]" : "[OFF]"));
+    Helper.debug("Mode NoWarn:", (Helper.isNoWarn() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode WebpackVisualizer:", (Helper.isWebpackVisualizer() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode LintRules:", Helper.getLintRules());
     Helper.debug("Mode LintReport:", Helper.getLintReport());
@@ -451,8 +471,11 @@ Helper.info = function () {
 };
 
 Helper.warn = function () {
-    var argsWithColors = chalk.black.bgYellow.apply(chalk, ["[WARN]"].concat(Helper.processLogArgs(arguments)));
-    gutil.log.call(gutil, argsWithColors);
+    if(!Helper.isNoWarn()){
+        var argsWithColors = chalk.black.bgYellow.apply(chalk, ["[WARN]"].concat(Helper.processLogArgs(arguments)));
+        gutil.log.call(gutil, argsWithColors);
+    }
+
 };
 
 Helper.error = function () {
@@ -464,6 +487,9 @@ Helper.processLogArgs = function (args) {
     //Les objets ne sont pas stringifiés avec chalk donc c'est fait main :(
     var processedArgs = _.map(args, function (arg) {
         if (_.isObject(arg)) {
+            if(arg instanceof Error) {
+                return [os.EOL, arg.toString()];
+            }
             return [os.EOL, JSON.stringify(arg, null, 2)];
         } else {
             return arg;
@@ -545,9 +571,9 @@ Helper.getModuleList = function (dir, project) {
                 }
                 var packageDef = require(packagePath);
                 let builderDef = Helper.ReadTypeBuilderJS(builderJsPath);
-                if (builderDef 
-                && (builderDef == Helper.TYPE.APPLICATION || builderDef == Helper.TYPE.APPLICATION_SERVER)
-                && (project && (project.type == Helper.TYPE.APPLICATION || project.type == Helper.TYPE.APPLICATION_SERVER))) {
+                if (builderDef
+                    && (builderDef == Helper.TYPE.APPLICATION || builderDef == Helper.TYPE.APPLICATION_SERVER)
+                    && (project && (project.type == Helper.TYPE.APPLICATION || project.type == Helper.TYPE.APPLICATION_SERVER))) {
                     return false;
                 }
 
@@ -589,11 +615,11 @@ Helper.readDirRecursiveAndCallBackOnDir = function (dir, callback) {
 Helper.sortObj = function (obj, cmp) {
     var r = [];
     for (var i in obj)
-        if (obj.hasOwnProperty(i)) r.push({key: i, value: obj[i]});
+        if (obj.hasOwnProperty(i)) r.push({ key: i, value: obj[i] });
 
     return r.sort(cmp || function (o1, o2) {
-            return o1.key < o2.key ? -1 : o1.key > o2.key ? 1 : 0;
-        }).reduce(function (obj, n) {
+        return o1.key < o2.key ? -1 : o1.key > o2.key ? 1 : 0;
+    }).reduce(function (obj, n) {
         obj[n.key] = n.value;
         return obj;
     }, {});
@@ -676,9 +702,9 @@ Helper.getDependenciesReport = function (npm, root, keyDependencies, resolved, c
         if (name in resolved && version == resolved[name].version && resolved[name].external) {
             j++;
             cb(resolved[name].packageJson);
-        } else if (State.reportNpmSearchVersion[ name + "@" + version]) {
+        } else if (State.reportNpmSearchVersion[name + "@" + version]) {
             j++;
-            cb(State.reportNpmSearchVersion[ name + "@" + version]);
+            cb(State.reportNpmSearchVersion[name + "@" + version]);
         } else {
             console.log = function () {
             };
@@ -702,10 +728,10 @@ Helper.getDependenciesReport = function (npm, root, keyDependencies, resolved, c
                             Helper.debug(name + "@" + version + " duration : ");
                             Helper.debug(new Date().getTime() - timeExe[name + "@" + version]);
                             delete timeExe[name + "@" + version];
-                        } 
+                        }
                         j++;
                         if (!err && resolvedPackage) {
-                            State.reportNpmSearchVersion[ name + "@" + version] = resolvedPackage;
+                            State.reportNpmSearchVersion[name + "@" + version] = resolvedPackage;
                             cb(resolvedPackage);
                         } else {
                             console.log = oldCLog;
@@ -713,7 +739,7 @@ Helper.getDependenciesReport = function (npm, root, keyDependencies, resolved, c
                             if (name.startsWith("@")) {
                                 cb(undefined);
                             } else {
-                                if(!Helper.isOfflineMode()) {
+                                if (!Helper.isOfflineMode()) {
                                     Helper.error("Problème de récupération de la dépendance '" + name + "@" + version + "'");
                                     throw err;
                                 }
@@ -737,7 +763,7 @@ Helper.getDependenciesReport = function (npm, root, keyDependencies, resolved, c
         npm.commands.cache.read(name, version, false, function (err, resolvedPackage) {
             j++;
             if (!err && resolvedPackage) {
-                State.reportNpmSearchVersion[ name + "@" + version] = resolvedPackage;
+                State.reportNpmSearchVersion[name + "@" + version] = resolvedPackage;
                 cb(resolvedPackage);
             } else {
                 console.log = oldCLog;
@@ -745,7 +771,7 @@ Helper.getDependenciesReport = function (npm, root, keyDependencies, resolved, c
                 if (name.startsWith("@")) {
                     cb(undefined);
                 } else {
-                    if(!Helper.isOfflineMode()) {
+                    if (!Helper.isOfflineMode()) {
                         Helper.error("Problème de récupération de la dépendance '" + name + "@" + version + "'");
                         throw err;
                     }
@@ -773,6 +799,19 @@ Helper.getDependenciesReport = function (npm, root, keyDependencies, resolved, c
         report[module.name][module.version] = moduleReport;
 
         fixed = mergeFixed(fixed, moduleReport.fixed);
+
+        Object.keys(moduleReport.fixed || {}).forEach(function (dep) {
+            if(!State.reportFixed) {
+                State.reportFixed={};
+            }
+            if(!State.reportFixed[root.name]) {
+                State.reportFixed[root.name]={};
+            }
+            if(!State.reportFixed[root.name][dep]) {
+                State.reportFixed[root.name][dep]={};
+            }
+            State.reportFixed[root.name][dep][moduleReport.fixed[dep]] = moduleReport.name;
+        });
 
         Object.keys(moduleReport.deps || {}).forEach(function (dep) {
             N++;
@@ -825,6 +864,7 @@ Helper.getFinalDependencies = function (report, root) {
  */
 Helper.mergeReportDependencies = function (root, report) {
     var merged = {};
+    var mergedFixed = {};
 
     function add(name, version, versionQ, issuer) {
         if (!merged[name]) merged[name] = {};
@@ -832,13 +872,26 @@ Helper.mergeReportDependencies = function (root, report) {
         merged[name][version][issuer] = versionQ;
     }
 
+    function addFixed(name, version, versionQ, issuer) {
+        if (!mergedFixed[name]) mergedFixed[name] = {};
+        if (!mergedFixed[name][version]) mergedFixed[name][version] = {};
+        mergedFixed[name][version][issuer] = versionQ;
+    }
     function walk(module, mainModuleName) {
         Object.keys(report[module.name][module.version].deps2).forEach(function (moduleName) {
-            if(mainModuleName && mainModuleName != moduleName) {
+            if (mainModuleName && mainModuleName != moduleName) {
                 Object.keys(report[module.name][module.version].deps2[moduleName]).forEach(function (moduleVersion) {
-                    if (!merged[moduleName] || !merged[moduleName][moduleVersion] || merged[moduleName][moduleVersion][module.name + '@' + module.version]) {
+                    if (!merged[moduleName] || !merged[moduleName][moduleVersion] || !merged[moduleName][moduleVersion][module.name + '@' + module.version]) {
                         add(moduleName, moduleVersion, report[module.name][module.version].deps2[moduleName][moduleVersion], module.name + '@' + module.version);
-                        walk({name: moduleName, version: moduleVersion}, mainModuleName);
+                        walk({ name: moduleName, version: moduleVersion }, mainModuleName);
+                    }
+                    if(report[module.name][module.version].fixed) {
+                        Object.keys(report[module.name][module.version].fixed).forEach(function (moduleName) {
+                            let moduleVersion = report[module.name][module.version].fixed[moduleName];
+                            if (!merged[moduleName] || !merged[moduleName][moduleVersion] || merged[moduleName][moduleVersion][module.name + '@' + module.version]) {
+                                addFixed(moduleName, moduleVersion, report[module.name][module.version].fixed[moduleName][moduleVersion], module.name + '@' + module.version);
+                            }
+                        });
                     }
                 });
             }
@@ -847,8 +900,42 @@ Helper.mergeReportDependencies = function (root, report) {
 
     walk(root, root.name);
 
+    for(let modulename in mergedFixed) {
+        if (!merged[modulename]) merged[modulename] = {};
+        for(let version in mergedFixed[modulename]) {
+            if (!merged[modulename][version]) merged[modulename][version] = {};
+            for(let issuer in mergedFixed[modulename][version]) {
+                if (!merged[modulename][version][issuer]) merged[modulename][version][issuer] = mergedFixed[modulename][version][issuer];
+            }
+        }
+
+    }
+
     // on filtre les deps restantes pour ne garder que la plus grande version
     Helper.forEach1Depth(merged, function (name) {
+
+        function arbo(name, version) {
+            let report = [];
+            let reportObj = {};
+            reportObj[name+"@"+version] = {};
+            if(merged[name]) {
+                let currentReport = {};
+                let previous = Object.keys(merged[name][version])[0].split('@');
+                while(previous[0] != root.name && merged[previous[0]] && merged[previous[0]][previous[1]]) {
+                    report.push(previous[0]+"@"+previous[1])
+                    previous = Object.keys(merged[previous[0]][previous[1]])[0].split('@');
+                }
+            }
+
+            report.forEach((elt, idx)=> {
+                reportObj[elt] = {};
+                reportObj[elt][Object.keys(reportObj)[0]] = reportObj[Object.keys(reportObj)[0]];
+                delete reportObj[Object.keys(reportObj)[0]];
+            });
+            return reportObj;
+        }
+
+
         var versions = Object.keys(merged[name]);
         if (versions.length > 1) {
 
@@ -865,8 +952,8 @@ Helper.mergeReportDependencies = function (root, report) {
 
             let lastVersion = Helper.getLastVersion(versions);
 
-            if (lastVersionFixed) { 
-                if(lastVersionFixed != lastVersion) {
+            if (lastVersionFixed) {
+                if (lastVersionFixed != lastVersion) {
                     if (Helper.isIgnoreAppDepVersion()) {
                         Helper.info("Version App ignorée pour la dépendance '" + name + "' : " + lastVersionFixed + " / " + lastVersion + " (" + JSON.stringify(merged[name], null, 2) + ")");
                         lastVersion = lastVersionFixed;
@@ -881,12 +968,19 @@ Helper.mergeReportDependencies = function (root, report) {
                 Helper.debug("Sélection de la plus grande version pour la dépendance '" + name + "' : '" + lastVersion + "' (" + JSON.stringify(merged[name], null, 2) + ")");
             }
 
+            if(State.reportFixed && State.reportFixed[root.name] && State.reportFixed[root.name][name] && (Object.keys(State.reportFixed[root.name][name]).length > 1 || !State.reportFixed[root.name][name][lastVersion])) {
+                Helper.warn("Sélection de la plus grande version pour la dépendance '" + name + "' : '" + lastVersion + "' mais elle est fixée dans : " + JSON.stringify(State.reportFixed[root.name][name], null, 2));
+                Helper.warn("Cette dépendance '" + name + "' : '" + lastVersion + "' est tirée par :" + JSON.stringify(arbo(name, lastVersion), null, "  |-" ).replace(/[\{\}\":]*/g, "").replace(/  /g, "").replace(/[\|\-\n\s]+\s*$/g, ""));
+                
+            }
+
             var save = merged[name][lastVersion];
             merged[name] = {};
             merged[name][lastVersion] = save;
         }
     });
     return merged;
+
 };
 
 Helper.forEach3Depth = function (obj, cb) {
@@ -1079,8 +1173,8 @@ Helper.getExternalModuleDirectories = function (project) {
                                 if (fs.existsSync(path.join(modPath, "package.json"))) {
                                     let builderFile = path.join(modPath, Helper.BUILDER_FILE)
                                     if (fs.existsSync(builderFile)) {
-                                        let path2addBuilderJS =  Helper.ReadTypeBuilderJS(builderFile);
-                                        if (path2addBuilderJS !== Helper.TYPE.APPLICATION && path2addBuilderJS !== Helper.TYPE.APPLICATION_SERVER ||  (currentType !== Helper.TYPE.APPLICATION && currentType !== Helper.TYPE.APPLICATION_SERVER && current === modPath)) {
+                                        let path2addBuilderJS = Helper.ReadTypeBuilderJS(builderFile);
+                                        if (path2addBuilderJS !== Helper.TYPE.APPLICATION && path2addBuilderJS !== Helper.TYPE.APPLICATION_SERVER || (currentType !== Helper.TYPE.APPLICATION && currentType !== Helper.TYPE.APPLICATION_SERVER && current === modPath)) {
                                             moduleDirectories.push(modPath);
                                         } else {
                                             Helper.info("Exclusion : " + path2addBuilderJS);
@@ -1164,7 +1258,7 @@ Helper.getCurrentProject = function () {
     return Helper.getProject(process.cwd());
 };
 
-Helper.ReadTypeBuilderJS = function(path){
+Helper.ReadTypeBuilderJS = function (path) {
     let data = fs.readFileSync(path, 'utf8');
     let regex = /type:\s*["|'](\S+)["|']\s*/g;
     var corresp = regex.exec(data);
@@ -1176,7 +1270,7 @@ Helper.getProject = function (dir) {
     let builderJsPath = path.join(dir, "builder.js");
     let configProjectPath = path.join(dir, "config", "default.json");
     let builderJsType;
-    
+
     if (!fs.existsSync(packageJsonPath) || !fs.existsSync(builderJsPath)) {
         Helper.error("Le projet doit avoir un fichier package.json et un fichier builder.js (dir=" + process.cwd() + ")");
         process.exit(1);
@@ -1186,10 +1280,10 @@ Helper.getProject = function (dir) {
     let moduleResolver = require("./module-resolver");
     moduleResolver.addModuleDirectory(dir);
     moduleResolver.addModuleDirectory(path.normalize(path.join(dir, Helper.NODE_MODULES_BUILD)));
-    
+
     let packageJson = require(packageJsonPath);
     let configProject = {};
-    if(builderJsType === "application"){
+    if (builderJsType === "application") {
         configProject = require(configProjectPath);
     }
     //retour arrière sur commit 187090, impossible à utiliser dans le cas ou le builder.js contient des requires
@@ -1288,9 +1382,6 @@ Helper.checkTasksExistence = function (gulp, tasks) {
 
 Helper.isValidVersion = function (version, moduleName) {
 
-    var builderPath = this.getCurrentProject().dir + "/builder.js"
-    var builder = require(builderPath);
-
     if (!semver.validRange(version)) {
         return false;
     } else {
@@ -1305,15 +1396,8 @@ Helper.isValidVersion = function (version, moduleName) {
         return (semver.validRange(version) != null);
     }
     else {
-        // Sinon on les autorise uniquement si le projet est-lui même en prerelease
         if (semver.prerelease(Helper.getCurrentProject().version) != null) {
-            // SAUF pour les modules Hornet qui doivent explicitement être paramétrés comme pouvant être
-            // utilisé en mode prerelease
-            if (moduleName.startsWith("hornet") && !Helper.getCurrentProject().name.startsWith("hornet")) {
-                return (builder.authorizedPrerelease == "true" && semver.validRange(version) != null);
-            } else {
-                return (semver.validRange(version) != null);
-            }
+            return (semver.validRange(version) != null);
         } else {
             return false;
         }
@@ -1335,7 +1419,7 @@ Helper.checkOrInstallBuildDependencies = function (project, npm, cb) {
     }
 };
 
-Helper.checkBuildAndTestDependencies = function(project) {
+Helper.checkBuildAndTestDependencies = function (project) {
     var root = project.packageJson;
     var ok = true;
 
@@ -1392,7 +1476,7 @@ Helper.detectBuildOrTestDependenciesChanges = function (project, dependenciesKey
     return diff;
 }
 
-Helper.installBuildOrTestDependencies = function(project, npm, dependenciesKey, nodeModulePath, done) {
+Helper.installBuildOrTestDependencies = function (project, npm, dependenciesKey, nodeModulePath, done) {
     var root = project.packageJson;
     var rootStr = root.name + '@' + root.version;
     var dependencies = root[dependenciesKey] || {};

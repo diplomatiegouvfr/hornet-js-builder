@@ -7,6 +7,7 @@ const State = require("./state");
 
 const FixVersion = require("./tasks/version/fix-version");
 const FixDependencyVersion = require("./tasks/version/fix-dependency-version");
+const GetLastVersion = require("./tasks/version/get-last-version");
 
 /**
  * Builder ajoutant les tâches gulp nécessaires à la construction d'un module de type 'parent'
@@ -96,6 +97,10 @@ module.exports = {
             // on map chaque tâche gulp existante par l'exécution de cette tâche sur tous les modules qui la possède
             helper.each(gulp.tasks, function (task, taskName) {
                 if (taskName.indexOf("/") != -1) return;
+
+                //exlusion de module
+                if(taskName === "versions:get") return;
+
                 var subProjectTasks = [];
                 
                 // chargement des differents types de projet dans un parent

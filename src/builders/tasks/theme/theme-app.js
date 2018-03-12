@@ -23,11 +23,11 @@ class ThemeInclusion extends Task {
                 var defaultJson = JSON.parse(fs.readFileSync(project.configJsonPath));
                 var themeName = defaultJson["themeName"];
                 if (themeName) {
-                    helper.info("Application avec thèmes embarqués : " + themeName);
+                    helper.debug("Application avec thèmes embarqués : " + themeName);
                     const staticHornetThemeDirectory = "static/" + themeName;
                     deleteDirectoryIfExists(helper, staticHornetThemeDirectory);
 
-                    helper.info("hornet-themes dependency - Deployment to Static application");
+                    helper.debug("hornet-themes dependency - Deployment to Static application");
                     createDirectoryIfMissing(helper, staticHornetThemeDirectory);
                     var packageJson = JSON.parse(fs.readFileSync(project.packageJsonPath));
                     var themeVersion = packageJson["appDependencies"][themeName];
@@ -39,7 +39,7 @@ class ThemeInclusion extends Task {
                     }
                     var directoryExtension = "/**/*.*";
                     var destinationDirectory = staticHornetThemeDirectory;
-                    helper.info("Déplacement de hornet-themes dans la partie static");
+                    helper.debug("Déplacement de hornet-themes dans la partie static");
                     if (helper.folderExists(directoryToMove)) {
                         gulp.src(directoryToMove + directoryExtension)
                             .pipe(gulp.dest(destinationDirectory))
@@ -62,14 +62,14 @@ class ThemeInclusion extends Task {
 
 function createDirectoryIfMissing(helper, directory) {
     if (!helper.folderExists(directory)) {
-        helper.info("Création du répertoire "+directory);
+        helper.debug("Création du répertoire "+directory);
         fs.mkdirSync(directory);
     }
 }
 
 function deleteDirectoryIfExists(helper, directory) {
     if (helper.folderExists(directory)) {
-        helper.info("Nettoyage du répertoire " + directory);
+        helper.debug("Nettoyage du répertoire " + directory);
         helper.removeDir(directory);
     }
 }

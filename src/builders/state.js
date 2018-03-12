@@ -13,6 +13,12 @@ class State {
 State.report = null;
 
 /**
+ * rapport pour l'état et l'arbre des dépendances des fixed
+ * @static
+ */
+State.reportFixed = null;
+
+/**
  * Marqueur de changement des dépendances applicatives (pour opimiser les temps)
  * @static
  */
@@ -29,6 +35,12 @@ State.testDependenciesInstalled = {};
  * @static
  */
 State.externalDependencies = {};
+
+/**
+ * Informations du module parent
+ * @static
+ */
+State.parentBuilder = {};
 
 /**
  * Dépendances avec script install
@@ -53,6 +65,12 @@ State.moduleList = {};
  * prefix pour les install specifique
  */
 State.prefix = "";
+
+
+/**
+ * Resultat afficher en fin de traitement
+ */
+State.result = undefined;
 
 /**
  * Retourne un nouveau rapport de dépendences en supprimants des dépendences et celles tirées par ces dernières

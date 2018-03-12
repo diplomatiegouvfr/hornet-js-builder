@@ -13,7 +13,7 @@ class Task {
         // Gestion du resolving des modules issus du parent
         if(!State.externalDependencies || !State.externalDependencies[project.name]) {
             State.externalDependencies[project.name] = {};
-            if((project.builderJs.externalModules && project.builderJs.externalModules.enabled) || !helper.isMultiType()) { 
+            if((project.builderJs.externalModules && project.builderJs.externalModules.enabled) || (State.parentBuilder.externalModules && State.parentBuilder.externalModules.enabled) || !helper.isMultiType()) { 
                 helper.getExternalModules(project).forEach(function (mod) {
                     State.externalDependencies[project.name][mod.name] = mod;
                     helper.info("Auto resolving module externe '" + mod.name + "@" + mod.version + " in '" + mod.dir + "'");

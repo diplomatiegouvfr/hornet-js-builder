@@ -14,6 +14,7 @@ const PublishTask = require("./tasks/publish/publish");
 const UnPublishTask = require("./tasks/publish/unpublish");
 const TraceDependencies = require("./tasks/trace/trace-dependencies");
 const FixVersion = require("./tasks/version/fix-version");
+const GetLastVersion = require("./tasks/version/get-last-version");
 const FixDependencyVersion = require("./tasks/version/fix-dependency-version");
 const LicenseHeader = require("./tasks/license/license-header");
 
@@ -53,7 +54,10 @@ module.exports = {
 
         new FixVersion("versions:set", "", [], gulp, helper, conf, project);
         new FixDependencyVersion("dependency:set", "", [], gulp, helper, conf, project);
-
+        new FixDependencyVersion("dependency:set-snapshot", "", ["versions:get"], gulp, helper, conf, project);
+        new GetLastVersion("versions:get", "", [], gulp, helper, conf, project);
+        
+        
         new LicenseHeader("license:header", "", [], gulp, helper, conf, project);
 
         /*if (project.type !== helper.TYPE.APPLICATION) {

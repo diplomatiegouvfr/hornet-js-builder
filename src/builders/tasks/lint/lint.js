@@ -41,7 +41,7 @@ class LintTask extends Task {
                 gulp.src(conf.sourcesTS)
                     .pipe(gulpTsLint(
                         {
-                            rulesDirectory: path.join(__dirname, "../../../../node_modules/tslint-microsoft-contrib"),
+                            //rulesDirectory: path.join(__dirname, "../../../../node_modules/tslint-microsoft-contrib"),
                             configuration: lintRulesPath,
                             formatter: helper.getLintReport()
                         })

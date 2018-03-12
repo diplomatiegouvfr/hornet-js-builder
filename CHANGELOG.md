@@ -1,3 +1,21 @@
+# Hornet JS Builder 1.5.3
+
+- Activation des externals modules depuis le parent.
+- Maj Gulp-zip 4.1.0
+- Maj documentation task clean
+- webpack v3.10.0
+- webpack-merge 4.1.1
+- webpack-stream 4.0.0
+- update dll vendor
+- paramètre --noWarn
+- Ajout tâche de recherche de dernière version d'un module.
+- Ajout tâche de merge de rapport de test (mocha / karma)
+- Validation des templates json environment
+- Zip des scripts database
+- Ajout de l'option stopOnError, qui stoppe l'ensemble des tâches si une erreur dans les tests Mocha est
+- Ajout de la génération des rapports JUnit
+- Ajout de la génération de 'index.d.ts' pour les modules
+
 # Hornet JS Builder 1.5.2
 - Filter sur prepare package spa
 - Tolérance à la compilation webpack sur karma

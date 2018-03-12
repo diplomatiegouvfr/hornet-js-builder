@@ -6,22 +6,15 @@ const gulpTypescript = require("gulp-typescript");
 const sourcemaps = require("gulp-sourcemaps");
 const path = require("path");
 const through = require("through2");
-const Utils = require("../utils");
-const nodemon = require("nodemon");
+const Utils = require("../../utils");
 
-const Task = require("./../task");
+const Task = require("../../task");
 
-class CompileTypeScript extends Task {
+class GenerateDefinition extends Task {
 
     task(gulp, helper, conf, project) {
-        var timeout = null;
         return (doneFn) => {
-            if (helper.isIDE()) {
-                // Ide: rien à compiler c'est l'IDE qui gère les .js, les .dts et les .maps
-                helper.debug("Pas besoin de compiler les TS ni les DTS");
-                doneFn();
-                return;
-            }
+
             if (!helper.fileExists(path.join(project.dir, "tsconfig.json"))) {
                 return doneFn(new Error("Le fichier 'tsconfig.json' est introuvable dans le répertoire '" + project.dir + "'"));
             }
@@ -53,8 +46,8 @@ class CompileTypeScript extends Task {
             // modifie les fichiers pour que le plugin sourcemaps génère correctement les fichiers de map
                 .pipe(Utils.rebase(conf.targetTS))
                 .pipe(sourcemaps.write(".", {
-                    includeContent: false, sourceRoot: (file) => {
-                        return "";// file.base;
+                    includeContent: false, sourceRoot: () => {
+                        return "";
                     }
                 })) //
                 // restaure le paramétrage des fichiers après la génration des fichiers de map
@@ -74,10 +67,7 @@ class CompileTypeScript extends Task {
             // Merge des deux pipes pour terminer quand les deux sont terminés
             helper.stream(
                 () => {
-                    doneFn(hasError ? new gutil.PluginError("gulp-typescript", "Au moins une erreur de compilation typeScript s'est produite") : (() => {if (timeout) clearTimeout(timeout); timeout=setTimeout(function () {
-                        timeout = null;
-                        nodemon.restart();
-                    }, 1000);return undefined})());
+                    doneFn(hasError ? new gutil.PluginError("gulp-typescript", "Au moins une erreur de compilation typeScript s'est produite") : undefined);
                 },
                 dtsPipe,
                 jsPipe
@@ -140,4 +130,4 @@ function rebase(defaultMapBase) {
 }
 
 
-module.exports = CompileTypeScript;
+module.exports = GenerateDefinition;

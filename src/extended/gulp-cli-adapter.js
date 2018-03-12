@@ -5,6 +5,7 @@ var _ = require("lodash");
 var gutil = require("gulp-util");
 var prettyTime = require("pretty-hrtime");
 var helper = require("../helpers");
+const State = require("../builders/state");
 var runSequence = require("run-sequence");
 
 module.exports = function (gulp) {
@@ -209,41 +210,54 @@ module.exports = function (gulp) {
     // exit with 0 or 1
     var failed = false;
     process.once("exit", function (code) {
+        if(State.result) {
+            console.log(State.result);
+        }
         if (code === 0 && failed) {
-            process.exit(1);
+            process.exit(code);
         }
     });
 
     // wire up logging events
     function logEvents(gulpInst) {
+        var inc = 0;
+
         // total hack due to poor error management in orchestrator
         gulpInst.on("err", function () {
             failed = true;
         });
-
         gulpInst.on("task_start", function (e) {
             // TODO: batch these
             // so when 5 tasks start at once it only logs one time with all 5
-            gutil.log("Starting", "'" + chalk.cyan(e.task) + "'...");
+            inc++;
+            let logShift = "_".repeat(inc);
+            gutil.log(logShift + "Starting", "'" + chalk.cyan(e.task) + "'...");
+
         });
 
         gulpInst.on("task_stop", function (e) {
+            let logShift = "_".repeat(inc);
+            inc--;
             var time = prettyTime(e.hrDuration);
-            gutil.log(
+            gutil.log(logShift + 
                 "Finished", "'" + chalk.cyan(e.task) + "'",
                 "after", chalk.magenta(time)
             );
         });
 
         gulpInst.on("task_err", function (e) {
-            var msg = formatError(e);
-            var time = prettyTime(e.hrDuration);
-            gutil.log(
-                "'" + chalk.cyan(e.task) + "'",
-                chalk.red("errored after"),
-                chalk.magenta(time)
-            );
-            gutil.log(msg);
+            if(e && e.err && e.err.console) {
+                gutil.log(e.err.data);
+            } else {
+                var msg = formatError(e);
+                var time = prettyTime(e.hrDuration);
+                gutil.log(
+                    "'" + chalk.cyan(e.task) + "'",
+                    chalk.red("errored after"),
+                    chalk.magenta(time)
+                );
+                gutil.log(msg);
+            }
         });
 
         gulpInst.on("task_not_found", function (err) {

@@ -29,25 +29,31 @@ class RunTestMocha extends Task {
                 harmony: true
             });
 
-            helper.stream(
-                function () {
-                    // revert modules paths
-                    moduleResolver.setModuleDirectories(savedCurrentModulePaths);
-
-                    // au cas où un test défini la variable document permet d'éviter que le chargement de 'sinon' échoue
-                    delete global.document;
+            
+            gulp.src(conf.testSources, {
+                read: true,
+                base: conf.testSourcesBase
+            })
+            .pipe(gulp.dest(conf.testSourcesBase))
+            // Exécution des tests
+            .pipe(mocha(conf.mocha))
+            .on("error", (err) => {
+                helper.error(err);
+                if(helper.getStopOnError()) {
+                    proces.exit(1);
+                }
+            })
+            .on("end", () => {
+                // revert modules paths
+                moduleResolver.setModuleDirectories(savedCurrentModulePaths);
+                // au cas où un test défini la variable document permet d'éviter que le chargement de 'sinon' échoue
+                delete global.document;
+                if(!helper.getStopOnError()) {
                     done();
-                },
-                gulp.src(conf.testSources, {
-                    read: true,
-                    base: conf.testSourcesBase
-                })
-                    .pipe(gulp.dest(conf.testSourcesBase))
-                    // Exécution des tests
-                    .pipe(mocha(conf.mocha))
-                    // Ecriture des rapports de couverture de code
-                    .pipe(istanbul.writeReports(conf.istanbul))
-            );
+                }
+            })
+            // Ecriture des rapports de couverture de code
+            .pipe(istanbul.writeReports(conf.istanbul));
         }
     }
 }

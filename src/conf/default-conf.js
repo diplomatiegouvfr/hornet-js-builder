@@ -10,7 +10,19 @@ const defaultConf = {
     src: "src",
     test: "test",
     static: "static",
+    database: "database",
+    environment: {
+        dir: "environment",
+        configuration: "environment/configuration",
+        templates:"environment/templates"
+    },   
+    testEnvironment: {
+        dir: "test-environment",
+        configuration: "test-environment/configuration",
+        templates:"test-environment/templates"
+    },
     js: "js",
+    dll: "dll",
     config: "./config",
     generatedTypings: {
         dir: ".",
@@ -55,8 +67,30 @@ const defaultConf = {
             dir: path.join(testReportDir, "merge"),
             lcov: {dir: path.join(testReportDir, "merge", "lcov"), file: "lcov.info"},
             html: {dir: path.join(testReportDir, "merge", "html")},
-            json: {dir: path.join(testReportDir, "merge"), file: "coverage_mocha.json"},
+            json: {dir: path.join(testReportDir, "merge"), file: "coverage.json"},
             cobertura: {dir: path.join(testReportDir, "merge")}
+        }
+    },remap: {
+        inputReport: {dir: path.join(testReportDir, "merge"), file: "coverage_mocha.json"},
+        reporters: ["lcovonly", "text", "text-summary", "cobertura", "json", "html"],
+        reportOpts: {
+            dir: path.join(testReportDir, "remap"),
+            lcovonly: {dir: path.join(testReportDir, "remap", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "remap", "html"), file: ""},
+            json: {dir: path.join(testReportDir, "remap"), file: "coverage_mocha.json"},
+            cobertura: {dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml"},
+            text: {dir: path.join(testReportDir, "remap"), file: "coverage_remap.txt"}
+        }
+    },remap: {
+        reporters: ["lcovonly", "text", "text-summary", "cobertura", "json", "html"],
+        reportOpts: {
+            dir: path.join(testReportDir, "remap"),
+            lcovonly: {dir: path.join(testReportDir, "remap", "lcov"), file: "lcov.info"},
+            html: {dir: path.join(testReportDir, "remap", "html")},
+            json: {dir: path.join(testReportDir, "remap"), file: "coverage.json"},
+            cobertura: {dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml"},
+            text: {dir: path.join(testReportDir, "remap"), file: "coverage.txt"},
+            "text-summary": {dir: path.join(testReportDir, "remap"), file: "coverage_summary.txt"}
         }
     },
     istanbulOpt: {
@@ -123,7 +157,9 @@ function buildConf(project, conf, helper) {
             .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(prepend("!" + conf.src)));
 
     // Gestion du clean
-    conf.cleanStaticElements = [path.join(conf.static, conf.js)];
+    conf.cleanStaticElements = [path.join(conf.static, conf.js) + "/*.js"];
+    conf.cleanStaticDllElements = [path.join(conf.static, conf.js, conf.dll)];
+
     conf.cleanThemeElements = []
     if(project.configJson["themeName"]){
         conf.cleanThemeElements.push(path.join(conf.static, project.configJson["themeName"]));

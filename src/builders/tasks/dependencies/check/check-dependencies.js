@@ -16,8 +16,12 @@ class CheckDependencies extends Task {
             var ok = true;
             helper.each(root[this.keyDependency], (version, key) => {
                 if (!helper.isValidVersion(version, key)) {
-                    ok = false;
-                    helper.error("Version '" + version + "' interdite pour la dépendance '" + key + "' ==> vous devez utiliser une version figée");
+                    if (project.builderJs.authorizedPrerelease) {
+                        helper.warn("Mode authorizedPrerelease activé, Version '" + version + "' interdite pour la dépendance en production'" + key + "' ==> vous devez utiliser une version figée");
+                    } else {
+                        ok = false;
+                        helper.error("Version '" + version + "' interdite pour la dépendance '" + key + "' ==> vous devez utiliser une version figée");
+                    }
                 }
             });
             if (ok) done();

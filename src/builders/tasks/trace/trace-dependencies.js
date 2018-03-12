@@ -26,7 +26,7 @@ class TraceDependencies extends Task {
             let s = {label: module, nodes: []};
             helper.getDependenciesReport(npm, root, State.externalDependencies, (report) => {
                 let out = {label: helper.getModule(), nodes: this.makeArchy(report, true)};
-                console.log(archy(out));
+                helper.info(archy(out));
                 done();
             });
         }
