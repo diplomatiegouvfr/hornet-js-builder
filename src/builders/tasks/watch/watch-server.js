@@ -31,9 +31,10 @@ class WatchServer extends Task {
         return (done) => {
 
             var confNodemon = {
-                watch: [/*conf.src, */conf.config].concat(helper.getExternalModuleDirectories(project)),
+                watch: [conf.src, conf.config].concat(helper.getExternalModuleDirectories(project)),
+                ignore: [conf.src + "/**/*.js*"],
                 script: project.packageJson.main,
-                ext: "html js jsx tsx json css",
+                ext: "html js json css",
                 ignore: [conf.targetClientJs],
                 nodeArgs: args,
                 delay: 3,

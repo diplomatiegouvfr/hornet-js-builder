@@ -94,7 +94,16 @@ function configBrowser(project, conf, debug) {
             path: path.join(project.dir, "static") ,
             publicPath: "./static-" + project.packageJson.version + "/",
             filename: conf.js + "/[name].js"
-        },
+        }/*,
+        node: {
+            console: false,
+            global: "mock",
+            process: "mock",
+            __filename: false,
+            __dirname: false,
+            Buffer: false,
+            setImmediate: false
+        }*/,
         module: {
             rules: [
                 {

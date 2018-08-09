@@ -19,6 +19,11 @@ class GenerateDefinition extends Task {
                 return doneFn(new Error("Le fichier 'tsconfig.json' est introuvable dans le répertoire '" + project.dir + "'"));
             }
 
+            if(!conf.autoGenerateIndex) {
+                helper.info("Fichier d'index typescript 'index.ts' non généré (configuration) !!");
+                return doneFn();
+            }
+
             let configTS = {
                 typescript: require((conf.typescript && conf.typescript.bin) || "typescript") // permet de forcer la version de typescript déclarée dans le builder plutôt que celle du plugin gulp-typescript
             }

@@ -38,7 +38,7 @@ const defaultConf = {
     mocha: {
         reporter: process.env.NODE_ENV === "integration" ? "xunit" : "spec",
         reporterOptions: {
-            output: "test-results.xml"
+            output: path.join(testReportDir, "mocha", "test-results.xml")
         }
         //,"grep": "Router constructor"
     },
@@ -71,17 +71,6 @@ const defaultConf = {
             cobertura: {dir: path.join(testReportDir, "merge")}
         }
     },remap: {
-        inputReport: {dir: path.join(testReportDir, "merge"), file: "coverage_mocha.json"},
-        reporters: ["lcovonly", "text", "text-summary", "cobertura", "json", "html"],
-        reportOpts: {
-            dir: path.join(testReportDir, "remap"),
-            lcovonly: {dir: path.join(testReportDir, "remap", "lcov"), file: "lcov.info"},
-            html: {dir: path.join(testReportDir, "remap", "html"), file: ""},
-            json: {dir: path.join(testReportDir, "remap"), file: "coverage_mocha.json"},
-            cobertura: {dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml"},
-            text: {dir: path.join(testReportDir, "remap"), file: "coverage_remap.txt"}
-        }
-    },remap: {
         reporters: ["lcovonly", "text", "text-summary", "cobertura", "json", "html"],
         reportOpts: {
             dir: path.join(testReportDir, "remap"),
@@ -92,6 +81,7 @@ const defaultConf = {
             text: {dir: path.join(testReportDir, "remap"), file: "coverage.txt"},
             "text-summary": {dir: path.join(testReportDir, "remap"), file: "coverage_summary.txt"}
         }
+        
     },
     istanbulOpt: {
         includeUntested: true
@@ -176,12 +166,21 @@ function buildConf(project, conf, helper) {
 
     conf.cleanTemplateElements = [path.join(conf.static, conf.templateDir)];
 
+    conf.cleanIndexElements = [
+        path.join(path.join(conf.generatedTypings.dir, "index.ts")),
+        path.join(path.join(conf.generatedTypings.dir, "index.js")),
+        path.join(path.join(conf.generatedTypings.dir, "index.d.ts"))
+    ]
+
     conf.complementarySpaSources = ["*.json"].map(prepend(path.join(conf.src, "resources")))
         .concat(["*.json"].map(prepend(conf.config)));
 
 
     conf.istanbulOpt["coverageVariable"] = conf.istanbul["coverageVariable"] = "___" + project.name.replace(/-/g, "_") + "___";
     conf.istanbulOpt.includeUntested = true;
+
+    // Permet d'exclure du remap les fichier sans transpilation (ex : jsx)
+    conf.remap.exclude = function(filename) { return !helper.fileExists(filename) };
 
     helper.debug("Configuration du applicationAndModuleBuilder:", conf);
 

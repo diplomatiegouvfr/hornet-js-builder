@@ -1,3 +1,17 @@
+# Hornet JS Builder 1.5.4
+
+- FIX  : correction remap sans tsx pour les tests
+- EVOL : update rules et dépendances tslint, airbnb
+- FIX  : niveau de log génération index.ts
+- EVOL : Doc génération index
+- EVOL : test ne déclenche pas la generation des indes
+- EVOL : Generation/Suppression des index à la demande
+- EVOL : Ajout polyfill node
+- EVOL : changement configuration plugin pour node_env
+- EVOL : exclusion de la generation des index.ts
+- FIX  : changement dépendances des tâches
+
+
 # Hornet JS Builder 1.5.3
 
 - Activation des externals modules depuis le parent.
@@ -15,6 +29,7 @@
 - Ajout de l'option stopOnError, qui stoppe l'ensemble des tâches si une erreur dans les tests Mocha est
 - Ajout de la génération des rapports JUnit
 - Ajout de la génération de 'index.d.ts' pour les modules
+- typecript 2.7.2
 
 # Hornet JS Builder 1.5.2
 - Filter sur prepare package spa

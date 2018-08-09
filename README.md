@@ -495,6 +495,7 @@ module.exports = {
     * d'ajouter des dépendances à une tâche existante au moyen de la méthode `gulp.addTaskDependency(taskName, dependencyTaskName)`
 * L'objet `externalModules` permet de déclarer des dépendances à partir de répertoires externes
 * L'objet `config` permet de surcharger la configuration du builder dans chaque application
+    * `autoGenerateIndex` permet d'autogénérer des `index.js`, `index.ts` et ``index.d.ts`` (utile pour le mode dev et dll, ou l'import auto des dts)
     * `routesDirs` permet de spécifier les répertoires des routes pour le code splitting automatique
     * `clientExclude` est un raccourci pour modifier la conf webpack et rajouter des __externals__
     * `clientNoParse` est un raccourci pour modifier la conf webpack et rajouter des __module.noParse__

@@ -17,6 +17,11 @@ class GenerateIndexDefinition extends Task {
             var dest = path.join(conf.generatedTypings.dir);
             helper.debug("[buildTypeScriptDefinition] dest:", dest);
 
+            if(!conf.autoGenerateIndex) {
+                helper.info("Fichier d'index typescript 'index.ts' non généré (configuration) !!");
+                return doneFn();
+            }
+
             helper.stream(
                 function () {
                     Utils.gulpDelete(helper, conf.postTSClean)(doneFn);

@@ -15,6 +15,16 @@ class GenerateIndexExport extends Task {
     task(gulp, helper, conf, project) {
         return (doneFn) => {
 
+            if(helper.fileExists(path.join(project.dir, "index.ts"))) {
+                helper.debug("Fichier d'index typescript 'index.ts' déjà présent !!");
+                return doneFn();
+            }
+            
+            if(!conf.autoGenerateIndex) {
+                helper.info("Fichier d'index typescript 'index.ts' non généré (configuration) !!");
+                return doneFn();
+            }
+
             helper.stream(
                 function () {
                     //Utils.gulpDelete(helper, conf.postTSClean)(doneFn);
@@ -28,12 +38,12 @@ class GenerateIndexExport extends Task {
 
                     lineReader.on("line", function (line) {
                         let result = moduleDeclare.exec(line);
-                        if (result) {
+                        if (result && result[1].substring(1, result[1].length -1) !== project.name) {
                             moduleExports.push("export * from " + result[1].replace(project.name, ".") +";")
                         }
                     });
                     lineReader.on("close", () => {
-                         fs.writeFile(path.join(projectfile.dir, "index.ts"), moduleExports.join("\n"), (err) => {
+                         fs.writeFile(path.join(project.dir, "index.ts"), moduleExports.join("\n"), (err) => {
                             if (err) {
                                 ok = false;
                                 helper.error("Erreur de mise à jour du fichier 'package.json' !!");
@@ -49,6 +59,5 @@ class GenerateIndexExport extends Task {
         }
     }
 }
-
 
 module.exports = GenerateIndexExport;

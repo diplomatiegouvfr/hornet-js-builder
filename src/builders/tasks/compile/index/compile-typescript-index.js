@@ -20,6 +20,13 @@ class CompileTypeScriptIndex extends Task {
                 doneFn();
                 return;
             }
+
+                        
+            if(!conf.autoGenerateIndex) {
+                helper.info("Fichier d'index typescript 'index.ts' non généré (configuration) !!");
+                return doneFn();
+            }
+            
             if (!helper.fileExists(path.join(project.dir, "tsconfig.json"))) {
                 return doneFn(new Error("Le fichier 'tsconfig.json' est introuvable dans le répertoire '" + project.dir + "'"));
             }

@@ -44,10 +44,14 @@
     "possible-timing-attack": true,
     "prefer-array-literal": true,
     "prefer-type-cast": true,
+    "prefer-while": true,
     "promise-must-complete": true,
 
     "await-promise": true,
     "no-floating-promises": true,
+
+    
+    "file-name-casing": [true, "kebab-case"],
 
     "react-a11y-anchors": true,
     "react-a11y-aria-unsupported-elements": true,
@@ -72,5 +76,6 @@
     
     "underscore-consistent-invocation": [true, { "style": "static" }],
     "use-named-parameter": true
+
   }
 }

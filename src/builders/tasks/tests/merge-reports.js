@@ -36,13 +36,23 @@ class MergeReportsTests extends Task {
         function merge(file, encoding, done) {
             if (file.isBuffer()) {
                 let instruResult = JSON.parse(file.contents.toString('utf-8'));
-                for(let file in instruResult) {
-                    let newResult = instruResult[file];
-                    newResult.path = newResult.path.replace("/istanbul/", "/");
-                    delete instruResult[file];
-                    instruResult[file.replace("/istanbul/", "/")] = newResult;
+                if(Object.keys(instruResult).length != 0) {helper.info("instruResult", Object.keys(instruResult).length);
+                    for(let file in instruResult) {
+                        let newResult = instruResult[file];
+                        
+                        newResult.path = newResult.path.replace("/istanbul/", "/");
+                        
+                        if(!helper.fileExists(newResult.path)) {
+                            newResult.path = newResult.path + "x";
+                        }
+
+                        delete instruResult[file];
+
+                        instruResult[file.replace("/istanbul/", "/")] = newResult;
+
+                    }
+                    collector.add(instruResult);
                 }
-                collector.add(instruResult);
             }
             if (file.isStream()) {
                 this.emit('error', new Error("Stream not supported in merge report"));
@@ -53,13 +63,22 @@ class MergeReportsTests extends Task {
         }
 
         function flush(done) {
-            reporters.forEach(function (reporter) {
-                reporter.writeReport(collector, true, function () {
-                    helper.info('report generated', reporter);
+            try{
+                reporters.forEach(function (reporter) {
+                    try {
+                        reporter.writeReport(collector, true, function () {
+                            helper.info('report generated', reporter);
+                        })
+                    } catch (err) {
+                        helper.error("Erreur durant le merge des rapports de couverture : " + err);
+                        done(err);
+                    }
                 });
-              });
-            
-            this.emit("finish");
+                this.emit("finish");
+            } catch(err) {
+                helper.error("Erreur durant le merge des rapports de couverture : " + err);
+                done(err);
+            }
             done();
         }
 

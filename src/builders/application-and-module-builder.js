@@ -53,7 +53,7 @@ module.exports = {
     gulpTasks: (gulp, project, conf, helper) => {
 
         let fileDckCompose = project.dir + "/docker-compose.yml";
-
+        
         conf = defaultConf.buildConf(project, conf, helper);
 
         function isModeDockerGoOn() {
@@ -91,13 +91,30 @@ module.exports = {
         } else {
             new CompileTypeScriptDefinition("compile:dts", "", ["compile:ts"], gulp, helper, conf, project);
             new CompileTypeScriptDefinition("compile-no-clean:dts", "", ["compile-no-clean:ts"], gulp, helper, conf, project);
-            new GenerateIndexExport("compile-index:index", "", ["compile-index:dts"], gulp, helper, conf, project);
-            new GenerateDefinition("compile-index:ts", "", [], gulp, helper, conf, project);
-            new GenerateIndexDefinition("compile-index:dts", "", ["compile-index:ts"], gulp, helper, conf, project);
-            new CompileTypeScriptIndex("compile:index", "", ["compile-index:index"], gulp, helper, conf, project);
-            gulp.task("compile", ["generate-index:dts", "compile:dts"]);
-            gulp.task("generate-index", ["compile:index"]);
-            gulp.task("generate-index:dts", ["dependencies:install-ts-definition", "compile-index:dts"]);
+            if (project.type === helper.TYPE.MODULE) {
+                new CleanTask("clean:index", "", [], gulp, helper, conf, project, conf.cleanIndexElements);
+                new GenerateIndexDefinition("compile-index:dts", "", ["compile-index:ts"], gulp, helper, conf, project);
+                new GenerateIndexExport("compile-index:index", "", ["compile-index:dts"], gulp, helper, conf, project);
+                new GenerateDefinition("compile-index:ts", "", [], gulp, helper, conf, project);
+                new CompileTypeScriptIndex("compile:index", "", ["compile-index:index"], gulp, helper, conf, project);
+                gulp.task("generate-index", ["dependencies:install-ts-definition", "compile:index"]);
+                gulp.task("generate-index:dts", ["dependencies:install-ts-definition", "compile-index:dts"]);
+                // si pas autogenere les tâches sont disponibles et peuvent être lancées manuelement
+                // sinon la tache de compile les lancera
+                if(conf.autoGenerateIndex === true) {
+                    gulp.task("compile", ["generate-index", "generate-index:dts", "compile:dts"]);
+                    gulp.addTaskDependency("clean-all", "clean:index");
+                } else {
+                    gulp.task("compile", ["compile:dts"]);
+                }
+            } else {
+                gulp.task("compile", ["compile:dts"]);
+
+            }
+        }
+        let compileTaskName = "compile:dts";
+        if (project.type === helper.TYPE.APPLICATION) {
+            compileTaskName = "compile:ts";
         }
 
         // Exécution des tests
@@ -105,18 +122,19 @@ module.exports = {
         new CleanTask("clean-test:karma", "", [], gulp, helper, conf, project, conf.karma.reportOpts.dir);
         new CleanTask("clean-test:merge", "", [], gulp, helper, conf, project, conf.merge.reportOpts.dir);
         new CleanTask("clean-test:remap", "", [], gulp, helper, conf, project, conf.remap.reportOpts.dir);
-        new PrepareTestSources("prepare:testSources", "", ["compile"], gulp, helper, conf, project);
+        new PrepareTestSources("prepare:testSources", "", [compileTaskName], gulp, helper, conf, project);
         new InstrumentSourcesTest("test:instrument", "", ["prepare:testSources"], gulp, helper, conf, project);
         //new RunTestsInclusion("test", "", ["clean:test", "test:mocha", "test:karma"], gulp, helper, conf, project);
-        gulp.task("test", ["clean:test", "dependencies:install", "compile", "test:mocha-run", "test:karma-run", "test:merge-reports", "test:remap-reports"])
+        gulp.task("test", ["clean:test", "dependencies:install", compileTaskName, "test:mocha-run", "test:karma-run", "test:merge-reports", "test:remap-reports"])
         new RunTestMocha("test:mocha", "", ["clean-test:mocha", "dependencies:install", "test:instrument"], gulp, helper, conf, project);
         new RunTestMocha("test:mocha-run", "", ["clean-test:mocha", "test:instrument"], gulp, helper, conf, project);
         new RunTestKarma("test:karma-run", "", ["clean-test:karma"], gulp, helper, conf, project);
+
         
         if (helper.getFile()) {
-            new RunTestKarma("test:karma", "", ["clean-test:karma", "dependencies:install", "compile", "watch:ts"], gulp, helper, conf, project);
+            new RunTestKarma("test:karma", "", ["clean-test:karma", "dependencies:install", compileTaskName, "watch:ts"], gulp, helper, conf, project);
         } else {
-            new RunTestKarma("test:karma", "", ["clean-test:karma", "dependencies:install", "compile"], gulp, helper, conf, project);
+            new RunTestKarma("test:karma", "", ["clean-test:karma", "dependencies:install", compileTaskName], gulp, helper, conf, project);
         }
 
         new MergeReportsTests("test:merge-reports", "", ["clean-test:merge"], gulp, helper, conf, project);

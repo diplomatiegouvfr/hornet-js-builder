@@ -1,5 +1,5 @@
 var createInnerCallback = require("enhanced-resolve/lib/createInnerCallback");
-var popPathSeqment = require("enhanced-resolve/lib/popPathSeqment");
+var popPathSeqment = require("enhanced-resolve/lib/getPaths").basename;
 var _ = require("lodash");
 
 function HornetModulesInDirectoriesPlugin(moduleType, directories) {
