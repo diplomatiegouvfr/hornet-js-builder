@@ -1,6 +1,8 @@
-# Hornet JS Builder 1.6.1
-- FIX: gestion des tâches liées à Sass
+# Hornet JS Builder 1.6.2
+- FIX : suppression d'ecrasement de config npm pour récupération des binaires
 
+# Hornet JS Builder 1.6.1
+- FIX : gestion des tâches liées à Sass
 
 # Hornet JS Builder 1.6.0
 - EVOL : mode interactive

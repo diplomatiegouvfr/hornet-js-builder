@@ -47,8 +47,6 @@ class InstallDependencies extends Task {
                             helper.info("Reinstallation de la dépendance (script install) " + dependencyName + "@" + dependencyVersion );
                             helper.debug("Verification existance (script install) " + path.join(State.prefix, helper.NODE_MODULES, dependencyName) );
 
-                            npm.config.list[0]["node_" + dependencyName +"_binary_host_mirror"] = npm.config.get("registry");
-
                             npm.commands.install(path.join(targetDir, ".."), [dependencyName + "@" + dependencyVersion], (err) => { 
                                 if (err) {
                                     helper.warn("Erreur durant l'installation de la dépendance : " + dependencyName + ", ERROR: "+ err);
