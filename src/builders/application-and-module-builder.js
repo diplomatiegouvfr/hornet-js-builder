@@ -46,7 +46,8 @@ const ValidateTestTemplate = require("./tasks/depaut/validate-test-template");
 const GenerateTestTemplate = require("./tasks/depaut/generate-test-template");
 const Properties2json = require("./tasks/depaut/properties2json");
 const FindUnusedTemplateVar = require("./tasks/depaut/find-unused-template-var");
-const ProcessSass = require("./tasks/sass/process-scss");
+const ProcessScss = require("./tasks/sass/process-scss");
+const ProcessImg = require("./tasks/sass/process-img");
 
 const Task = require("./tasks/task");
 
@@ -176,7 +177,7 @@ module.exports = {
                 new Task("package", "", ["compile", "test", "prepare-package:minified", "prepare-all-package", "zip-static", "zip-dynamic", "prepare-package-docker"], gulp, helper, conf, project);
                 new PublishDockerImages("publish", "", [], gulp, helper, conf, project);
             } else {
-                new Task("package", "", ["compile", "test", "template-html", "prepare-package",  "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
+                new Task("package", "", ["compile", "test", "template-html", "prepare-package", "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
                 new Task("package:spa", "", ["compile", "test", "template-html", "prepare-package-spa", "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
             }
 
@@ -184,9 +185,17 @@ module.exports = {
             new ThemeInclusion("dependencies:install-app-themes", "dependencies:install", [], gulp, helper, conf, project);
             new CommunityThemeInclusion("dependencies:install-community-themes", "dependencies:install", [], gulp, helper, conf, project);
 
-            // generation css from scss
-            new ProcessSass("process:sass", "", [], gulp, helper, conf, project);
-            new ProcessSass("watch:sass", "", [], gulp, helper, conf, project, true, ["process-sass"]);
+
+            new Task("process:sass", "", ["process:img", "process:scss"], gulp, helper, conf, project);
+            new Task("watch:sass", "", ["process:sass", "watch:scss"], gulp, helper, conf, project);
+
+            // Generation css from scss
+            new ProcessScss("process:scss", "", [], gulp, helper, conf, project);
+            new ProcessScss("watch:scss", "", [], gulp, helper, conf, project, true, ["process:sass"]);
+
+            // Déplacement des images sass
+            new ProcessImg("process:img", "", [], gulp, helper, conf, project);           
+
 
         } else if (project.type === helper.TYPE.APPLICATION_SERVER) {
             new PreparePackage("prepare-all-package", "", ["prepare-clean"], gulp, helper, conf, project);
@@ -260,15 +269,15 @@ module.exports = {
                 new WatchServer("watch:serveur-dck", "", ["watch:ts"], gulp, helper, conf, project, false, "default-docker");
                 new WatchServer("watch:serveur-brk-dck", "", ["watch:ts"], gulp, helper, conf, project, true, "default-docker");
                 new WatchServer("watch:serveur-prod-dck", "", ["watch:ts"], gulp, helper, conf, project, false, "production-docker");
-                new Task("watch-dck", "", ["dependencies:install", "compile", "watch:client", "watch:serveu-dck"], gulp, helper, conf, project);
+                new Task("watch-dck", "", ["dependencies:install", "compile", "watch:client", "watch:serveur-dck"], gulp, helper, conf, project);
             }
 
             //
             // Gestion de la construction et de l'écoute des fichiers clients
             //
-            new PreparePackageClient("watch:client", "", ["clean:static", "prepare-package-dll", "watch:ts"], gulp, helper, conf, project, true, true);
+            new PreparePackageClient("watch:client", "", ["clean:static", "prepare-package-dll", "watch:ts", "watch:sass"], gulp, helper, conf, project, true, true);
             new PreparePackageClient("watch:client-prod", "", ["clean:static", "watch:ts"], gulp, helper, conf, project, false, true);
-            new Task("watch-prod", "", ["dependencies:install", "compile", "watch:client-prod", "watch:serveu-prod"], gulp, helper, conf, project);
+            new Task("watch-prod", "", ["dependencies:install", "compile", "watch:client-prod", "watch:serveur-prod"], gulp, helper, conf, project);
 
             // raccourcis
             new Task("ws", "", ["watch:serveur"], gulp, helper, conf, project);

@@ -3,7 +3,7 @@
 const concat = require("gulp-concat");
 const Task = require("../task");
 
-class ProcessSass extends Task {
+class ProcessScss extends Task {
     constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project, watchMode, watchTasks) {
         super(name, taskDepend, taskDependencies, gulp, helper, conf, project);
         this.watchMode = watchMode;
@@ -12,31 +12,51 @@ class ProcessSass extends Task {
 
     task(gulp, helper, conf, project) {
         return (done) => {
-            const sass = require("gulp-sass");
+
             if (this.watchMode) {
-                gulp.watch(conf.sass.inputFilter, this.watchTasks)
-                .on("change", function (event) {
+
+                gulp.watch(conf.sassConfiguration.sass.inputFilter, this.watchTasks)
+                .on("change", (event) => {
                     helper.debug("Fichier ", event.path, "a été", event.type);
                 });
                 done();
             } else {
-                
-                let sassPipe = gulp.src(conf.sass.inputFilter)
-                .pipe(sass(conf.sass.options).on('error', sass.logError));
-
-                if(conf.sass.merge) {
-                    sassPipe = sassPipe.pipe(concat(conf.sass.output.fileName));
-                }
-
-                return helper.stream(
-                    done,
-                    sassPipe
-                    .pipe(gulp.dest(conf.sass.output.dir))
-                );
+                this.sassProcess(gulp, helper, conf, done);
             }
         }
+    }
+
+    /**
+     * Méthode de génération des fichiers css depuis des scss
+     */
+    sassProcess(gulp, helper, conf, done) {
+
+        if (!Array.isArray(conf.sassConfiguration.sass.inputFilter)) {
+            conf.sassConfiguration.sass.inputFilter = [conf.sassConfiguration.sass.inputFilter];   
+        }
+        conf.sassConfiguration.sass.inputFilter.splice(0, -1, conf.sassConfiguration.img.output.dir + "_sass-image.scss");
+        let sass;
+        try {
+            sass = require("gulp-sass");
+
+        } catch (e) {
+            helper.error(e);
+            done();
+        }
+        let sassPipe = gulp.src(conf.sassConfiguration.sass.inputFilter)
+        .pipe(sass(conf.sassConfiguration.sass.options).on('error', sass.logError));
+
+        if(conf.sassConfiguration.sass.merge) {
+            sassPipe = sassPipe.pipe(concat(conf.sassConfiguration.sass.output.fileName));
+        }
+
+        return helper.stream(
+            done,
+            sassPipe
+            .pipe(gulp.dest(conf.sassConfiguration.sass.output.dir))
+        );
     }
 }
 
 
-module.exports = ProcessSass;
+module.exports = ProcessScss;

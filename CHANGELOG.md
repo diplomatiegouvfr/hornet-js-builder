@@ -1,3 +1,7 @@
+# Hornet JS Builder 1.6.1
+- FIX: gestion des tâches liées à Sass
+
+
 # Hornet JS Builder 1.6.0
 - EVOL : mode interactive
 - EVOL : support du mode sql

@@ -16,12 +16,12 @@ const defaultConf = {
     environment: {
         dir: "environment",
         configuration: "environment/configuration",
-        templates:"environment/templates"
-    },   
+        templates: "environment/templates"
+    },
     testEnvironment: {
         dir: "test-environment",
         configuration: "test-environment/configuration",
-        templates:"test-environment/templates"
+        templates: "test-environment/templates"
     },
     js: "js",
     dll: "dll",
@@ -37,16 +37,25 @@ const defaultConf = {
     testReportDir: testReportDir,
     testWorkDir: testWorkDir,
     templateDir: "html",
-    sassConfiguration : {
-        merge: true,
-        inputFilter: "./sass/**/*.scss",
-        options: {
-            outputStyle: "compressed",
-            data: ""
+    sassConfiguration: {
+        sass: {
+            merge: true,
+            inputFilter: "./src/**/*.scss",
+            options: {
+                outputStyle: process.env.NODE_ENV !== "production" ? "expanded": "compressed",
+                data: ""
+            },
+            output: {
+                dir: path.join(staticDir, "css"),
+                fileName: process.env.NODE_ENV !== "production" ? "appli.css": "appli.min.css"
+            }
         },
-        output: {
-            dir: path.join(staticDir, "css"),
-            fileName: "generated.css"
+        img: {
+            inputFilter: "./img/**/*.+(jpeg|jpg|png|gif|svg|ttf)",
+            output: {
+                dir: path.join(staticDir, "img")
+            },
+            template: path.join(__dirname, "..", "builders", "tasks", "sass", "sass-image-template.mustache")
         }
     },
     mocha: {
@@ -57,7 +66,7 @@ const defaultConf = {
             filenameFormatter: (currentPath) => {
                 let newFilePAth = path.join(process.cwd(), currentPath).replace("istanbul" + path.sep, "");
                 let exts = ["tsx", "ts", "js"];
-                if (path.extname(newFilePAth) == ".js"){
+                if (path.extname(newFilePAth) == ".js") {
                     let originalFile = path.parse(newFilePAth);
                     originalFile.base = undefined;
                     let extIdx = 0;
@@ -75,41 +84,41 @@ const defaultConf = {
         reporters: ["lcov", "text", "text-summary", "cobertura", "json", "html"],
         reportOpts: {
             dir: path.join(testReportDir, "mocha"),
-            lcov: {dir: path.join(testReportDir, "mocha", "lcov"), file: "lcov.info"},
-            html: {dir: path.join(testReportDir, "mocha", "html")},
-            json: {dir: path.join(testReportDir, "mocha"), file: "coverage_mocha.json"},
-            cobertura: {dir: path.join(testReportDir, "mocha")}
+            lcov: { dir: path.join(testReportDir, "mocha", "lcov"), file: "lcov.info" },
+            html: { dir: path.join(testReportDir, "mocha", "html") },
+            json: { dir: path.join(testReportDir, "mocha"), file: "coverage_mocha.json" },
+            cobertura: { dir: path.join(testReportDir, "mocha") }
         }
     },
     karma: {
         reporters: ["mocha", "coverage"],
         reportOpts: {
             dir: path.join(testReportDir, "karma"),
-            lcov: {dir: path.join(testReportDir, "karma", "lcov"), file: "lcov.info"},
-            html: {dir: path.join(testReportDir, "karma", "html")},
-            json: {dir: path.join(testReportDir, "karma"), file: "converage_karma.json"}
+            lcov: { dir: path.join(testReportDir, "karma", "lcov"), file: "lcov.info" },
+            html: { dir: path.join(testReportDir, "karma", "html") },
+            json: { dir: path.join(testReportDir, "karma"), file: "converage_karma.json" }
         }
-    },merge: {
+    }, merge: {
         reporters: ["lcov", "text", "text-summary", "cobertura", "json", "html"],
         reportOpts: {
             dir: path.join(testReportDir, "merge"),
-            lcov: {dir: path.join(testReportDir, "merge", "lcov"), file: "lcov.info"},
-            html: {dir: path.join(testReportDir, "merge", "html")},
-            json: {dir: path.join(testReportDir, "merge"), file: "coverage.json"},
-            cobertura: {dir: path.join(testReportDir, "merge")}
+            lcov: { dir: path.join(testReportDir, "merge", "lcov"), file: "lcov.info" },
+            html: { dir: path.join(testReportDir, "merge", "html") },
+            json: { dir: path.join(testReportDir, "merge"), file: "coverage.json" },
+            cobertura: { dir: path.join(testReportDir, "merge") }
         }
-    },remap: {
+    }, remap: {
         reporters: ["lcovonly", "text", "text-summary", "cobertura", "json", "html"],
         reportOpts: {
             dir: path.join(testReportDir, "remap"),
-            lcovonly: {dir: path.join(testReportDir, "remap", "lcov"), file: "lcov.info"},
-            html: {dir: path.join(testReportDir, "remap", "html")},
-            json: {dir: path.join(testReportDir, "remap"), file: "coverage.json"},
-            cobertura: {dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml"},
-            text: {dir: path.join(testReportDir, "remap"), file: "coverage.txt"},
-            "text-summary": {dir: path.join(testReportDir, "remap"), file: "coverage_summary.txt"}
+            lcovonly: { dir: path.join(testReportDir, "remap", "lcov"), file: "lcov.info" },
+            html: { dir: path.join(testReportDir, "remap", "html") },
+            json: { dir: path.join(testReportDir, "remap"), file: "coverage.json" },
+            cobertura: { dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml" },
+            text: { dir: path.join(testReportDir, "remap"), file: "coverage.txt" },
+            "text-summary": { dir: path.join(testReportDir, "remap"), file: "coverage_summary.txt" }
         }
-        
+
     },
     istanbulOpt: {
         includeUntested: true
@@ -132,9 +141,11 @@ function buildConf(project, conf, helper) {
         defaultConf.template = [];
     }
 
-    if(helper.isJUnitReporter() && process.env.NODE_ENV === "integration" ) {
+    if (helper.isJUnitReporter() && process.env.NODE_ENV === "integration") {
         defaultConf.mocha.reporter = "xunit";
     }
+    // Cas particulier pour conf sass: limites de la méthode merge de lodash....
+    defaultConf.sassConfiguration = merge(defaultConf.sassConfiguration, conf.sassConfiguration);
 
     conf = _.merge(conf, defaultConf);
 
@@ -142,8 +153,6 @@ function buildConf(project, conf, helper) {
     if (!conf.webPackLogAddedFiles) {
         conf.webPackLogAddedFiles = false;
     }
-
-    conf.sass = merge(defaultConf.sassConfiguration, conf.sass);
 
     conf.sourcesDTS = ["**/*.d.ts"].map(prepend(conf.src));
 
@@ -165,6 +174,11 @@ function buildConf(project, conf, helper) {
     conf.testSources = ["**/*{-spec,-test}.{js,tsx}"]
         .map(prepend(path.join(conf.testSourcesBase, conf.test)));
 
+    if (helper.getFile()) {
+        conf.testSources = [path.join(conf.testSourcesBase, helper.getFile().replace(/\.tsx?$/, ".js").replace(/^\.\//, ""))];
+    }
+
+
     conf.allSources = _.flatten(["**/*.*js*", "!**/*.js.map"].map(prepend(conf.src, conf.test))).concat("index.js");
 
     // Fichiers JS à instrumenter pour la mesure de la couverture de code
@@ -185,7 +199,7 @@ function buildConf(project, conf, helper) {
     conf.cleanStaticDllElements = [path.join(conf.static, conf.js, conf.dll)];
 
     conf.cleanThemeElements = []
-    if(project.configJson["themeName"]){
+    if (project.configJson["themeName"]) {
         conf.cleanThemeElements.push(path.join(conf.static, project.configJson["themeName"]));
     }
 
@@ -214,7 +228,7 @@ function buildConf(project, conf, helper) {
     conf.istanbulOpt.includeUntested = true;
 
     // Permet d'exclure du remap les fichier sans transpilation (ex : jsx)
-    conf.remap.exclude = function(filename) { return !helper.fileExists(filename) };
+    conf.remap.exclude = function (filename) { return !helper.fileExists(filename) };
 
     helper.debug("Configuration du applicationAndModuleBuilder:", conf);
 
@@ -243,4 +257,4 @@ function prepend() {
     };
 }
 
-module.exports = {buildConf: buildConf};
+module.exports = { buildConf: buildConf };

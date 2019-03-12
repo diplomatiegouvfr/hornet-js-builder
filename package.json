@@ -1,6 +1,6 @@
 {
   "name": "hornet-js-builder",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "license": "CECILL-2.1",
   "description": "Builder/loader des Applications Hornet, Wrapper NPM permettant de fixer les versions des dépendances",
   "dependencies": {
@@ -33,8 +33,8 @@
     "gulp-nodemon": "2.1.0",
     "gulp-props2json": "2.0.0",
     "gulp-react": "3.1.0",
+    "gulp-rename": "1.4.0",
     "gulp-replace": "0.6.1",
-    "gulp-sass": "4.0.1",
     "gulp-sourcemaps": "1.6.0",
     "gulp-token-replace": "1.1.2",
     "gulp-tslint": "8.1.2",
@@ -116,6 +116,8 @@
     "karma-phantomjs-launcher": "1.0.4",
     "phantomjs-prebuilt": "2.1.16",
     "sass-loader": "7.1.0",
-    "node-sass": "4.9.4"
+    "node-sass": "4.9.4",
+    "gulp-sass": "4.0.1",
+    "gulp-sass-image": "1.1.0"
   }
 }

@@ -107,12 +107,14 @@ Exemple d'un fichier `package.json` complet avec version fixée par le builder :
 
 ## Utiliser hornetbuilder en ligne de commandes
 
-- Ouvrir une invite de commande et se placer dans le dossier du projet.
+- Ouvrir un terminal et se placer dans le dossier du projet.
 
 Exemple:
 
 ```shell
-cd D:\dev\workspace\applitutoriel\applitutoriel-js
+
+cd /home/user/Dev/workspace-js/applitutoriel-modules/
+
 ```
 
 - Taper la commande `hornetbuilder` (ou `hb`) suivi de la tâche à exécuter. Exemple:
@@ -178,7 +180,7 @@ Résultat :
 hb$
 ```
 
-le prompt "hb$" s'affiche est permet alors de lancer n'importe quelle commande du builder.
+le prompt "hb$" s'affiche et permet alors de lancer n'importe quelle commande du builder.
 
 Il est possible de lister toutes les commandes avec un double "tab" ou bien d'utiliser l'aide
 
@@ -225,7 +227,7 @@ Le `package.json` diffère de la norme npm concernant l'ajout de dépendances ce
 
 #### Gestion des définitions Typescript
 
-Afin de bénéficier de la compilation Typescript pour les modules d'un projet, il est possible de spécifier les fichiers de définition typescript spécifique au projet dans la section `tsDefinitionDependencies`. Celles-ci sont automatiquement ajouté au répertoire `definition-ts` à la racine du projet.
+Afin de bénéficier de la compilation Typescript pour les modules d'un projet, il est possible de spécifier les fichiers de définition typescript spécifique au projet dans la section `tsDefinitionDependencies`. Celles-ci sont automatiquement ajoutées au répertoire `definition-ts` à la racine du projet.
 
 Le projet peut également avoir ses propres fichiers de définition en plus de ceux proposés par le framework.
 
@@ -338,9 +340,9 @@ ex :
 
 ### Fichier de configuration builder : `builder.js`
 
-Les projets doivent comporter à la racine un fichier `builder.js` afin de déterminer le type de l'application : `application`, `module`, ... ainsi que les différentes tâches à éxécuter nécessaire à la construction.
+Les projets doivent comporter à la racine un fichier `builder.js` afin de déterminer le type de l'application : `application`, `module`, ... ainsi que les différentes tâches à éxécuter nécessaires à la construction.
 
-Ce fichier doit comporter au minimum le code suivant pour hornet.js:
+Ce fichier doit comporter au minimum le code suivant pour `hornet.js`:
 
 ```javascript
 module.exports = {
@@ -438,9 +440,10 @@ module.exports = {
 
 ```
 
-Ce fichier doit comporter au minimum le code suivant pour hornet.js-lite:
+Ce fichier doit comporter au minimum le code suivant pour `hornet.js-lite`:
 
 ```javascript
+
 module.exports = {
     type: "application",
 
@@ -524,7 +527,7 @@ module.exports = {
 };
 ```
 
-* La clé `type` indique au builder le type de projet actuel. Pour une application le type doit toujours être `application` (types possibles : "parent", "application", "application-server", "module", "theme", "custom").
+* La clé `type` indique au builder le type de projet actuel. Pour une application le type doit toujours être `application` (types possibles : "parent", "application", "application-server", "module", "theme", "custom", "composant").
 * La fonction `gulpTasks` permet :
     * d'ajouter de nouvelles tâches gulp au moyen du paramètre `gulp`
     * de modifier la configuration par défaut du builder (ajouter un répertoire de sources, modifier la conf webpack, ...)
@@ -655,7 +658,7 @@ const defaultConf = {
 
 ### Les tâches de gestion des dépendances
 
-`hornetbuilder` fourni les tâches suivantes afin de gérer les dépendances d'un projet :
+`hornetbuilder` fournit les tâches suivantes afin de gérer les dépendances d'un projet :
 
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
@@ -678,7 +681,7 @@ const defaultConf = {
 
 ### Les tâches de compilation
 
-`hornetbuilder` fourni les tâches suivantes afin de compiler les sources d'un projet :
+`hornetbuilder` fournit les tâches suivantes afin de compiler les sources d'un projet :
 
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
@@ -687,7 +690,7 @@ const defaultConf = {
 
 ### Les tâches de test
 
-`hornetbuilder` fourni les tâches suivantes afin d'exécuter les tests d'un projet :
+`hornetbuilder` fournit les tâches suivantes afin d'exécuter les tests d'un projet :
 
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
@@ -720,7 +723,7 @@ const defaultConf = {
 
 ### Les tâches de construction des livrables
 
-`hornetbuilder` fourni les tâches suivantes afin de construire les livrables d'un projet :
+`hornetbuilder` fournit les tâches suivantes afin de construire les livrables d'un projet :
 
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
@@ -748,7 +751,7 @@ const defaultConf = {
 
 ### Les tâches de watch
 
-`hornetbuilder` fourni les tâches suivantes afin d'outiller le démarrage d'une application en développement
+`hornetbuilder` fournit les tâches suivantes afin d'outiller le démarrage d'une application en développement
 
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
@@ -764,7 +767,7 @@ const defaultConf = {
 
 ### Les tâches de qualimétrie
 
-`hornetbuilder` fourni les tâches suivantes afin de construire des rapports de qualimétrie :
+`hornetbuilder` fournit les tâches suivantes afin de construire des rapports de qualimétrie :
 
 | Tâche | Rôle | Dépendances |
 | ----- | ---- | ----------- |
@@ -782,7 +785,7 @@ hb lint --lintReport json
 
 ### Première utilisation du builder
 
-Lors de la première utilisation du builder et peu importe la commande, le builder va installer les dépendances de construction/test afin que celles-ci soient disponibles dans le fichier `builder.js`. Cela permet d'ajouter à un projet des tâches de construction dépendantes de modules non fournis par le framework. Il sera ainsi possible d'écrire dans le fichier `builder.js` :
+Lors de la première utilisation du builder et peu importe la commande, le builder va installer les dépendances de construction/test afin que celles-ci soient disponibles dans le fichier `builder.js`. Cela permet d'ajouter à un projet des tâches de construction dépendantes de modules non fournies par le framework. Il sera ainsi possible d'écrire dans le fichier `builder.js` :
 
 ```javascript
 
@@ -924,7 +927,7 @@ hb template-html
 
 Lance le templating basé sur **EJS** et écrit les fichiers dans 'static/html' du projet.
 
-Si l'objet de configuration *tempate* est un tableau, il lancera autant de templating que d'élément dans le tableau, exemple :
+Si l'objet de configuration *template* est un tableau, il lancera autant de templating que d'éléments dans le tableau, exemple :
 
 ```javascript
 
@@ -942,7 +945,7 @@ template: [
 
 Dans cet exemple, le templating suivant est lancé :
 
-1. Sur le répertoire "./template/error" et autant de fois que d'item dans l'attribut context (2). Les fichiers seront suffixés par l'attibut suffixe de chaque contexte (_404, _500) et générés dans le répertoire **error** (attibut *dest*) dans **static/html** du projet.
+1. Sur le répertoire "./template/error" et autant de fois que d'items dans l'attribut context (2). Les fichiers seront suffixés par l'attibut suffixe de chaque contexte (_404, _500) et générés dans le répertoire **error** (attibut *dest*) dans **static/html** du projet.
 2. Sur le répertoire "./template" (valeur par défaut)
 
 
@@ -1048,6 +1051,119 @@ Il est possible de spécifier celle-ci via l'option "-uri".
 ```shell
 hb pg -q "select * from table" --uri "postgres://applitutorieljs_dvlt_00_usr:pwd_usr@localhost:5432/applitutorieljs_dvlt_00"
 ```
+
+### Sass: Syntactically Awesome Style Sheets
+
+2 modes sont possibles: 
+
+* approche `builder.js`
+* approche `composant`
+
+#### Approche builder.js
+
+##### Configuration
+
+une configuration par défaut est déclarée au niveau de `hornet-js-builder`:
+
+```js
+
+        sassConfiguration: {
+        sass: {
+            merge: true,
+            inputFilter: "./src/**/*.scss",
+            options: {
+                outputStyle: process.env.NODE_ENV !== "production" ? "expanded": "compressed",
+                data: ""
+            },
+            output: {
+                dir: path.join(staticDir, "css"),
+                fileName: process.env.NODE_ENV !== "production" ? "appli.css": "appli.min.css"
+            }
+        },
+        img: {
+            inputFilter: "./img/**/*.+(jpeg|jpg|png|gif|svg|ttf)",
+            output: {
+                dir: path.join(staticDir, "img")
+            },
+            template: path.join(__dirname, "..", "builders", "tasks", "sass", "sass-image-template.mustache")
+        }
+    }
+
+```
+
+Il est possible de surcharger cette configuration via le `builder.js` tel que: 
+
+```json
+
+    conf : {
+        sassConfiguration: {
+            sass: {
+                inputFilter: "src/**/sources/*.scss",
+            },
+            img: {
+                inputFilter: "src/**/sources/*.+(jpeg|jpg|png|gif|svg)",
+            }
+        }
+    }
+    ....
+
+```
+
+##### Tâches SASS
+
+2 tâches sont prévues pour manipuler des fichiers SCSS:
+
+```shell
+
+hb process:sass
+
+```
+
+Cette tâche permet de générer un fichier CSS (par défaut, le fichier sera `./static/css/generated.css` comme indiqué dans la conf.)
+
+
+```shell
+
+hb watch:sass
+
+```
+
+Cette tâche permet de générer un fichier CSS puis de watcher les modifications des fichiers SCSS pour re-générer au besoin le fichier CSS.
+
+Par défaut, cette tâche est rattachée à la tâche de `watch:client`. 
+Si l'application est démarée via la commande `hb w`, la tâche `watch:sass` sera donc exécutée et n'importe quelle modification de fichier `.scss` entrainera une génération des nouveaux `.css` et un redémarrage du nodemon.
+
+
+##### Manipulation des images
+
+Les tâches liées à SASS reposent sur la librairie `gulp-sass-image` laquelle génère par défaut un fichier `./static/css/_sass-image.scss`. Ce dernier contient des méthods utiles afin de manipuler les images (cf. [![documentation github](https://github.com/npostulart/gulp-sass-image#supported-compass-functions)](https://github.com/npostulart/gulp-sass-image#supported-compass-functions) ). Ce fichier généré repose sur un template `mustache` qui'il est possible de surcharger.
+
+
+#### Approche Composant
+
+Il est également possible de générer des fichiers CSS à partir de fichiers SCSS en important ces derniers directement dans les composants React.
+
+```javascript
+
+import * as React from "react";
+import { Utils } from "hornet-js-utils";
+
+if(!Utils.isServer) {
+    require("path/vers/Scss/File.scss");
+}
+
+
+export class MyComponent extends HornetComponent<MyComponentProps, MyComponentState> {
+
+...
+
+}
+
+
+```
+
+La déclaration d'un simple `require` dans un composant `.tsx` en le protégeant d'un `!Utils.isServer` permettra à `sass-loader` de générer le fichier CSS associé
+
 
 ## Licence
 

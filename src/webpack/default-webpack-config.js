@@ -70,10 +70,10 @@ function configBrowser(project, conf, debug) {
     var customPreLoadersDir = path.resolve(__dirname, "..", "webpack") + path.sep;
     helper.debug("customPreLoadersDir:", customPreLoadersDir);
 
-
+    var fileName =  process.env.NODE_ENV !== "production" ? "appli.css": "appli.min.css";
     var extractCSS = new ExtractTextPlugin({
         filename:  (getPath) => {
-          return getPath('css/appli.css');
+          return getPath('css/' + fileName);
         },
         allChunks: true
       });
@@ -105,6 +105,12 @@ function configBrowser(project, conf, debug) {
     // if(process.env.NODE_ENV != "production") {
     //     staticUrlImg = "/" + (contextRoot || project.name) + "/static/";
     // }
+
+    try {
+        require("sass-loader");
+    } catch (e) {
+        helper.error(e);
+    }
 
     var configuration = {
         entry: {
