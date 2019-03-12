@@ -18,8 +18,10 @@ class CommunityThemeInclusion extends Task {
 
             const communityProjects = [];
             Object.keys(packageJson["appDependencies"]).forEach((module) => {
-                // Recherche des projets liés à "hornet-js-community"
-                if (module.indexOf("hornet-js-community") !== -1 && module != "hornet-js-community") {
+                // Recherche des projets liés à "hornet-js-community" ou referentielApp
+                if ((module.indexOf("hornet-js-community") !== -1 && module != "hornet-js-community")
+                || (module.indexOf("referentielApp") !== -1)
+                ){
                     let dir = null;
 
                     // Gestion des externalModules

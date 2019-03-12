@@ -17,7 +17,10 @@ const FixVersion = require("./tasks/version/fix-version");
 const GetLastVersion = require("./tasks/version/get-last-version");
 const FixDependencyVersion = require("./tasks/version/fix-dependency-version");
 const LicenseHeader = require("./tasks/license/license-header");
+const InteractiveCLI = require("./tasks/interactive-cli/vorpal");
+const PostgresCLI = require("./tasks/pg-cli/postgres");
 
+const Task = require("./tasks/task");
 
 /**
  * Module permettant de gérer les tâches communes :
@@ -57,23 +60,21 @@ module.exports = {
         new FixDependencyVersion("dependency:set-snapshot", "", ["versions:get"], gulp, helper, conf, project);
         new GetLastVersion("versions:get", "", [], gulp, helper, conf, project);
         
-        
         new LicenseHeader("license:header", "", [], gulp, helper, conf, project);
 
-        /*if (project.type !== helper.TYPE.APPLICATION) {
-            helper.debug("Configuration du applicationAndModuleBuilder:", conf);
-            gulp.task("dependencies:install", ["dependencies:install-ts-definition", "dependencies:install-app"]);
-        } else {
-            gulp.task("dependencies:install", ["dependencies:install-ts-definition", "dependencies:install-app", "dependencies:install-app-themes"]);
-        }*/
+        new InteractiveCLI("interactive", "", [], gulp, helper, conf, project);
+
+        new PostgresCLI("pg", "", [], gulp, helper, conf, project);
+      
 
         let installationTasks = ["dependencies:install-ts-definition", "dependencies:install-app"];
         if(!helper.isSkipTests()) {
             installationTasks.push("dependencies:install-test");
         }
 
-        gulp.task("dependencies:install", installationTasks);
-        gulp.task("install", ["dependencies:install"]);
+        new Task("dependencies:install", "", installationTasks, gulp, helper, conf, project);
+        
+        new Task("install", "", ["dependencies:install"], gulp, helper, conf, project);
 
         // Publishing tasks
         new PublishTask("publish", "", [], gulp, helper, conf, project);

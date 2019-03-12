@@ -26,6 +26,7 @@ commander
     .option("--show-webpack-files", "Log les fichiers pris en compte par webpack dans sa phase de compilation du bundle client")
     .option("--webpackVisualizer", "Visualisation de la répartition des sources projets et node modules dans un chart, /static/dev/webpack-visualizer.html")
     .option("-i, --ide", "Indique que c'est l'IDE qui compile les TS, dans ce cas la compilation TS est désactivée ainsi que les watchers associés")
+    .option("-j, --junitReporter", "Indique que c'est sonar qui expose les rapports des tests")
     .option("-r, --registry <url>", "L'url du repository global : servant à la récupération des dépendances et à la publication")
     .option("--publish-registry <url>", "L'url du repository servant uniquement à la publication (tasks 'publish' & 'unpublish'")
     .option("-f, --force", "Forcer la mise à jour des dépendances")
@@ -45,6 +46,8 @@ commander
     .option("--versionFix <versionFix>", "version ou suffixe si commence par '-', '.' ou si null", (value) => { console.log(value); return value ? value.replace(/'/g, "") : "auto" })
     .option("--versionSearch <versionSearch>", "préfixe de la dernière version", (value) => { console.log(value); return value ? value.replace(/'/g, "") : "auto" })
     .option("--dependencyVersionFix <dependency>", "Fix une version pour une dépendance")
+    .option("-q, --query <sql>", "Requête sql à executer")
+    .option("--uri <chaine de connexion postgresql>", "Paramètre de chaine de connexion à l'instance postgres, ex : postgres://serveur:pwd@localhost:5432/instance-name")
     .parse(process.argv);
 
 helper.setForce(commander.force);
@@ -57,6 +60,7 @@ helper.setSkipTests(commander.skipTests);
 helper.setSkipMinified(commander.skipMinified);
 helper.setNoWarn(commander.noWarn);
 helper.setIDE(commander.ide);
+helper.setJUnitReporter(commander.junitReporter);
 helper.setShowWebPackFiles(commander.showWebpackFiles);
 helper.setWebpackVisualizer(commander.webpackVisualizer);
 helper.setDebugPort(commander.debugPort);
@@ -71,7 +75,9 @@ helper.setRelease(commander.release);
 helper.setVersion(commander.versionFix);
 helper.setVersion(commander.versionSearch);
 helper.setDependency(commander.dependencyVersionFix);
-helper.setStopOnError(commander.stopOnError)
+helper.setStopOnError(commander.stopOnError);
+helper.setQuery(commander.query);
+helper.setUri(commander.uri);
 
 helper.setCommandArgs(process.argv);
 helper.info("\n"+
@@ -90,7 +96,8 @@ helper.logBuilderModes();
 helper.allowJSON5();
 
 let config = {
-    loglevel: "warn"
+    loglevel: "warn",
+    progress: false
 };
 
 npm.load(config, function (err, npmLoaded) {
@@ -134,4 +141,5 @@ npm.load(config, function (err, npmLoaded) {
             ));
         });
     });
+    
 });

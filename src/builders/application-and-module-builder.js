@@ -46,6 +46,9 @@ const ValidateTestTemplate = require("./tasks/depaut/validate-test-template");
 const GenerateTestTemplate = require("./tasks/depaut/generate-test-template");
 const Properties2json = require("./tasks/depaut/properties2json");
 const FindUnusedTemplateVar = require("./tasks/depaut/find-unused-template-var");
+const ProcessSass = require("./tasks/sass/process-scss");
+
+const Task = require("./tasks/task");
 
 const Utils = require("./tasks/utils");
 FindUnusedTemplateVar
@@ -75,41 +78,42 @@ module.exports = {
         new CleanTask("clean:test", "", [], gulp, helper, conf, project, conf.cleanTestElements);
         new CleanTask("clean:static", "", [], gulp, helper, conf, project, conf.cleanStaticElements);
         new CleanTask("clean:static-dll", "", [], gulp, helper, conf, project, conf.cleanStaticDllElements);
-        new CleanTask("clean:Theme", "", [], gulp, helper, conf, project, conf.cleanThemeElements);
+        new CleanTask("clean:theme", "", [], gulp, helper, conf, project, conf.cleanThemeElements);
         new CleanTask("clean:src", "", [], gulp, helper, conf, project, conf.cleanElements);
         new CleanTask("clean:template", "", [], gulp, helper, conf, project, conf.cleanTemplateElements);
-        gulp.task("clean:static-all", ["clean:static", "clean:static-dll"]);
-        gulp.task("clean", ["clean:src", "clean:test"]);
-        gulp.task("clean-all", ["clean", "clean:build", "dependencies:clean-all", "clean:static-all", "clean:template"]);
 
+        new Task("clean:static-all", "", ["clean:static", "clean:static-dll"], gulp, helper, conf, project);
+        new Task("clean", "", ["clean:src", "clean:test"], gulp, helper, conf, project);
+        new Task("clean-all", "", ["clean", "clean:build", "dependencies:clean-all", "clean:static-all", "clean:template"], gulp, helper, conf, project);
+        
         new CompileTypeScript("compile:ts", "", ["clean", "dependencies:install-ts-definition"], gulp, helper, conf, project);
         new CompileTypeScript("compile-no-clean:ts", "", ["dependencies:install-ts-definition"], gulp, helper, conf, project);
         
         if (project.type === helper.TYPE.APPLICATION) {
-            gulp.task("compile", ["compile:ts"]);
-
+            new Task("compile", "", ["compile:ts"], gulp, helper, conf, project);
         } else {
             new CompileTypeScriptDefinition("compile:dts", "", ["compile:ts"], gulp, helper, conf, project);
             new CompileTypeScriptDefinition("compile-no-clean:dts", "", ["compile-no-clean:ts"], gulp, helper, conf, project);
-            if (project.type === helper.TYPE.MODULE) {
+            if (project.type === helper.TYPE.MODULE || project.type === helper.TYPE.COMPOSANT) {
                 new CleanTask("clean:index", "", [], gulp, helper, conf, project, conf.cleanIndexElements);
                 new GenerateIndexDefinition("compile-index:dts", "", ["compile-index:ts"], gulp, helper, conf, project);
                 new GenerateIndexExport("compile-index:index", "", ["compile-index:dts"], gulp, helper, conf, project);
                 new GenerateDefinition("compile-index:ts", "", [], gulp, helper, conf, project);
                 new CompileTypeScriptIndex("compile:index", "", ["compile-index:index"], gulp, helper, conf, project);
-                gulp.task("generate-index", ["dependencies:install-ts-definition", "compile:index"]);
-                gulp.task("generate-index:dts", ["dependencies:install-ts-definition", "compile-index:dts"]);
+                
+                new Task("generate-index", "", ["dependencies:install-ts-definition", "compile:index"], gulp, helper, conf, project);        
+                new Task("generate-index:dts", "", ["dependencies:install-ts-definition", "compile-index:dts"], gulp, helper, conf, project);
+
                 // si pas autogenere les tâches sont disponibles et peuvent être lancées manuelement
                 // sinon la tache de compile les lancera
                 if(conf.autoGenerateIndex === true) {
-                    gulp.task("compile", ["generate-index", "generate-index:dts", "compile:dts"]);
+                    new Task("compile", "", ["generate-index", "generate-index:dts", "compile:dts"], gulp, helper, conf, project);
                     gulp.addTaskDependency("clean-all", "clean:index");
                 } else {
-                    gulp.task("compile", ["compile:dts"]);
+                    new Task("compile", "", ["compile:dts"], gulp, helper, conf, project);
                 }
-            } else {
-                gulp.task("compile", ["compile:dts"]);
-
+            } else {                
+                new Task("compile", "", ["compile:dts"], gulp, helper, conf, project);
             }
         }
         let compileTaskName = "compile:dts";
@@ -125,7 +129,7 @@ module.exports = {
         new PrepareTestSources("prepare:testSources", "", [compileTaskName], gulp, helper, conf, project);
         new InstrumentSourcesTest("test:instrument", "", ["prepare:testSources"], gulp, helper, conf, project);
         //new RunTestsInclusion("test", "", ["clean:test", "test:mocha", "test:karma"], gulp, helper, conf, project);
-        gulp.task("test", ["clean:test", "dependencies:install", compileTaskName, "test:mocha-run", "test:karma-run", "test:merge-reports", "test:remap-reports"])
+        new Task("test", "", ["clean:test", "dependencies:install", compileTaskName, "test:mocha-run", "test:karma-run", "test:merge-reports", "test:remap-reports"], gulp, helper, conf, project);   
         new RunTestMocha("test:mocha", "", ["clean-test:mocha", "dependencies:install", "test:instrument"], gulp, helper, conf, project);
         new RunTestMocha("test:mocha-run", "", ["clean-test:mocha", "test:instrument"], gulp, helper, conf, project);
         new RunTestKarma("test:karma-run", "", ["clean-test:karma"], gulp, helper, conf, project);
@@ -162,25 +166,27 @@ module.exports = {
 
             new ZipDatabaseTask("zip-database", "", [], gulp, helper, conf, project);
 
-            gulp.task("prepare-package", ["prepare-package:minified", "prepare-all-package"]);
-            gulp.task("prepare-package-spa", ["prepare-package:spa", "prepare-package"]);
-
-            gulp.task("package-zip-static", ["prepare-package:minified", "zip-static"]);
-            gulp.task("package-zip-dynamic", ["prepare-package:minified", "zip-dynamic"]);
+            new Task("prepare-package", "", ["prepare-package:minified", "prepare-all-package"], gulp, helper, conf, project);
+            new Task("prepare-package-spa", "", ["prepare-package:spa", "prepare-package"], gulp, helper, conf, project);
+            new Task("package-zip-static", "", ["prepare-package:minified", "zip-static"], gulp, helper, conf, project);
+            new Task("package-zip-dynamic", "", ["prepare-package:minified", "zip-dynamic"], gulp, helper, conf, project);
 
             if (isModeDockerGoOn()) {
-                new BuildDockerImages("prepare-package-docker", "", [], gulp, helper, conf, project);
-                gulp.task("package", ["compile", "test", "prepare-package:minified", "prepare-all-package", "zip-static", "zip-dynamic", "prepare-package-docker"]);
+                new BuildDockerImages("prepare-package-docker", "", [], gulp, helper, conf, project);                
+                new Task("package", "", ["compile", "test", "prepare-package:minified", "prepare-all-package", "zip-static", "zip-dynamic", "prepare-package-docker"], gulp, helper, conf, project);
                 new PublishDockerImages("publish", "", [], gulp, helper, conf, project);
-
             } else {
-                gulp.task("package", ["compile", "test", "template-html", "prepare-package",  "zip-static", "zip-dynamic", "zip-environment", "zip-database"]);
-                gulp.task("package:spa", ["compile", "test", "template-html", "prepare-package-spa", "zip-static", "zip-dynamic", "zip-environment", "zip-database"]);
+                new Task("package", "", ["compile", "test", "template-html", "prepare-package",  "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
+                new Task("package:spa", "", ["compile", "test", "template-html", "prepare-package-spa", "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
             }
 
             // inclusion des themes en static applicatif
             new ThemeInclusion("dependencies:install-app-themes", "dependencies:install", [], gulp, helper, conf, project);
             new CommunityThemeInclusion("dependencies:install-community-themes", "dependencies:install", [], gulp, helper, conf, project);
+
+            // generation css from scss
+            new ProcessSass("process:sass", "", [], gulp, helper, conf, project);
+            new ProcessSass("watch:sass", "", [], gulp, helper, conf, project, true, ["process-sass"]);
 
         } else if (project.type === helper.TYPE.APPLICATION_SERVER) {
             new PreparePackage("prepare-all-package", "", ["prepare-clean"], gulp, helper, conf, project);
@@ -195,14 +201,14 @@ module.exports = {
             new ZipDynamicTask("zip-dynamic", "", [], gulp, helper, conf, project);
             new ZipDatabaseTask("zip-database", "", [], gulp, helper, conf, project);
 
-            gulp.task("package-zip-dynamic", ["prepare-package:minified", "zip-dynamic"]);
-            gulp.task("package", ["compile", "test", "prepare-all-package", "zip-dynamic", "zip-environment", "zip-database"]);
+            new Task("package-zip-dynamic", "", ["prepare-package:minified", "zip-dynamic"], gulp, helper, conf, project);
+            new Task("package", "", ["compile", "test", "prepare-all-package", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
 
         } else {
-            gulp.task("package", ["test"]);
+            new Task("package", "", ["test"], gulp, helper, conf, project);
         }
         
-        if (project.type === helper.TYPE.MODULE) {
+        if (project.type === helper.TYPE.MODULE || project.type === helper.TYPE.COMPOSANT) {
             new ModulePublish("publish", "", ["dependencies:fix-app", "compile"/*, "test"*/], gulp, helper, conf, project);
         } else {
             if (project.type === helper.TYPE.APPLICATION || project.type === helper.TYPE.APPLICATION_SERVER) {
@@ -213,8 +219,8 @@ module.exports = {
 
         }
 
-        // Par défaut, on package.
-        gulp.task("default", ["package"]);
+        // Par défaut, le mode interactive.
+        new Task("default", "", ["interactive"], gulp, helper, conf, project);
 
         //
         // Les étapes Gulp spéciales DEV
@@ -240,21 +246,21 @@ module.exports = {
                     });
                 }
 
-                gulp.task("watch", [], watchDocker("watch-dck"));
-                gulp.task("watch:serveur", [], watchDocker("watch:serveur-dck"));
-                gulp.task("watch:serveur-brk", [], watchDocker("watch:serveur-brk-dck"));
-                gulp.task("watch:serveur-prod", [], watchDocker("watch:serveur-prod-dck"));
+                new Task("watch", "", watchDocker("watch-dck"), gulp, helper, conf, project);
+                new Task("watch:serveur", "", watchDocker("watch:serveur-dck"), gulp, helper, conf, project);
+                new Task("watch:serveur-brk", "", watchDocker("watch:serveur-brk-dck"), gulp, helper, conf, project);
+                new Task("watch:serveur-prod", "", watchDocker("watch:serveur-prod-dck"), gulp, helper, conf, project);
 
             } else {
 
                 new WatchServer("watch:serveur", "", ["watch:ts"], gulp, helper, conf, project, false, "development");
                 new WatchServer("watch:serveur-brk", "", ["watch:ts"], gulp, helper, conf, project, true, "development");
                 new WatchServer("watch:serveur-prod", "", ["watch:ts"], gulp, helper, conf, project, false, "production");
-                gulp.task("watch", ["dependencies:install", "compile", "watch:client", "watch:serveur"]);
+                new Task("watch", "", ["dependencies:install", "compile", "watch:client", "watch:serveur"], gulp, helper, conf, project);
                 new WatchServer("watch:serveur-dck", "", ["watch:ts"], gulp, helper, conf, project, false, "default-docker");
                 new WatchServer("watch:serveur-brk-dck", "", ["watch:ts"], gulp, helper, conf, project, true, "default-docker");
                 new WatchServer("watch:serveur-prod-dck", "", ["watch:ts"], gulp, helper, conf, project, false, "production-docker");
-                gulp.task("watch-dck", ["dependencies:install", "compile", "watch:client", "watch:serveur-dck"]);
+                new Task("watch-dck", "", ["dependencies:install", "compile", "watch:client", "watch:serveu-dck"], gulp, helper, conf, project);
             }
 
             //
@@ -262,30 +268,31 @@ module.exports = {
             //
             new PreparePackageClient("watch:client", "", ["clean:static", "prepare-package-dll", "watch:ts"], gulp, helper, conf, project, true, true);
             new PreparePackageClient("watch:client-prod", "", ["clean:static", "watch:ts"], gulp, helper, conf, project, false, true);
-            gulp.task("watch-prod", ["dependencies:install", "compile", "watch:client-prod", "watch:serveur-prod"]);
+            new Task("watch-prod", "", ["dependencies:install", "compile", "watch:client-prod", "watch:serveu-prod"], gulp, helper, conf, project);
 
             // raccourcis
-            gulp.task("ws", ["watch:serveur"]);
-            gulp.task("wsd", ["watch:serveur-brk"]);
-            gulp.task("wc", ["watch:client"]);
-            gulp.task("wp", ["watch-prod"]);
-            gulp.task("pp", ["prepare-package"]);
+            new Task("ws", "", ["watch:serveur"], gulp, helper, conf, project);
+            new Task("wsd", "", ["watch:serveur-brk"], gulp, helper, conf, project);
+            new Task("wc", "", ["watch:client"], gulp, helper, conf, project);
+            new Task("wp", "", ["watch-prod"], gulp, helper, conf, project);
+            new Task("pp", "", ["prepare-package"], gulp, helper, conf, project);
+            new Task("ppc", "", ["prepare-package-client"], gulp, helper, conf, project);
 
         } else if(project.type === helper.TYPE.APPLICATION_SERVER){
             new WatchServer("watch:serveur", "", ["watch:ts"], gulp, helper, conf, project, false, "development");
             new WatchServer("watch:serveur-brk", "", ["watch:ts"], gulp, helper, conf, project, true, "development");
             new WatchServer("watch:serveur-prod", "", ["watch:ts"], gulp, helper, conf, project, false, "production");
-            gulp.task("watch", ["dependencies:install", "compile", "watch:serveur"]);
-            gulp.task("watch-prod", ["dependencies:install", "compile", "watch:serveur-prod"]);
-            gulp.task("wp", ["watch-prod"]);
-            gulp.task("pp", ["prepare-package"]);
+            
+            new Task("watch", "", ["dependencies:install", "compile", "watch:serveur"], gulp, helper, conf, project);
+            new Task("watch-prod", "", ["dependencies:install", "compile", "watch:serveur-prod"], gulp, helper, conf, project);
+            new Task("wp", "", ["watch-prod"], gulp, helper, conf, project);
+            new Task("pp", "", ["prepare-package"], gulp, helper, conf, project);
 
         } else {
             new WatchDTypeScript("watch:dts", "", ["compile:dts"], gulp, helper, conf, project);
-            gulp.task("watch", ["compile", "watch:dts"]);
+            new Task("watch", "", ["compile", "watch:dts"], gulp, helper, conf, project);
         }
 
-        // raccourcis
-        gulp.task("w", ["watch"]);
+        new Task("w", "", ["watch"], gulp, helper, conf, project);
     }
 };

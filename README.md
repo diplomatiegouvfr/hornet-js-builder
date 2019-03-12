@@ -74,9 +74,9 @@ Exemple d'un fichier `package.json` complet avec version fixée par le builder :
 ```json
 {
   "name": "applitutoriel",
-  "version": "5.1.X",
+  "version": "5.x.x",
   "main": "index.js",
-  "description": "Application tutoriel utilisant le Framework hornet 5.1.X",
+  "description": "Application tutoriel utilisant le Framework hornet 5.x.x",
   "tsDefinitionDependencies": {
   	...
   },
@@ -96,7 +96,7 @@ Exemple d'un fichier `package.json` complet avec version fixée par le builder :
     "current": "b9265f7937e0a4a52491f52fe18fe26a537052e8",
     "history": {
       "b9265f7937e0a4a52491f52fe18fe26a537052e8": {
-        "version": "5.1.X",
+        "version": "5.x.x",
         "date": "2017-03-09T10:02:18.543Z",
         "deps": {"amdefine":"X.X.X",...}
       }
@@ -154,6 +154,43 @@ hb --help
 | --versionFix | Indique la version ou suffixe si commence par '-', '.' ou si null calcule un suffixe avec timestamp. |      
 | --versionSearch | préfixe de la dernière version"|
 
+## Utiliser hornetbuilder en mode interactive
+
+Le principe du mode interactive est d'être immergé dans les commandes du builder sans pour autant à avoir à retaper "hb ..." et de bénéficier d'un mode intuitif d'autocompletion.
+
+```shell
+hb 
+```
+
+Résultat : 
+
+```shell
+[17:08:30] Démarrage de hornet-js-builder dans  /home/heurtes/Dev/workspace-vscode/applitutoriel-modules/applitutoriel-js-lite
+[17:08:30] Builder lancé sur le projet applitutoriel-js-lite en version 5.2.0
+[17:08:30] Utilisation du registry configuré dans NPM : http://artifactory.app.diplomatie.gouv.fr/artifactory-dev/api/npm/repository-npm-mae-dev
+[17:08:31] Chargement des tâches du projet 'applitutoriel-js-lite'
+[17:08:31] Auto resolving module externe 'applitutoriel-js-common@5.2.0 in '/home/heurtes/Dev/workspace-vscode/applitutoriel-modules/applitutoriel-js-common'
+[17:08:31] Auto resolving module externe 'applitutoriel-js-common-dts@5.2.0 in '/home/heurtes/Dev/workspace-vscode/applitutoriel-modules/applitutoriel-js-common-dts'
+[17:08:31] _Starting 'default'...
+[17:08:31] __Starting 'interactive'...
+[17:08:31] __Finished 'interactive' after 294 μs
+[17:08:31] _Finished 'default' after 1.59 ms
+hb$
+```
+
+le prompt "hb$" s'affiche est permet alors de lancer n'importe quelle commande du builder.
+
+Il est possible de lister toutes les commandes avec un double "tab" ou bien d'utiliser l'aide
+
+```shell
+hb$ help
+```
+
+L'arrêt du mode interactive ce fait avec la commande "exit".
+
+```shell
+hb$ exit
+```
 
 ## Configurer un projet pour utiliser hornetbuilder
 
@@ -172,15 +209,15 @@ Le `package.json` diffère de la norme npm concernant l'ajout de dépendances ce
 ```json
 {
   "appDependencies": {
-    "hornet-js-components": "5.1.X"
+    "hornet-js-components": "5.x.x"
     ...
   },
   "testDependencies": {
-    "hornet-js-test": "5.1.X"
+    "hornet-js-test": "5.x.x"
     ...
   },
   "buildDependencies": {
-    "md-loader": "X"
+    "md-loader": "x.x.x"
     ...
   },  ...
 }
@@ -194,9 +231,9 @@ Le projet peut également avoir ses propres fichiers de définition en plus de c
 
 ```json
   "tsDefinitionDependencies": {
-    "hornet-js-ts-typings": "5.1.X",
-    "hornet-js-utils-dts": "5.1.X",
-    "hornet-js-core-dts": "5.1.X"
+    "hornet-js-ts-typings": "5.x.x",
+    "hornet-js-utils-dts": "5.x.x",
+    "hornet-js-core-dts": "5.x.x"
     ...
 	}
 ```
@@ -206,9 +243,9 @@ Le projet peut également avoir ses propres fichiers de définition en plus de c
 ```json
 {
   "name": "applitutoriel",
-  "version": "5.1.X",
+  "version": "5.x.x",
   "main": "index.js",
-  "description": "Application tutoriel utilisant le Framework hornet 5.1.X",
+  "description": "Application tutoriel utilisant le Framework hornet 5.x.x",
   "bugs": {
     "url": "https://github.com/diplomatiegouvfr/applitutoriel-js/issues"
   },
@@ -217,25 +254,25 @@ Le projet peut également avoir ses propres fichiers de définition en plus de c
     "url": "git+https://github.com/diplomatiegouvfr/applitutoriel-js.git"
   },
   "tsDefinitionDependencies": {
-    "applitutoriel-js-common-dts": "5.1.X",
-    "hornet-js-ts-typings": "5.1.X",
-    "hornet-js-utils-dts": "5.1.X",
-    "hornet-js-core-dts": "5.1.X",
-    "hornet-js-components-dts": "5.1.X",
+    "applitutoriel-js-common-dts": "5.x.x",
+    "hornet-js-ts-typings": "5.x.x",
+    "hornet-js-utils-dts": "5.x.x",
+    "hornet-js-core-dts": "5.x.x",
+    "hornet-js-components-dts": "5.x.x",
     "hornet-js-react-components-dts": "5.1.",
-    "hornet-js-react-component-chart-dts": "5.1.X",
-    "hornet-js-passport-dts": "5.1.X",
-    "hornet-js-test-dts": "5.1.X"
+    "hornet-js-react-component-chart-dts": "5.x.x",
+    "hornet-js-passport-dts": "5.x.x",
+    "hornet-js-test-dts": "5.x.x"
   },
   "appDependencies": {
-    "hornet-js-bean": "5.1.X",
-    "hornet-js-components": "5.1.X",
-    "hornet-js-react-components": "5.1.X",
-    "hornet-js-react-component-chart": "5.1.X",
-    "hornet-js-core": "5.1.X",
-    "hornet-js-utils": "5.1.X",
-    "hornet-js-passport": "5.1.X",
-    "hornet-themes-intranet": "5.1.X",
+    "hornet-js-bean": "5.x.x",
+    "hornet-js-components": "5.x.x",
+    "hornet-js-react-components": "5.x.x",
+    "hornet-js-react-component-chart": "5.x.x",
+    "hornet-js-core": "5.x.x",
+    "hornet-js-utils": "5.x.x",
+    "hornet-js-passport": "5.x.x",
+    "hornet-themes-intranet": "5.x.x",
     "jsonwebtoken": "7.3.0",
     "connect-flash": "0.1.1",
     "passport": "0.2.1",
@@ -244,7 +281,7 @@ Le projet peut également avoir ses propres fichiers de définition en plus de c
   },
   "buildDependencies": {},
   "testDependencies": {
-    "hornet-js-test": "5.1.X"
+    "hornet-js-test": "5.x.x"
   },
   "author": "MEAE - Ministère de l'Europe et des Affaires étrangères",
 
@@ -252,7 +289,7 @@ Le projet peut également avoir ses propres fichiers de définition en plus de c
     "current": "92f3196ce9c86b9708e3273152885f52e18443a3",
     "history": {
       "92f3196ce9c86b9708e3273152885f52e18443a3": {
-        "version": "5.1.X",
+        "version": "5.x.x",
         "date": "2017-03-09T13:23:55.506Z",
         "deps": {"amdefine":"X.X.X", ...}
       }
@@ -673,6 +710,8 @@ const defaultConf = {
 | clean:build | Supprime le répertoire de build | ./target | |
 | clean:test | Supprime le dossier istanbul ainsi que les fichiers générés (.js, .map et .d.ts dans le dossier de tests) | test, test_report, karma_html|  |
 | clean:static | Supprime les fichiers statics générés par webpack | ./static/js | |
+| clean:static-dll | Supprime les fichiers dll statics générés par webpack | ./static/js/dll | |
+| clean:static-all | Supprime les fichiers dll statics générés par webpack + les dll | ./static/js/dll/* | |
 | clean:theme | Supprime le thème de l'application dans le répêrtoire static | ./static/themeName | |
 | clean:src | Supprime les fichiers généré dans le répertoire source ./src| extended/*.js", "**/*.json", "**/*.jsx | |
 | clean:template | Supprime les templates générées dans la partie static | ./static/templateDir  |
@@ -990,6 +1029,25 @@ hb versions:get --versionSearch=snapshot --module=hornet-js-core
 ```
 
 Permet d'avoir la dernière version snapshot d'un module présent dans les dépendances du projet (appDependencies, buildDependencies, ...).
+
+### Requêtage postgresql
+
+Il est possible de requêter via le builder une instance de postgresql.
+
+| Tâche | Rôle | Dépendances |
+| ----- | ---- | ----------- |
+| pg | lance une commande postgres | |
+
+```shell
+hb pg -q "select * from table"
+```
+
+Par défaut, c'est la clé "database.config.uri" d'un projet Hornet qui est pris comme uri de connexion.
+Il est possible de spécifier celle-ci via l'option "-uri".
+
+```shell
+hb pg -q "select * from table" --uri "postgres://applitutorieljs_dvlt_00_usr:pwd_usr@localhost:5432/applitutorieljs_dvlt_00"
+```
 
 ## Licence
 

@@ -50,10 +50,12 @@ class PreparePackageClient extends Task {
             if (!this.debugMode && !helper.isSkipMinified()) {
                 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
                 conf.webPackConfiguration.plugins.push(new UglifyJSPlugin({
-                    compress: {
-                        warnings: false
-                    },
-                    sourceMap: true
+                    uglifyOptions: {
+                        compress: {
+                            warnings: false
+                        },
+                        sourceMap: true
+                    }
                 }));
             }
 

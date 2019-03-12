@@ -70,21 +70,41 @@ function configBrowser(project, conf, debug) {
     var customPreLoadersDir = path.resolve(__dirname, "..", "webpack") + path.sep;
     helper.debug("customPreLoadersDir:", customPreLoadersDir);
 
-    var webpackPlugin = [/*commonsPlugin,*/ new webpack.NoErrorsPlugin()/*, new webpack.EnvironmentPlugin(["NODE_ENV"])*/, new ExtractTextPlugin('../css/[name].css')]
+
+    var extractCSS = new ExtractTextPlugin({
+        filename:  (getPath) => {
+          return getPath('css/appli.css');
+        },
+        allChunks: true
+      });
+
+    var webpackPlugin = [/*commonsPlugin,*/ new webpack.NoErrorsPlugin()/*, new webpack.EnvironmentPlugin(["NODE_ENV"])*/, extractCSS];
 
     if (helper.isWebpackVisualizer()) {
         helper.info("Ajout de l'analyse des chunks webpack '--webpackVisualizer' a été utilisée");
         var Visualizer = require("webpack-visualizer-plugin");
         webpackPlugin.push(new Visualizer({
-            filename: "./dev/webpack-visualizer.html"
+            filename: path.resolve(path.join(project.dir, "dev", "webpack-visualizer.html"))
         }));
+
+
+        /*const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+        webpackPlugin.push(new BundleAnalyzerPlugin({
+            reportFilename: path.resolve(path.join(project.dir, "dev", "webpack-visualizer.html")), analyzerMode: "static", openAnalyzer: false
+        }));*/
+
+        /*const WebpackMonitor = require('webpack-monitor');
+        webpackPlugin.push(new WebpackMonitor({
+            capture: true,
+            launch: true,
+            port: 9191
+        }));*/
     }
 
     let staticUrlImg = "/" + (contextRoot || project.name) + "/static-" + project.version + "/";
     // if(process.env.NODE_ENV != "production") {
     //     staticUrlImg = "/" + (contextRoot || project.name) + "/static/";
     // }
-
 
     var configuration = {
         entry: {
@@ -131,14 +151,13 @@ function configBrowser(project, conf, debug) {
                     enforce: 'pre',
                     test: /\.js$/,
                     loader: "source-map-loader"
-                }, {
-                    test: /\.css$/,
-                    //use: [ 'style-loader', 'css-loader' ]
+                }, 
+                {
+                    test: /\.scss$/,
                     use: ExtractTextPlugin.extract({
-                        fallback: "style-loader",
-                        use: "css-loader"
+                        use: ['css-loader?minimize='+ !debug + '&sourceMap='+debug, 'sass-loader', "resolve-url-loader"]
                     })
-                }, {
+                  }, {
                     test: /\.(jpe?g|gif|png)$/,
                     loader: "file-loader?name=img/[name].[ext]&publicPath=" + staticUrlImg
                 }

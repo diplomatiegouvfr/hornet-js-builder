@@ -6,13 +6,12 @@ var fs = require("fs");
 
 var moduleDirectories = [];
 var savedModuleDirectories = [];
-var old_nodeModulePaths = Module._old_nodeModulePaths || Module._nodeModulePaths;
 
 var NODE_MODULES_APP = path.join("node_modules", "app");
 if (!Module._old_nodeModulePaths) {
-    Module._old_nodeModulePaths = old_nodeModulePaths;
+    Module._old_nodeModulePaths = Module._nodeModulePaths;
     Module._nodeModulePaths = function (from) {
-        var paths = old_nodeModulePaths.call(this, from);
+        var paths = Module._old_nodeModulePaths.call(this, from);
         // ajouter au fur et à mesure suivant les besoins des taches
         //paths.unshift(process.cwd());
         //paths.unshift(path.join(process.cwd(), NODE_MODULES_APP));
@@ -20,7 +19,6 @@ if (!Module._old_nodeModulePaths) {
         moduleDirectories.forEach(function (path) {
             paths.unshift(path);
         });
-
         return paths;
     };
 }

@@ -10,6 +10,16 @@ const eventStream = require("event-stream");
 const JSON5 = require("json5");
 const State = require("./builders/state");
 
+const taskInfo = require("./builders/tasks/task-info");
+
+const shell = require("shelljs");
+const vorpal = require("vorpal")();
+
+vorpal.command("$ [cmd...]", "run command in a shell terminal, ex : '$ ls'")
+    .allowUnknownOptions()
+    .action(async function (args) {
+      shell.exec(vorpal._command.command.substring(2));
+    });
 
 var Helper = function () {
 };
@@ -92,6 +102,10 @@ Helper.getCommandArgs = function () {
     return args;
 }
 
+Helper.getVorpal = function () {
+    return vorpal;
+}
+
 Helper.setDocker = function (value) {
     dockerOpts = value;
 
@@ -117,69 +131,18 @@ Helper.getDocker = function () {
     return dockerOpts;
 };
 
+Helper.getTaskInfo = function (value) {
+    return taskInfo[value];
+}
+
 Helper.setList = function (value) {
 
     if (!_.isUndefined(value)) {
-        Helper.info("Listing de toutes les tâches du builder"
-
-            + "\n\n Tâches de gestion des dépendances"
-            + "\n " + chalk.blue.bold("dependencies:clean-build             ") + " | supprime les dépendances de construction/test (répertoire node_modules/buildntest)"
-            + "\n " + chalk.blue.bold("dependencies:clean-all               ") + " | supprime toutes les dépendances"
-            + "\n " + chalk.blue.bold("dependencies:clean-fix               ") + " | supprime toutes les dépendances fixées, à utiliser avec l'option -f"
-            + "\n " + chalk.blue.bold("dependencies:check-app               ") + " | vérifie la conformité des versions des dépendances applicatives déclarées"
-            + "\n " + chalk.blue.bold("dependencies:check-ts-definition     ") + " | vérifie la conformité des versions des fichiers de définition Typescript"
-            + "\n " + chalk.blue.bold("dependencies:change-app              ") + " | vérifie si les dépendances applicatives ont été modifiées | dependencies:check-app"
-            + "\n " + chalk.blue.bold("dependencies:fix-app                 ") + " | Calcule l'arbre de dépendances applicatives et fixe les versions des dépendances transitives déclarées avec un ^, ~ ou * | dependencies:change-app"
-            + "\n " + chalk.blue.bold("dependencies:install-ts-definition   ") + " | Installe les fichiers de définition | dependencies:check-ts-definition"
-            + "\n " + chalk.blue.bold("dependencies:install-app             ") + " | Installe les dépendances applicatives | dependencies:fix-app"
-            + "\n " + chalk.blue.bold("dependencies:install-test            ") + " | Installe les dépendances de test"
-            + "\n " + chalk.blue.bold("dependencies:install-app-themes      ") + " | Installe des dépendances de thème embarqué"
-            + "\n " + chalk.blue.bold("dependencies:install-community-themes") + " | Installe des dépendances de thème liés à hornet-js-community"
-            + "\n " + chalk.blue.bold("dependencies:install                 ") + " | Installe les dépendances applicatives et les fichiers de définitions | dependencies:install-ts-definition, dependencies:install-buildntest, dependencies:install-app"
-            + "\n " + chalk.blue.bold("install                              ") + " | Alias de 'dependencies:install' | dependencies:install"
-
-
-
-            + "\n\n Tâches de compilation"
-            + "\n " + chalk.blue.bold("compile:ts                           ") + " | Transpile les sources TS en Javascript. S'exécute uniquement si l'option '-i' (--ide) n'est pas utilisée | clean"
-            + "\n " + chalk.blue.bold("compile                              ") + " | Transpile les sources TS en Javascript. | dependencies:install et compile:ts"
-
-
-            + "\n\n Tâches de test"
-            + "\n " + chalk.blue.bold("prepare:testSources                  ") + " | Copie les sources originales et compilées dans le répertoire de travail des tests : istanbul | compile"
-            + "\n " + chalk.blue.bold("test:instrument                      ") + " | Défini les instruments de couverture de code sur les sources | prepare:testSources"
-            + "\n " + chalk.blue.bold("test                                 ") + " | Exécute les tests unitaires et la mesure de couverture de code | dependencies:install et test:instrument"
-
-
-            + "\n\n Tâches de nettoyage"
-            + "\n " + chalk.blue.bold("clean:test                           ") + " | Supprime le dossier istanbul ainsi que les fichiers générés (.js, .map et .d.ts dans le dossier de tests)"
-            + "\n " + chalk.blue.bold("clean                                ") + " | Supprime les fichiers générés (.js, .map et .d.ts dans le dossier de sources) | clean:test"
-            + "\n " + chalk.blue.bold("clean-all                            ") + " | Supprime tous les fichiers et dépendances | clean, dependencies:clean-all"
-
-            + "\n\n Tâches de construction"
-            + "\n " + chalk.blue.bold("prepare-package                      ") + " | Lance WebPack pour la construction du js client  (mode debug)"
-            + "\n " + chalk.blue.bold("prepare-package-spa                  ") + " | Lance WebPack pour la construction du js client  (mode spa)"
-            + "\n " + chalk.blue.bold("prepare-package:minified             ") + " | Lance WebPack avec la minification pour la construction du js client"
-            + "\n " + chalk.blue.bold("prepare-package:spa                  ") + " | Prépare les fichiers à packager pour un projet en FullSpa"
-            + "\n " + chalk.blue.bold("package-zip-static                   ") + " | Construit le livrable statique | prepare-package:minified"
-            + "\n " + chalk.blue.bold("package-zip-dynamic                  ") + " | Construit le livrable dynamique | prepare-package:minified"
-            + "\n " + chalk.blue.bold("package                              ") + " | Lance les tests puis construit tous les livrables | test, package-zip-static et package-zip-dynamic"
-            + "\n " + chalk.blue.bold("package:spa                          ") + " | Lance les tests puis construit tous les livrables spa | "
-
-
-            + "\n\n Tâches de watch"
-            + "\n " + chalk.blue.bold("watch:ts                             ") + " | Ecoute les modifications sur les fichiers TS et les recompile à la volée. S'exécute uniquement si l'option '-i' (--ide) n'est pas utilisée"
-            + "\n " + chalk.blue.bold("watch:serveur                        ") + " | Ecoute les modifications sur les fichiers et redémarre le serveur node pour les prendre en compte. Démarre nodejs en mode development | watch:ts"
-            + "\n " + chalk.blue.bold("watch:serveur-prod                   ") + " | Equivalent à watch:serveur mais avec nodejs en mode production | watch:ts"
-            + "\n " + chalk.blue.bold("watch:client                         ") + " | Ecoute les modifications sur les fichiers et relance WebPack à la volée. Lance WebPack en mode development. | watch:ts"
-            + "\n " + chalk.blue.bold("watch:client-prod                    ") + " | Equivalent à watch:client mais avec WebPack en mode production | watch:ts"
-            + "\n " + chalk.blue.bold("watch                                ") + " | Compile et écoute les modifications pour redémarrer nodejs et relancer WebPack si besoin. mode : development | compile, watch:client et watch:serveur"
-            + "\n " + chalk.blue.bold("watch-prod                           ") + " | Compile et écoute les modifications pour redémarrer nodejs et relancer WebPack si besoin. mode : production  | compile, watch:client-prod et watch:serveur-prod"
-            + "\n " + chalk.blue.bold("w                                    ") + " | Alias de 'watch' | watch"
-            + "\n " + chalk.blue.bold("wp                                   ") + " | Alias de 'watch-prod' | watch-prod"
-
-            + "\n\n Tâches de qualimétrie"
-            + "\n " + chalk.blue.bold("lint                                 ") + " | Lance le tslint sur les sources ts (qualité de code)");
+        let taskInfoPrint;
+        Object.keys(taskInfo).forEach((key) => {
+            taskInfoPrint += "\n " + chalk.blue.bold(key) + " | " + taskInfo[key];
+        })
+        Helper.info("Listing de toutes les tâches du builder" + taskInfoPrint);
         process.exit(1);
     }
 };
@@ -247,6 +210,16 @@ Helper.setIDE = function (value) {
 };
 Helper.isIDE = function () {
     return process.env.HB_IDE || false;
+};
+
+Helper.setJUnitReporter = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.HB_SONAR = value;
+    }
+};
+
+Helper.isJUnitReporter = function (value) {
+   return process.env.HB_SONAR || false;
 };
 
 Helper.setWebpackVisualizer = function (value) {
@@ -378,6 +351,26 @@ Helper.setDependency = function (value) {
 
 Helper.getDependency = function () {
     return process.env.DEPENDENCY;
+};
+
+Helper.setQuery = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.QUERY = value;
+    }
+};
+
+Helper.getQuery = function () {
+    return process.env.QUERY;
+};
+
+Helper.setUri = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.URI = value;
+    }
+};
+
+Helper.getUri = function () {
+    return process.env.URI;
 };
 
 Helper.setStopOnError = function (value) {

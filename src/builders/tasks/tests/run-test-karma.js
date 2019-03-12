@@ -26,23 +26,17 @@ class RunTestKarma extends PreparePackageClient {
             files: [
                 (helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js")) || "tests.webpack.js",//, "src/**/*.js" pour rapport à vide
             ],
-            customLaunchers: {
-                'PhantomJS_custom': {
-                    base: 'PhantomJS',
-                    debug: true,
-                }
-            },
+            
             browsers: ["PhantomJS"],
             port: 9876,
             colors: true,
-            singleRun: !helper.getFile(),
+            singleRun: !(helper.isDebug() || helper.getFile()),
             autoWatch: helper.getFile() ? true : false,
             customLaunchers: {
-
             },
             // level of logging
             // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
-            logLevel: constants.LOG_ERROR,
+            logLevel: helper.isDebug() ? constants.DEBUG : constants.LOG_WARN,
             plugins: [
                 "karma-requirejs",
                 "karma-mocha",
@@ -60,6 +54,9 @@ class RunTestKarma extends PreparePackageClient {
             ],
             frameworks: ["mocha"],
             client: {
+                captureConsole: true,
+                clearContext: true,
+
                 mocha: {
                     //grep: "*.karma.js",
                     timeout: 15000,
@@ -74,12 +71,33 @@ class RunTestKarma extends PreparePackageClient {
             exclude: [],
             // test results reporter to use
             // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
-            reporters: ["mocha", "coverage", "html", "junit"],
-            junitReporter: {
+            reporters: ["mocha", "coverage", "html", "progress"],
+            /*junitReporter: {
                 outputFile: path.join(conf.karma.reportOpts.dir, "test-results.xml"),
                 useBrowserName: false,
                 suite: project.name,
-                xmlVersion: 1
+            },*/
+            sonarQubeUnitReporter: {
+                sonarQubeVersion: "LATEST",
+                outputFile: "./test_report/karma/test-sonar-results.xml",
+                useBrowserName: false,
+                filenameFormatter :(currentPath) => {
+                    let newFilePAth = path.join(process.cwd(), currentPath.split(/\s/)[0]);
+                    let exts = ["tsx", "ts", "js"];
+                    if (path.extname(newFilePAth) == ".js"){
+                        let originalFile = path.parse(newFilePAth);
+                        originalFile.base = undefined;
+                        let extIdx = 0;
+                        do {
+                            originalFile.ext = "." + exts[extIdx++];
+                        } while (!fs.existsSync(path.format(originalFile)) && extIdx < exts.length);
+                        return path.format(originalFile).replace(process.cwd() + path.sep, '') || currentPath;
+                    }
+                    return currentPath;
+                },
+                testnameFormatter : (testname, result) => {
+                    return result.description || testname;
+                }
             },
             coverageReporter: {
                 dir: "./test_report/karma",
@@ -131,6 +149,9 @@ class RunTestKarma extends PreparePackageClient {
 
         if (helper.getFile()) {
             this.config.preprocessors[(helper.getFile() && helper.getFile().replace(/\.tsx?$/, ".js"))] = ["webpack", "sourcemap"];
+        } else {
+            this.config.plugins.push("karma-sonarqube-unit-reporter");
+            this.config.reporters.push("sonarqubeUnit");
         }
     }
 
@@ -151,6 +172,9 @@ class RunTestKarma extends PreparePackageClient {
             helper.debug("configuration webpack", this.config.webpack);
 
             new Server(this.config, (exitCode) => {
+                if(exitCode && helper.getStopOnError()) {
+                    proces.exit(1);
+                }
                 done();
             }
             ).start();
@@ -203,12 +227,27 @@ class RunTestKarma extends PreparePackageClient {
                 }, {
                     test: /\.(jpe?g|gif|png)$/,
                     loader: 'file-loader?name=img/[name].[ext]&publicPath=static/'
-                }
-                ]
+                }, { 
+                    test: /\.js$/,
+                    loader: customPreLoadersDir + "add-file-name-test-loader",
+                    options: {
+                        original: ["tsx", "ts", "js"]
+                    }
+                }]
             },
             resolve: {
                 extensions: [".js", ".json", ".jsx", ".tsx", ".ts", ".css"],
                 mainFields: ["webpack", "browser", "web", "browserify", "main", "module"]
+            },
+            node: {
+                global: true,
+                process: true,
+                __filename: true,
+                __dirname: true,
+                Buffer: true,
+                setImmediate: true
+            
+                // See "Other node core libraries" for additional options.
             },
             externals: {
             },

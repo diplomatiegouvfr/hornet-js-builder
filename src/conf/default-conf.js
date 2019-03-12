@@ -1,15 +1,17 @@
 "use strict";
 
 const path = require("path");
+const fs = require("fs");
 const _ = require("lodash");
 const merge = require('webpack-merge');
 
+const staticDir = "static";
 const testReportDir = "test_report";
 const testWorkDir = "istanbul";
 const defaultConf = {
     src: "src",
     test: "test",
-    static: "static",
+    static: staticDir,
     database: "database",
     environment: {
         dir: "environment",
@@ -35,15 +37,41 @@ const defaultConf = {
     testReportDir: testReportDir,
     testWorkDir: testWorkDir,
     templateDir: "html",
+    sassConfiguration : {
+        merge: true,
+        inputFilter: "./sass/**/*.scss",
+        options: {
+            outputStyle: "compressed",
+            data: ""
+        },
+        output: {
+            dir: path.join(staticDir, "css"),
+            fileName: "generated.css"
+        }
+    },
     mocha: {
-        reporter: process.env.NODE_ENV === "integration" ? "xunit" : "spec",
+        quiet: false,
+        reporter: process.env.NODE_ENV === "integration" ? require("../mocha/mocha-sonarqube-file-name-reporter") : "spec",
         reporterOptions: {
-            output: path.join(testReportDir, "mocha", "test-results.xml")
+            output: path.join(testReportDir, "mocha", "test-results.xml"),
+            filenameFormatter: (currentPath) => {
+                let newFilePAth = path.join(process.cwd(), currentPath).replace("istanbul" + path.sep, "");
+                let exts = ["tsx", "ts", "js"];
+                if (path.extname(newFilePAth) == ".js"){
+                    let originalFile = path.parse(newFilePAth);
+                    originalFile.base = undefined;
+                    let extIdx = 0;
+                    do {
+                        originalFile.ext = "." + exts[extIdx++];
+                    } while (!fs.existsSync(path.format(originalFile)) && extIdx < exts.length);
+                    return path.format(originalFile).replace(process.cwd() + path.sep, '');
+                }
+            }
         }
         //,"grep": "Router constructor"
     },
     istanbul: {
-        dir: path.join(testWorkDir, "coverage"),
+        dir: path.join(testWorkDir),
         reporters: ["lcov", "text", "text-summary", "cobertura", "json", "html"],
         reportOpts: {
             dir: path.join(testReportDir, "mocha"),
@@ -104,12 +132,18 @@ function buildConf(project, conf, helper) {
         defaultConf.template = [];
     }
 
+    if(helper.isJUnitReporter() && process.env.NODE_ENV === "integration" ) {
+        defaultConf.mocha.reporter = "xunit";
+    }
+
     conf = _.merge(conf, defaultConf);
 
     conf.webPackConfiguration = merge(defaultConf.webPackConfiguration, conf.webpack);
     if (!conf.webPackLogAddedFiles) {
         conf.webPackLogAddedFiles = false;
     }
+
+    conf.sass = merge(defaultConf.sassConfiguration, conf.sass);
 
     conf.sourcesDTS = ["**/*.d.ts"].map(prepend(conf.src));
 

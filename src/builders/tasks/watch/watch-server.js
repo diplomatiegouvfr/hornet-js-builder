@@ -31,7 +31,7 @@ class WatchServer extends Task {
         return (done) => {
 
             var confNodemon = {
-                watch: [conf.src, conf.config].concat(helper.getExternalModuleDirectories(project)),
+                watch: [conf.config, conf.static].concat(helper.getExternalModuleDirectories(project)),
                 ignore: [conf.src + "/**/*.js*"],
                 script: project.packageJson.main,
                 ext: "html js json css",
@@ -44,7 +44,9 @@ class WatchServer extends Task {
                 }
             };
 
-            nodemon(confNodemon);
+            nodemon(confNodemon).on('restart', function (files) {
+                console.log('restarted :', files)
+              });
             done();
         }
     }

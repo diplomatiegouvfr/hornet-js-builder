@@ -1,16 +1,11 @@
+# Hornet JS Builder 1.6.0
+- EVOL : mode interactive
+- EVOL : support du mode sql
+- EVOL : SASS
+- FIX  : Correction enchainement test karma et mocha
+
 # Hornet JS Builder 1.5.4
-
-- FIX  : correction remap sans tsx pour les tests
-- EVOL : update rules et dépendances tslint, airbnb
-- FIX  : niveau de log génération index.ts
-- EVOL : Doc génération index
-- EVOL : test ne déclenche pas la generation des indes
-- EVOL : Generation/Suppression des index à la demande
-- EVOL : Ajout polyfill node
-- EVOL : changement configuration plugin pour node_env
-- EVOL : exclusion de la generation des index.ts
-- FIX  : changement dépendances des tâches
-
+- update rules et dépendances tslint, airbnb
 
 # Hornet JS Builder 1.5.3
 

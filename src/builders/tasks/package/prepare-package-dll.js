@@ -8,9 +8,9 @@ const gutil = require("gulp-util");
 const webpackStream = require("webpack-stream");
 const merge = require('webpack-merge');
 
-const Task = require("../task");
+const PreparePackageClient = require("./prepare-package-client");
 
-class PreparePackageDll extends Task {
+class PreparePackageDll extends PreparePackageClient {
     constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project, debugMode, watchMode) {
         super(name, taskDepend, taskDependencies, gulp, helper, conf, project);
 
@@ -59,6 +59,8 @@ class PreparePackageDll extends Task {
             this.webpackConf = merge(confWebPack, conf.webPackConfiguration);
 
             this.webpackConf = merge( this.webpackConf, { externals: {"net": "{}", "fs": "{}", "dns": "{}", "v8": "{}", "module": "{}"}});
+
+            this.buildExternal(conf, this.webpackConf, helper);
 
             // Configuration dynamique de webpack
             if (!this.debugMode) {

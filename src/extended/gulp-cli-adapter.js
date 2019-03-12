@@ -7,6 +7,8 @@ var prettyTime = require("pretty-hrtime");
 var helper = require("../helpers");
 const State = require("../builders/state");
 var runSequence = require("run-sequence");
+const Task = require("../builders/tasks/task");
+
 
 module.exports = function (gulp) {
 
@@ -130,16 +132,16 @@ module.exports = function (gulp) {
 
             if (_.isUndefined(gulp.tasks[preTaskName+subName]) && _.isUndefined(gulp.tasks[doTaskName+subName]) && _.isUndefined(gulp.tasks[postTaskName+subName])) {
                 // Génération de la tâche 'post'
-                gulp.task(postTaskName, [], function(done){return done()});
+                new Task(postTaskName, "", [], gulp, helper, null, null, (done) => {return done()});
 
                 // Génération de la tâche 'do' qui a la fonction d'origine
-                gulp.task(doTaskName, tasksHistory[name].fn);
+                new Task(doTaskName, "", [], gulp, helper, null, null, tasksHistory[name].fn);
 
                 // Génération de la tâche 'pre'
-                gulp.task(preTaskName, [], function(done){return done()});
+                new Task(preTaskName, "", [], gulp, helper, null, null, (done) => {return done()});
 
                 // Modification de la tâche d'origine, ordre : [pre-, deps originales ... , tache originale, post-]
-                gulp.task(taskName, [preTaskName].concat(deps).concat([doTaskName, postTaskName]));
+                new Task(taskName, "", [preTaskName].concat(deps).concat([doTaskName, postTaskName]), gulp, helper, null, null);
             }
         }
 
