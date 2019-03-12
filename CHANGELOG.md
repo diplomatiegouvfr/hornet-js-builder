@@ -1,3 +1,6 @@
+# Hornet JS Builder 1.6.3
+- EVOL : vérification du binary et script install dans le package.json en cache
+
 # Hornet JS Builder 1.6.2
 - FIX : suppression d'ecrasement de config npm pour récupération des binaires
 

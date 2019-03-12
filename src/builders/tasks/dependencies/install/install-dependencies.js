@@ -41,24 +41,28 @@ class InstallDependencies extends Task {
                 else {
                     if (helper.fileExists(path.join(project.dir, targetDir, "package.json"))) {
                         let pjson = require(path.join(project.dir, targetDir, "package.json"));
-                        if (pjson.binary && pjson.binary.host) {
-                            helper.removeDir(targetDir);
-                                                
-                            helper.info("Reinstallation de la dépendance (script install) " + dependencyName + "@" + dependencyVersion );
-                            helper.debug("Verification existance (script install) " + path.join(State.prefix, helper.NODE_MODULES, dependencyName) );
-
-                            npm.commands.install(path.join(targetDir, ".."), [dependencyName + "@" + dependencyVersion], (err) => { 
-                                if (err) {
-                                    helper.warn("Erreur durant l'installation de la dépendance : " + dependencyName + ", ERROR: "+ err);
-                                }
-                                
-                                return resolve();
-
-                            });
-                        } else {
-                            resolve()
-                        }
-
+                        npm.commands.cache.read(pjson.name, dependencyVersion, false, function (err, resolvedPackage) {
+                            if(!err && resolvedPackage && (resolvedPackage.binary && resolvedPackage.binary.host) || (resolvedPackage.scripts && resolvedPackage.scripts.install)) {
+                                pjson = resolvedPackage;
+                            }
+                            if ((pjson.binary && pjson.binary.host) || (pjson.scripts && pjson.scripts.install)) {
+                                helper.removeDir(targetDir);
+                                                    
+                                helper.info("Reinstallation de la dépendance (script install) " + dependencyName + "@" + dependencyVersion );
+                                helper.debug("Verification existance (script install) " + path.join(State.prefix, helper.NODE_MODULES, dependencyName) );
+    
+                                npm.commands.install(path.join(targetDir, ".."), [dependencyName + "@" + dependencyVersion], (err) => { 
+                                    if (err) {
+                                        helper.warn("Erreur durant l'installation de la dépendance : " + dependencyName + ", ERROR: "+ err);
+                                    }
+                                    
+                                    return resolve();
+    
+                                });
+                            } else {
+                                resolve()
+                            }
+                        });
                     } else {
                         resolve()
                     }
