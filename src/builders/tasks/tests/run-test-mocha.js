@@ -40,7 +40,7 @@ class RunTestMocha extends Task {
             .on("error", (err) => {
                 helper.error(err);
                 if(helper.getStopOnError()) {
-                    proces.exit(1);
+                    process.exit(1);
                 }
             })
             .on("end", () => {

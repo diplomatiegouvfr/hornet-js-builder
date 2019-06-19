@@ -1,3 +1,6 @@
+# Hornet JS Builder 1.6.4
+- EVOL : Mise en place plugin webpack pour remplacer du contenu dans les fichiers en mode production
+
 # Hornet JS Builder 1.6.3
 - EVOL : vérification du binary et script install dans le package.json en cache
 

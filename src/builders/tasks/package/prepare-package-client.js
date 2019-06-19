@@ -7,7 +7,7 @@ const gulpEol = require("gulp-eol");
 const gutil = require("gulp-util");
 const webpackStream = require("webpack-stream");
 const merge = require('webpack-merge');
-const RemoveDefinePlugin = require('../../../webpack/webpack-remove-define-plugin');
+const ReplacePlugin = require('../../../webpack/webpack-replace-plugin');
 
 const Task = require("../task");
 
@@ -34,8 +34,15 @@ class PreparePackageClient extends Task {
             // Configuration dynamique de webpack
             if (!this.debugMode) {
                 process.env.NODE_ENV = "production";
-                conf.webPackConfiguration.plugins.push(new RemoveDefinePlugin({
-                    include: (filepath)=> {return filepath.endsWith("hornet-js-utils/src/index.js");},
+                conf.webPackConfiguration.plugins.push(new ReplacePlugin({
+                    include: (filepath)=> {
+                        return filepath.endsWith("hornet-js-utils/src/index.js");
+                    }, replacements: [
+                        {
+                            key : "process.env.NODE_ENV",
+                            by: "if(!process) { var process={env: {NODE_ENV: window.Mode}}}; process.env.NODE_ENV"
+                        }
+                    ]
                 }));
                 conf.webPackConfiguration.plugins.push(new webpack.DefinePlugin({
                     'process.env': {

@@ -173,7 +173,7 @@ class RunTestKarma extends PreparePackageClient {
 
             new Server(this.config, (exitCode) => {
                 if(exitCode && helper.getStopOnError()) {
-                    proces.exit(1);
+                    process.exit(1);
                 }
                 done();
             }

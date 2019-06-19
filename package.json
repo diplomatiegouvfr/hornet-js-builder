@@ -1,6 +1,6 @@
 {
   "name": "hornet-js-builder",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "license": "CECILL-2.1",
   "description": "Builder/loader des Applications Hornet, Wrapper NPM permettant de fixer les versions des dépendances",
   "dependencies": {
