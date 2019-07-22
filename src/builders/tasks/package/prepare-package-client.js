@@ -1,14 +1,12 @@
 "use strict";
 
-const path = require("path");
 const _ = require("lodash");
 const webpack = require("webpack");
-const gulpEol = require("gulp-eol");
-const gutil = require("gulp-util");
-const webpackStream = require("webpack-stream");
-const merge = require('webpack-merge');
-const ReplacePlugin = require('../../../webpack/webpack-replace-plugin');
-
+const log = require("fancy-log"); // remplacement gulp-util.log
+const path = require("path");
+const merge = require("webpack-merge");
+const RemoveDefinePlugin = require("../../../webpack/webpack-replace-plugin");
+const webpackConfigPart = require("../../configuration/webpack/config-parts");
 const Task = require("../task");
 
 class PreparePackageClient extends Task {
@@ -17,166 +15,176 @@ class PreparePackageClient extends Task {
 
         this.debugMode = debugMode;
         this.watchMode = watchMode;
-    }
+        this.done = false;
+        this.configuration = webpackConfigPart.getDefaultConf(project, conf, helper);
 
+        // Possibilité de surcharger la configuration globale par le projet
+        let env = (process.env.NODE_ENV || "").toLowerCase();
+        if (helper.fileExists(path.join(project.dir, "webpack.config." + env + ".js"))) {
+            this.webpackConfigFile = path.join(project.dir, "webpack.config." + env + ".js");
+        } else if (helper.fileExists(path.join(project.dir, "webpack.config.js"))) {
+            this.webpackConfigFile = path.join(project.dir, "webpack.config.js");
+        } else {
+            this.webpackConfigFile = undefined;
+        }
+        // Possibilité de compléter la configuration par le projet
+        if (helper.fileExists(path.join(project.dir, "webpack.addons.config." + env + ".js"))) {
+            this.webpackAddonsConfigFile = path.join(project.dir, "webpack.addons.config." + env + ".js");
+        } else if (helper.fileExists(path.join(project.dir, "webpack.addons.config.js"))) {
+            this.webpackAddonsConfigFile = path.join(project.dir, "webpack.addons.config.js");
+        } else {
+            this.webpackAddonsConfigFile = undefined;
+        }
+        this.buildWebpackConfiguration(project, conf, helper);
+    }
+    
     task(gulp, helper, conf, project) {
         return (done) => {
-
-            // initialisation de la conf webpack
-            var confWebPack = require("../../../webpack/default-webpack-config.js").browser(project, conf, helper.isDebug());
-            if (project.builderJs && project.builderJs.webpack && project.builderJs.webpack.watchMode) {
-                confWebPack = require("../../../webpack/devserver-webpack-config.js").browser(project, conf, helper.isDebug());
-            }
-            conf.webPackConfiguration = merge(confWebPack, conf.webPackConfiguration);
-
-            this.buildExternal(conf, conf.webPackConfiguration, helper);
-
-            // Configuration dynamique de webpack
-            if (!this.debugMode) {
-                process.env.NODE_ENV = "production";
-                conf.webPackConfiguration.plugins.push(new ReplacePlugin({
-                    include: (filepath)=> {
-                        return filepath.endsWith("hornet-js-utils/src/index.js");
-                    }, replacements: [
-                        {
-                            key : "process.env.NODE_ENV",
-                            by: "if(!process) { var process={env: {NODE_ENV: window.Mode}}}; process.env.NODE_ENV"
-                        }
-                    ]
-                }));
-                conf.webPackConfiguration.plugins.push(new webpack.DefinePlugin({
-                    'process.env': {
-                        'NODE_ENV': '"production"'
-                      }
-                }));
-            } else {
-                conf.webPackConfiguration.plugins.push(new webpack.LoaderOptionsPlugin({ debug: true }));
-            }
-
-            // Activation minification 
-            if (!this.debugMode && !helper.isSkipMinified()) {
-                const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
-                conf.webPackConfiguration.plugins.push(new UglifyJSPlugin({
-                    uglifyOptions: {
-                        compress: {
-                            warnings: false
-                        },
-                        sourceMap: true
-                    }
-                }));
-            }
-
-            // Activation du context
-            this.buildClientContext(conf, conf.webPackConfiguration);
-
-            if (helper.isDevMode()) {
-                if (conf.dev && conf.dev.dllEntry){
-                    for(let dll in conf.dev.dllEntry) {
-                        conf.webPackConfiguration.plugins.splice(1, 0, new webpack.DllReferencePlugin({
-                            context: path.join(project.dir, "node_modules", "app"),
-                            manifest: require(path.join(project.dir, conf.static, conf.js, conf.dll, dll + "-manifest.json")),
-                        }));
-                    }
-
+            webpack(this.configuration, (err, stats) => {
+                if (err) done(err);
+                log(stats.toString(this.configuration.stats));
+                if (!this.done) {
+                    this.done = true;
+                    done();
                 }
-            }
-
-            conf.webPackConfiguration.watch = this.watchMode === true;
-
-            if (conf.webPackConfiguration.resolve.modules && _.isArray(conf.webPackConfiguration.resolve.modules)) {
-                conf.webPackConfiguration.resolve.modules.forEach(function (dir) {
-                    helper.warn("WEBPACK MODULE RESOLVER > répertoire déclaré :", dir);
-                });
-            }
-
-            if (conf.webPackConfiguration.module && conf.webPackConfiguration.module.noParse && _.isArray(conf.webPackConfiguration.module.noParse)) {
-                conf.webPackConfiguration.module.noParse.forEach(function (regexp) {
-                    helper.warn("WEBPACK CONF > exclusions de :", regexp.toString());
-                });
-            }
-
-            helper.debug("WEBPACK CONF CLIENT :", conf.webPackConfiguration);
-
-            webpack(conf.webPackConfiguration, (err, stats) => {
-                if(err) done(err);
-                gutil.log(stats.toString(conf.webPackConfiguration.stats));
-                if (!this.watchMode) done();
             });
-
-            if (this.watchMode) done();
         }
     }
 
     /**
      * Contruit la configuration externals pour webpack
      * @param {*} conf - L'object de configuration du builder.js
-     * @param {*} webPackConfiguration - L'object de configuration webpack à enrichir
+     * @param {*} helper - L'object helper du builder
      */
-    buildExternal(conf, webPackConfiguration, helper) {
-        if (!conf.externals) {
-            conf.externals = [];
-        }
+    buildExternal(conf, helper) {
+
+        const externals = (conf && conf.externals) || [];
+        let confWebpack = { externals: undefined };
 
         if (conf.clientExclude) {
-            
+
             if (conf.clientExclude.dirs && _.isArray(conf.clientExclude.dirs)) {
-                conf.clientExclude.dirs.forEach((excludeDir)=> {
-                    conf.externals.push(new RegExp(excludeDir + "/.*"));
+                conf.clientExclude.dirs.forEach((excludeDir) => {
+                    externals.push(new RegExp(excludeDir + "/.*"));
                 });
             }
 
             if (conf.clientExclude.filters && _.isArray(conf.clientExclude.filters)) {
-                conf.clientExclude.filters.forEach((excludeFilter)=> {
-                    conf.externals.push(new RegExp(excludeFilter));
+                conf.clientExclude.filters.forEach((excludeFilter) => {
+                    externals.push(new RegExp(excludeFilter));
                 });
-            }  
+            }
 
             if (conf.clientExclude.modules && _.isArray(conf.clientExclude.modules)) {
-                conf.clientExclude.modules.forEach((excludeModules)=> {
-                    conf.externals.push(excludeModules);
+                conf.clientExclude.modules.forEach((excludeModules) => {
+                    externals.push(excludeModules);
                 });
-            }  
+            }
 
             if (conf.clientNoParse && _.isArray(conf.clientNoParse)) {
-                conf.webPackConfiguration = merge( conf.webPackConfiguration, { module: {noParse: conf.clientNoParse} });
+                confWebpack = { externals: undefined, module: { noParse: conf.clientNoParse } };
             }
         } else {
-            conf.externals.push(new RegExp(".*/src/services/data/.*"));
-            conf.externals.push(new RegExp(".*/src/services/*-data.*"));
+            externals.push(new RegExp(".*/src/services/data/.*"));
+            externals.push(new RegExp(".*/src/services/*-data.*"));
         }
 
-        Array.prototype.push.apply(conf.externals, ["net", "fs", "dns"]);
+        Array.prototype.push.apply(externals, ["net", "fs", "dns"]);
 
-        webPackConfiguration.externals = (context, request, callback) => {
-            
-            for(let i = 0; i < conf.externals.length; i++) {
-                let extern = conf.externals[i];
+        confWebpack.externals = (context, request, callback) => {
+
+            for (let i = 0; i < externals.length; i++) {
+                let extern = externals[i];
                 if (extern.test) { // c'est une regexp'
                     if (extern.test(request)) {
-                        helper.debug("Externals exclude : " +  request);
                         return callback(null, "{}");
-                    } 
+                    }
                 } else if (request == extern) {
-                    helper.debug("Externals exclude : " +  request);
                     return callback(null, "{}");
                 }
             }
 
             return callback();
-        }
+        };
+        return confWebpack;
     }
 
     /**
-     * Rajoute des intances de ContextReplacementPlugin dans la configuration webpack
+     * Construit la configuration webpack soit à partir d'un fichier présent dans le projet (webpack.config.js ou webpack.addons.config.js)
+     * @param {*} project - L'object de description du projet
      * @param {*} conf - L'object de configuration du builder.js
-     * @param {*} webPackConfiguration - L'object de configuration webpack à enrichir
+     * @param {*} helper - L'object helper du builder
      */
-    buildClientContext(conf, webPackConfiguration) {
-        // Activation du context
-        if (conf.clientContext && _.isArray(conf.clientContext)) {
-            conf.clientContext.forEach((contextElt) => {
-                webPackConfiguration.plugins.splice(1, 0, new webpack.ContextReplacementPlugin(...contextElt)); 
-            });
+    buildWebpackConfiguration(project, conf, helper) {
+        // initialisation de la conf webpack
+        if (this.webpackConfigFile) {
+            this.configuration = require(this.webpackConfigFile)(project, conf, helper, webpackConfigPart, webpack);
+        } else {
+            this.configuration = merge(this.configuration, conf.webPackConfiguration);
+
+            let confWithExternals = this.buildExternal(conf, helper);
+            this.configuration = merge(this.configuration, confWithExternals);
+
+            this.configuration = merge(this.configuration, webpackConfigPart.autoCodeSplittingChunks(project, conf, helper));
+            this.configuration = merge(this.configuration, webpackConfigPart.addJsxLoader(project, conf, helper));
+            this.configuration = merge(this.configuration, webpackConfigPart.addSourceMapLoader(project, conf, helper));
+            this.configuration = merge(this.configuration, webpackConfigPart.addScssLoader(project, conf, helper));
+            this.configuration = merge(this.configuration, webpackConfigPart.addImageLoader(project, conf, helper));
+            this.configuration = merge(this.configuration, webpackConfigPart.addFontLoader(project, conf, helper));
+            
+            if (helper.isWebpackVisualizer()) {
+                this.configuration = merge(this.configuration, webpackConfigPart.addChunkVizualizer(project, conf, helper));
+            }
+            // Configuration dynamique de webpack
+            if (!this.debugMode) {
+                process.env.NODE_ENV = "production";
+                this.configuration.plugins.push(new RemoveDefinePlugin({
+                    include: (filepath) => { return filepath.endsWith("hornet-js-utils/src/index.js"); },
+                }));
+                this.configuration.plugins.push(new webpack.DefinePlugin({
+                    'process.env': {
+                        'NODE_ENV': '"production"'
+                    }
+                }));
+            } else {
+                this.configuration = merge(this.configuration, webpackConfigPart.addGlobalPluginsOption(project, conf, helper));
+                this.configuration["devtool"] = "eval-source-map";//inline-source-map eval-source-map
+                this.configuration["mode"] = "development";
+    
+            }
+            if(helper.isDebug()) {
+                this.configuration = merge(this.configuration, webpackConfigPart.addReportFileSizePlugin(project, conf, helper));
+            }
+
+            // Activation minification 
+            if (!this.debugMode && !helper.isSkipMinified()) {
+                this.configuration = merge(this.configuration, webpackConfigPart.addUglifyPlugins(project, conf, helper));
+            }
+
+            // Activation du context
+            this.configuration = merge(this.configuration, webpackConfigPart.addConfContextReplacement(project, conf, helper));
+
+
+            this.configuration.watch = this.watchMode === true;
+
+            if (this.configuration.resolve.modules && _.isArray(this.configuration.resolve.modules)) {
+                this.configuration.resolve.modules.forEach(function (dir) {
+                    helper.warn("WEBPACK MODULE RESOLVER > répertoire déclaré :", dir);
+                });
+            }
+
+            if (this.configuration.module && this.configuration.module.noParse && _.isArray(this.configuration.module.noParse)) {
+                this.configuration.module.noParse.forEach(function (regexp) {
+                    helper.warn("WEBPACK CONF > exclusions de :", regexp.toString());
+                });
+            }
+
+            
+            this.configuration['profile'] = true;
+            if (this.webpackAddonsConfigFile) {
+                this.configuration = require(this.webpackAddonsConfigFile)(project, conf, helper, webpackConfigPart, this.configuration, webpack);
+            }
+            helper.debug("WEBPACK CONF CLIENT :", this.configuration);
         }
     }
 }

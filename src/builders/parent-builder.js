@@ -31,14 +31,13 @@ module.exports = {
 
         helper.debug("recherche des modules dans : ", project.dir);
         var moduleList = helper.getModuleList(project.dir);
-        helper.debug("moduleList : ", moduleList);
-
+        
         //Extraction des dépendances entre les modules
         moduleList.forEach(function (mod) {
             mod.dependencies = [];
             var json = mod.packageJson;
-            var dep = json[helper.APP_DEPENDENCIES] || {};
-            var testDep = json[helper.TEST_DEPENDENCIES] || {};
+            var dep = json[helper.DEPENDENCIES] || {};
+            var testDep = json[helper.DEV_DEPENDENCIES] || {};
 
             moduleList.forEach(function (dependent) {
                 if (dep[dependent.name] || testDep[dependent.name]) {
@@ -51,26 +50,9 @@ module.exports = {
         moduleList.sort(function(p1, p2) {
             return (p1.dependencies.indexOf(p2.name) != -1) ? -1 : 1
         });
-        // on trie les modules de façon à gérer les dts
-        let moduleListDts = moduleList.filter((elt) => {return elt.name.endsWith("-dts")});
-        let idxDTS = [];
-        moduleList = moduleList.filter((elt) => {return !elt.name.endsWith("-dts")});
-        moduleListDts.forEach((elt, idx) => {
-            moduleList.every((eltM, idxM) => {
-                if(elt.name.substring(0, elt.name.length -4) == eltM.name) {
-                    moduleList.splice(idxM, 0, elt);
-                    idxDTS.push(idx);
-                    return false;
-                }
-                return true;
-            });
+        moduleList.sort(function(p1, p2) {
+            return (p1.dependencies.indexOf(p2.name) != -1) ? -1 : 1
         });
-
-        // on ajoute les projet DTS non trouvé
-        idxDTS.forEach((elt) => {
-            moduleListDts.splice(0, 1);
-        });
-        Array.prototype.push.apply(moduleList, moduleListDts)     
 
         moduleList.reverse();
         helper.debug("Modules trouvés :", moduleList);

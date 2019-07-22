@@ -3,7 +3,7 @@
 const path = require("path");
 const fs = require("fs");
 const gulpTsLint = require("gulp-tslint");
-const gutil = require("gulp-util");
+const log = require("fancy-log"); // remplacement gulp-util.log
 const chalk = require("chalk");
 
 const Task = require("./../task");
@@ -28,7 +28,7 @@ class LintTask extends Task {
 
                 fs.exists(lintRulesPath,(exists) => {
                     if(!exists){
-                        gutil.log(
+                        log(
                             chalk.red("Rules file '" + lintRulesPath + "' does not exist")
                         );
                         process.exit(1);
@@ -41,7 +41,6 @@ class LintTask extends Task {
                 gulp.src(conf.sourcesTS)
                     .pipe(gulpTsLint(
                         {
-                            //rulesDirectory: path.join(__dirname, "../../../../node_modules/tslint-microsoft-contrib"),
                             configuration: lintRulesPath,
                             formatter: helper.getLintReport()
                         })

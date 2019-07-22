@@ -1,7 +1,9 @@
 "use strict";
 
 const State = require("./../state");
+const Helper = require("./../../helpers");
 const chalk = require("chalk");
+var prettyTime = require("pretty-hrtime");
 
 var taskList = [];
 
@@ -16,7 +18,7 @@ class Task {
         // Gestion du resolving des modules issus du parent
         if(project && (!State.externalDependencies || !State.externalDependencies[project.name])) {
             State.externalDependencies[project.name] = {};
-            if((project.builderJs.externalModules && project.builderJs.externalModules.enabled) || (State.parentBuilder.externalModules && State.parentBuilder.externalModules.enabled) || !helper.isMultiType()) { 
+            if((project.builderJs.externalModules && project.builderJs.externalModules.enabled) || (State.parentBuilder.externalModules && State.parentBuilder.externalModules.enabled) || helper.isActiveExternal() /*|| !helper.isMultiType()*/) { 
                 helper.getExternalModules(project).forEach(function (mod) {
                     State.externalDependencies[project.name][mod.name] = mod;
                     helper.info("Auto resolving module externe '" + mod.name + "@" + mod.version + " in '" + mod.dir + "'");
@@ -36,7 +38,7 @@ class Task {
             helper.getVorpal()
                 .command(this.name, helper.getTaskInfo(this.name))
                 .option("-d, --debug", "Mode debug")
-                .option("-D, --docker [options]", "Exécute les commandes du Builder dans le container Docker nodeJS")
+                .option("-e, --external", "Mode auto external")
                 .option("-l, --list", "Listing de toutes les tâches")
                 .option("--show-webpack-files", "Log les fichiers pris en compte par webpack dans sa phase de compilation du bundle client")
                 .option("--webpackVisualizer", "Visualisation de la répartition des sources projets et node modules dans un chart, /static/dev/webpack-visualizer.html")
@@ -65,7 +67,7 @@ class Task {
                 .action((args, callback) => {
                     helper.setForce(args.options.force);
                     helper.setDebug(args.options.debug);
-                    helper.setDocker(args.options.docker);
+                    helper.setActiveExternal(args.options.external);
                     helper.setList(args.options.list);
                     helper.setRegistry(args.options.registry);
                     helper.setPublishRegistry(args.options.publishRegistry);
@@ -78,7 +80,6 @@ class Task {
                     helper.setDebugPort(args.options.debugPort);
                     helper.setLintRules(args.options.lintRules);
                     helper.setLintReport(args.options.lintReport);
-                    helper.setIgnoreAppDepVersion(args.options.ignoreApp);
                     helper.setModule(args.options.module);
                     helper.setFile(args.options.file);
                     helper.setDevMode(args.options.dev);
@@ -120,6 +121,18 @@ class Task {
      * @returns {Function} tache Gulp exécutée
      */
     task() {
+        //throw new Error("La tâche '" + this.name + "' ne surcharge pas la méthode 'task'");
+    }
+    /**
+     * méthode appelée à l'initialisation d'une task
+     * @returns {Function} tache Gulp exécutée
+     */
+    passIfAlreadyExec(done, project) {
+        if(State.taskHistory[project.name + ":" + this.name]) {
+            Helper.info("Tache déjà exécutée il y a :", prettyTime(process.hrtime(State.taskHistory[project.name + ":" + this.name])));
+            return true;
+        }
+        State.taskHistory[project.name + ":" + this.name] = process.hrtime();
         //throw new Error("La tâche '" + this.name + "' ne surcharge pas la méthode 'task'");
     }
 }

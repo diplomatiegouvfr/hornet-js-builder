@@ -1,0 +1,385 @@
+<svg id="mermaid-1562578828696" width="100%" xmlns="http://www.w3.org/2000/svg" height="100%" style="max-width:1445.5px;" viewBox="-245.5 -10 1445.5 711"><style>
+
+
+#mermaid-1562578828696 .label {
+  font-family: 'trebuchet ms', verdana, arial;
+  color: #333; }
+
+#mermaid-1562578828696 .node rect,
+#mermaid-1562578828696 .node circle,
+#mermaid-1562578828696 .node ellipse,
+#mermaid-1562578828696 .node polygon {
+  fill: #ECECFF;
+  stroke: #9370DB;
+  stroke-width: 1px; }
+
+#mermaid-1562578828696 .node.clickable {
+  cursor: pointer; }
+
+#mermaid-1562578828696 .arrowheadPath {
+  fill: #333333; }
+
+#mermaid-1562578828696 .edgePath .path {
+  stroke: #333333;
+  stroke-width: 1.5px; }
+
+#mermaid-1562578828696 .edgeLabel {
+  background-color: #e8e8e8; }
+
+#mermaid-1562578828696 .cluster rect {
+  fill: #ffffde;
+  stroke: #aaaa33;
+  stroke-width: 1px; }
+
+#mermaid-1562578828696 .cluster text {
+  fill: #333; }
+
+#mermaid-1562578828696 div.mermaidTooltip {
+  position: absolute;
+  text-align: center;
+  max-width: 200px;
+  padding: 2px;
+  font-family: 'trebuchet ms', verdana, arial;
+  font-size: 12px;
+  background: #ffffde;
+  border: 1px solid #aaaa33;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 100; }
+
+#mermaid-1562578828696 .actor {
+  stroke: #CCCCFF;
+  fill: #ECECFF; }
+
+#mermaid-1562578828696 text.actor {
+  fill: black;
+  stroke: none; }
+
+#mermaid-1562578828696 .actor-line {
+  stroke: grey; }
+
+#mermaid-1562578828696 .messageLine0 {
+  stroke-width: 1.5;
+  stroke-dasharray: '2 2';
+  stroke: #333; }
+
+#mermaid-1562578828696 .messageLine1 {
+  stroke-width: 1.5;
+  stroke-dasharray: '2 2';
+  stroke: #333; }
+
+#mermaid-1562578828696 #arrowhead {
+  fill: #333; }
+
+#mermaid-1562578828696 #crosshead path {
+  fill: #333 !important;
+  stroke: #333 !important; }
+
+#mermaid-1562578828696 .messageText {
+  fill: #333;
+  stroke: none; }
+
+#mermaid-1562578828696 .labelBox {
+  stroke: #CCCCFF;
+  fill: #ECECFF; }
+
+#mermaid-1562578828696 .labelText {
+  fill: black;
+  stroke: none; }
+
+#mermaid-1562578828696 .loopText {
+  fill: black;
+  stroke: none; }
+
+#mermaid-1562578828696 .loopLine {
+  stroke-width: 2;
+  stroke-dasharray: '2 2';
+  stroke: #CCCCFF; }
+
+#mermaid-1562578828696 .note {
+  stroke: #aaaa33;
+  fill: #fff5ad; }
+
+#mermaid-1562578828696 .noteText {
+  fill: black;
+  stroke: none;
+  font-family: 'trebuchet ms', verdana, arial;
+  font-size: 14px; }
+
+#mermaid-1562578828696 .activation0 {
+  fill: #f4f4f4;
+  stroke: #666; }
+
+#mermaid-1562578828696 .activation1 {
+  fill: #f4f4f4;
+  stroke: #666; }
+
+#mermaid-1562578828696 .activation2 {
+  fill: #f4f4f4;
+  stroke: #666; }
+
+
+#mermaid-1562578828696 .section {
+  stroke: none;
+  opacity: 0.2; }
+
+#mermaid-1562578828696 .section0 {
+  fill: rgba(102, 102, 255, 0.49); }
+
+#mermaid-1562578828696 .section2 {
+  fill: #fff400; }
+
+#mermaid-1562578828696 .section1,
+#mermaid-1562578828696 .section3 {
+  fill: white;
+  opacity: 0.2; }
+
+#mermaid-1562578828696 .sectionTitle0 {
+  fill: #333; }
+
+#mermaid-1562578828696 .sectionTitle1 {
+  fill: #333; }
+
+#mermaid-1562578828696 .sectionTitle2 {
+  fill: #333; }
+
+#mermaid-1562578828696 .sectionTitle3 {
+  fill: #333; }
+
+#mermaid-1562578828696 .sectionTitle {
+  text-anchor: start;
+  font-size: 11px;
+  text-height: 14px; }
+
+
+#mermaid-1562578828696 .grid .tick {
+  stroke: lightgrey;
+  opacity: 0.3;
+  shape-rendering: crispEdges; }
+
+#mermaid-1562578828696 .grid path {
+  stroke-width: 0; }
+
+
+#mermaid-1562578828696 .today {
+  fill: none;
+  stroke: red;
+  stroke-width: 2px; }
+
+
+
+#mermaid-1562578828696 .task {
+  stroke-width: 2; }
+
+#mermaid-1562578828696 .taskText {
+  text-anchor: middle;
+  font-size: 11px; }
+
+#mermaid-1562578828696 .taskTextOutsideRight {
+  fill: black;
+  text-anchor: start;
+  font-size: 11px; }
+
+#mermaid-1562578828696 .taskTextOutsideLeft {
+  fill: black;
+  text-anchor: end;
+  font-size: 11px; }
+
+
+#mermaid-1562578828696 .task.clickable {
+  cursor: pointer; }
+
+#mermaid-1562578828696 .taskText.clickable {
+  cursor: pointer;
+  fill: #003163 !important;
+  font-weight: bold; }
+
+#mermaid-1562578828696 .taskTextOutsideLeft.clickable {
+  cursor: pointer;
+  fill: #003163 !important;
+  font-weight: bold; }
+
+#mermaid-1562578828696 .taskTextOutsideRight.clickable {
+  cursor: pointer;
+  fill: #003163 !important;
+  font-weight: bold; }
+
+
+#mermaid-1562578828696 .taskText0,
+#mermaid-1562578828696 .taskText1,
+#mermaid-1562578828696 .taskText2,
+#mermaid-1562578828696 .taskText3 {
+  fill: white; }
+
+#mermaid-1562578828696 .task0,
+#mermaid-1562578828696 .task1,
+#mermaid-1562578828696 .task2,
+#mermaid-1562578828696 .task3 {
+  fill: #8a90dd;
+  stroke: #534fbc; }
+
+#mermaid-1562578828696 .taskTextOutside0,
+#mermaid-1562578828696 .taskTextOutside2 {
+  fill: black; }
+
+#mermaid-1562578828696 .taskTextOutside1,
+#mermaid-1562578828696 .taskTextOutside3 {
+  fill: black; }
+
+
+#mermaid-1562578828696 .active0,
+#mermaid-1562578828696 .active1,
+#mermaid-1562578828696 .active2,
+#mermaid-1562578828696 .active3 {
+  fill: #bfc7ff;
+  stroke: #534fbc; }
+
+#mermaid-1562578828696 .activeText0,
+#mermaid-1562578828696 .activeText1,
+#mermaid-1562578828696 .activeText2,
+#mermaid-1562578828696 .activeText3 {
+  fill: black !important; }
+
+
+#mermaid-1562578828696 .done0,
+#mermaid-1562578828696 .done1,
+#mermaid-1562578828696 .done2,
+#mermaid-1562578828696 .done3 {
+  stroke: grey;
+  fill: lightgrey;
+  stroke-width: 2; }
+
+#mermaid-1562578828696 .doneText0,
+#mermaid-1562578828696 .doneText1,
+#mermaid-1562578828696 .doneText2,
+#mermaid-1562578828696 .doneText3 {
+  fill: black !important; }
+
+
+#mermaid-1562578828696 .crit0,
+#mermaid-1562578828696 .crit1,
+#mermaid-1562578828696 .crit2,
+#mermaid-1562578828696 .crit3 {
+  stroke: #ff8888;
+  fill: red;
+  stroke-width: 2; }
+
+#mermaid-1562578828696 .activeCrit0,
+#mermaid-1562578828696 .activeCrit1,
+#mermaid-1562578828696 .activeCrit2,
+#mermaid-1562578828696 .activeCrit3 {
+  stroke: #ff8888;
+  fill: #bfc7ff;
+  stroke-width: 2; }
+
+#mermaid-1562578828696 .doneCrit0,
+#mermaid-1562578828696 .doneCrit1,
+#mermaid-1562578828696 .doneCrit2,
+#mermaid-1562578828696 .doneCrit3 {
+  stroke: #ff8888;
+  fill: lightgrey;
+  stroke-width: 2;
+  cursor: pointer;
+  shape-rendering: crispEdges; }
+
+#mermaid-1562578828696 .milestone {
+  transform: rotate(45deg) scale(0.8, 0.8); }
+
+#mermaid-1562578828696 .milestoneText {
+  font-style: italic; }
+
+#mermaid-1562578828696 .doneCritText0,
+#mermaid-1562578828696 .doneCritText1,
+#mermaid-1562578828696 .doneCritText2,
+#mermaid-1562578828696 .doneCritText3 {
+  fill: black !important; }
+
+#mermaid-1562578828696 .activeCritText0,
+#mermaid-1562578828696 .activeCritText1,
+#mermaid-1562578828696 .activeCritText2,
+#mermaid-1562578828696 .activeCritText3 {
+  fill: black !important; }
+
+#mermaid-1562578828696 .titleText {
+  text-anchor: middle;
+  font-size: 18px;
+  fill: black; }
+
+#mermaid-1562578828696 g.classGroup text {
+  fill: #9370DB;
+  stroke: none;
+  font-family: 'trebuchet ms', verdana, arial;
+  font-size: 10px; }
+
+#mermaid-1562578828696 g.classGroup rect {
+  fill: #ECECFF;
+  stroke: #9370DB; }
+
+#mermaid-1562578828696 g.classGroup line {
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 .classLabel .box {
+  stroke: none;
+  stroke-width: 0;
+  fill: #ECECFF;
+  opacity: 0.5; }
+
+#mermaid-1562578828696 .classLabel .label {
+  fill: #9370DB;
+  font-size: 10px; }
+
+#mermaid-1562578828696 .relation {
+  stroke: #9370DB;
+  stroke-width: 1;
+  fill: none; }
+
+#mermaid-1562578828696 #compositionStart {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 #compositionEnd {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 #aggregationStart {
+  fill: #ECECFF;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 #aggregationEnd {
+  fill: #ECECFF;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 #dependencyStart {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 #dependencyEnd {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 #extensionStart {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 #extensionEnd {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562578828696 .commit-id,
+#mermaid-1562578828696 .commit-msg,
+#mermaid-1562578828696 .branch-label {
+  fill: lightgrey;
+  color: lightgrey; }
+</style><style>#mermaid-1562578828696 {
+    color: rgba(0, 0, 0, 0.65);
+    font: ;
+  }</style><g></g><g><line id="actor223" x1="75" y1="5" x2="75" y2="700" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="0" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="75" dy="0">compile</tspan></text></g><g><line id="actor224" x1="275" y1="5" x2="275" y2="700" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="200" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="275" dy="0">install</tspan></text></g><g><line id="actor225" x1="475" y1="5" x2="475" y2="700" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="400" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="475" dy="0">compileTs</tspan></text></g><g><line id="actor226" x1="675" y1="5" x2="675" y2="700" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="600" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="675" dy="0">cleanIndexDts</tspan></text></g><g><line id="actor227" x1="875" y1="5" x2="875" y2="700" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="800" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="875" dy="0">computeIndexDts</tspan></text></g><g><line id="actor228" x1="1075" y1="5" x2="1075" y2="700" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1000" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1075" dy="0">rewriteModule</tspan></text></g><defs><marker id="arrowhead" refX="5" refY="2" markerWidth="6" markerHeight="4" orient="auto"><path d="M 0,0 V 4 L6,2 Z"></path></marker></defs><defs><marker id="crosshead" markerWidth="15" markerHeight="8" orient="auto" refX="16" refY="4"><path fill="black" stroke="#000000" style="stroke-dasharray: 0, 0;" stroke-width="1px" d="M 9,2 V 6 L16,4 Z"></path><path fill="none" stroke="#000000" style="stroke-dasharray: 0, 0;" stroke-width="1px" d="M 0,1 L 6,7 M 6,1 L 0,7"></path></marker></defs><g><text x="175" y="93" style="text-anchor: middle;" class="messageText">installation des dépendances</text><line x1="75" y1="100" x2="275" y2="100" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="270" y="102" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="172.5" y="128" style="text-anchor: middle;" class="messageText">installation ok</text><line x1="270" y1="135" x2="75" y2="135" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="75" y="163" style="text-anchor: middle;" class="messageText">lecture du fichier tsConfig</text><path d="M 75,170 C 135,160 135,200 75,190" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></path></g><g><text x="275" y="253" style="text-anchor: middle;" class="messageText">transiplation des ts en js</text><line x1="75" y1="260" x2="475" y2="260" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="470" y="262" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="272.5" y="288" style="text-anchor: middle;" class="messageText">transiplation des ok</text><line x1="470" y1="295" x2="75" y2="295" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><line x1="65" y1="210" x2="490" y2="210" class="loopLine"></line><line x1="490" y1="210" x2="490" y2="305" class="loopLine"></line><line x1="65" y1="305" x2="490" y2="305" class="loopLine"></line><line x1="65" y1="210" x2="65" y2="305" class="loopLine"></line><polygon points="65,210 115,210 115,223 106.6,230 65,230" class="labelBox"></polygon><text x="72.5" y="225" class="labelText"><tspan x="72.5">opt</tspan></text><text x="277.5" y="225" style="text-anchor: middle;" class="loopText"><tspan x="277.5">[ si l'option -i ou --ide n'est pas activée ]</tspan></text></g><g><text x="375" y="358" style="text-anchor: middle;" class="messageText">suppression de index.d.ts</text><line x1="75" y1="365" x2="675" y2="365" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="670" y="367" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="372.5" y="393" style="text-anchor: middle;" class="messageText">suppression ok</text><line x1="670" y1="400" x2="75" y2="400" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="475" y="428" style="text-anchor: middle;" class="messageText">générer index.d.ts</text><line x1="75" y1="435" x2="875" y2="435" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="870" y="437" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="472.5" y="463" style="text-anchor: middle;" class="messageText">génération ok</text><line x1="870" y1="470" x2="75" y2="470" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="575" y="498" style="text-anchor: middle;" class="messageText">réécriture des modules pour ajuster les imports</text><line x1="75" y1="505" x2="1075" y2="505" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="1070" y="507" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="572.5" y="533" style="text-anchor: middle;" class="messageText">réécriture ok</text><line x1="1070" y1="540" x2="75" y2="540" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><line x1="65" y1="315" x2="1090" y2="315" class="loopLine"></line><line x1="1090" y1="315" x2="1090" y2="550" class="loopLine"></line><line x1="65" y1="550" x2="1090" y2="550" class="loopLine"></line><line x1="65" y1="315" x2="65" y2="550" class="loopLine"></line><polygon points="65,315 115,315 115,328 106.6,335 65,335" class="labelBox"></polygon><text x="72.5" y="330" class="labelText"><tspan x="72.5">opt</tspan></text><text x="577.5" y="330" style="text-anchor: middle;" class="loopText"><tspan x="577.5">[ si project.type in [helper.TYPE.MODULE, project.type === helper.TYPE.COMPOSANT] ]</tspan></text></g><g><text x="75" y="578" style="text-anchor: middle;" class="messageText">création du dossier conteneant les fichier issus de la transpilation (tsConfig.tscOutDir)</text><path d="M 75,585 C 135,575 135,615 75,605" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></path></g><g><rect x="0" y="635" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="667.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="75" dy="0">compile</tspan></text></g><g><rect x="200" y="635" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="667.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="275" dy="0">install</tspan></text></g><g><rect x="400" y="635" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="667.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="475" dy="0">compileTs</tspan></text></g><g><rect x="600" y="635" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="667.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="675" dy="0">cleanIndexDts</tspan></text></g><g><rect x="800" y="635" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="667.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="875" dy="0">computeIndexDts</tspan></text></g><g><rect x="1000" y="635" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="667.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1075" dy="0">rewriteModule</tspan></text></g></svg>

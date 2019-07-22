@@ -1,0 +1,30 @@
+
+sequenceDiagram
+    install -> depInstall: npm install --only=prod
+    activate  depInstall
+    depInstall->>install: install ok
+    deactivate  depInstall
+    opt Si externals
+        install-->depInstallLink: install des links dependencies
+        activate  depInstallLink
+            loop Externals
+                depInstallLink-->depInstallLink:copie du lien
+                depInstallLink-->depInstallLink: dedupe dependencies
+            end
+        depInstallLink-->install: install des links dependencies ok
+        deactivate  depInstallLink
+    end
+    install -> depInstallDev: npm install --only=dev
+    activate  depInstallDev
+    depInstallDev->>install: install des devDependencies ok
+    deactivate  depInstallDev
+    opt Si externals
+        install-->depInstallLinkDev: install des links devDependencies
+        activate  depInstallLinkDev
+            loop Externals
+                depInstallLinkDev-->depInstallLinkDev:copie du lien
+                depInstallLinkDev-->depInstallLinkDev: dedupe devDependencies
+            end
+        depInstallLinkDev-->install: install des links devDependencies ok
+        deactivate  depInstallLinkDev
+    end

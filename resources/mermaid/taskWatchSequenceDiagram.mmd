@@ -1,0 +1,21 @@
+sequenceDiagram
+opt si project.type in [application, application-server]
+opt si l'option -i ou --ide n'est pas activée
+   watchExe->>watchTsExe: Ecoute des modifcations des fichiers ts et recompilation à la volée
+   activate watchTsExe
+   watchTsExe->>watchExe: écoute ok
+   deactivate watchTsExe
+end
+   opt si projet.type === application
+        watchExe->>watchClientExe: Ecoute les modifications des fichiers et lance webpack à la volée
+        activate watchClientExe
+        watchClientExe->>watchClientExe: lancement de la tâche clean:static
+        watchClientExe->>watchClientExe: lancement de la tâche prepare-package-dll
+        watchClientExe->>watchExe: Ecoute ok
+        deactivate watchClientExe
+   end
+   watchExe->>watchServeurExe: Ecoute les modifications et relance le serveur node à la volée
+   activate watchServeurExe
+   watchServeurExe->>watchExe : Ecoute ok
+   deactivate watchServeurExe
+end

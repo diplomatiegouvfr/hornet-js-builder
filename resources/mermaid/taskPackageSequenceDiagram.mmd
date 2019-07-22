@@ -1,0 +1,52 @@
+sequenceDiagram
+    opt si projet.type === application
+        package->>templateHtml : lancement du templating html
+        activate templateHtml
+        templateHtml->>package:templating ok
+        deactivate templateHtml
+    end
+    opt si projet.type === application-server
+        package->>compile : lancement de la tâche compile
+        activate compile
+        compile->>package: compile ok
+        deactivate compile
+    end
+    opt si projet.type !== application et l'option --skiptests n'est pas activée
+        package->>test : lancement des tests
+        activate test
+        test->>package: test ok
+        deactivate test
+    end
+    opt si projet.type in [application, application-server]
+        package->>depInstallCiProd: lancement de la commande npm ci --only=prod
+        activate depInstallCiProd
+        depInstallCiProd->>package: npm ci ok
+        deactivate depInstallCiProd
+        alt si projet.type === application
+            package->>preparePackage: construction des chunks
+            activate preparePackage
+            preparePackage->>package: construction ok
+            deactivate preparePackage
+        else
+            package->>prepareAllPackage: copie des livrables vers dans le target
+            activate prepareAllPackage
+            prepareAllPackage->>package: copie ok
+            deactivate prepareAllPackage
+        end
+        package->>zipStatic: construit le livrable static
+        activate zipStatic
+        zipStatic->>package: construction ok
+        deactivate zipStatic
+        package->>zipDynamic: construit le livrable dynamique
+        activate zipDynamic
+        zipDynamic->>package: construction ok
+        deactivate zipDynamic
+        package->>zipEnv: construit le livrable environnement
+        activate zipEnv
+        zipEnv->>package: construction ok
+        deactivate zipEnv
+        package->>zipDb: construit le livrable database
+        activate zipDb
+        zipDb->>package: construction ok
+        deactivate zipDb
+    end

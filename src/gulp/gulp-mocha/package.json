@@ -1,0 +1,15 @@
+{
+  "name": "gulp-mocha",
+  "version": "1.0.0",
+  "description": "mocha task runner",
+  "main": "./index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "import-cwd": "3.0.0"
+  }
+
+}

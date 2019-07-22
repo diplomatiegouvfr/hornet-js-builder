@@ -1,13 +1,9 @@
 "use strict";
 
 const _ = require("lodash");
-const gutil = require("gulp-util");
+const PluginError = require("plugin-error");
 const gulpTypescript = require("gulp-typescript");
-const sourcemaps = require("gulp-sourcemaps");
 const path = require("path");
-const through = require("through2");
-const Utils = require("../../utils");
-
 const Task = require("../../task");
 
 class CompileTypeScriptIndex extends Task {
@@ -20,7 +16,6 @@ class CompileTypeScriptIndex extends Task {
                 doneFn();
                 return;
             }
-
                         
             if(!conf.autoGenerateIndex) {
                 helper.info("Fichier d'index typescript 'index.ts' non généré (configuration) !!");
@@ -45,7 +40,7 @@ class CompileTypeScriptIndex extends Task {
             var tsResult = gulp.src(["index.ts"])
 
             // Activation de la compilation typeScript
-            tsResult = tsResult.pipe(tsProject(gulpTypescript.reporter.nullReporter()));
+            tsResult = tsResult.pipe(tsProject());
 
             // Gestion des erreurs
             var hasError = false;
@@ -60,7 +55,11 @@ class CompileTypeScriptIndex extends Task {
             // Merge des deux pipes pour terminer quand les deux sont terminés
             helper.stream(
                 () => {
-                    doneFn(hasError ? new gutil.PluginError("gulp-typescript", "Au moins une erreur de compilation typeScript s'est produite") : undefined);
+                    if(hasError && project.watch === true) {
+                        helper.info("Au moins une erreur de compilation typeScript s'est produite");
+                    } else {
+                        doneFn(hasError ? new PluginError("gulp-typescript", "Au moins une erreur de compilation typeScript s'est produite") : undefined);
+                    }
                 },
                 jsPipe
             );

@@ -2,7 +2,6 @@
 
 const Task = require("./../task");
 const path = require("path");
-
 const props2json = require("gulp-props2json");
 
 class Properties2Json  extends Task {

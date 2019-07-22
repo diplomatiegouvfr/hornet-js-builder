@@ -2,7 +2,6 @@
 
 const Task = require("./../task");
 const zip = require("gulp-zip");
-const path = require("path");
 
 /**
  * Fonction générique de recopie de fichiers vers le repertoire de destination

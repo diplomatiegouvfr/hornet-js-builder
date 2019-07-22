@@ -14,8 +14,8 @@ class Vorpal extends Task {
                 helper
                     .getVorpal()
                     .delimiter("hb$")
-                    .show());
-            done();
+                    .show()
+            );
         }
     }
 }

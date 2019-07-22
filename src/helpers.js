@@ -1,5 +1,5 @@
 "use strict";
-const gutil = require("gulp-util");
+const log = require('fancy-log'); // remplacement gulp-util.log
 const fs = require("fs");
 const chalk = require("chalk");
 const _ = require("lodash");
@@ -18,7 +18,7 @@ const vorpal = require("vorpal")();
 vorpal.command("$ [cmd...]", "run command in a shell terminal, ex : '$ ls'")
     .allowUnknownOptions()
     .action(async function (args) {
-      shell.exec(vorpal._command.command.substring(2));
+        shell.exec(vorpal._command.command.substring(2));
     });
 
 var Helper = function () {
@@ -29,7 +29,6 @@ var oldCLog = console.log;
 
 // Establish the object that gets returned to break out of a loop iteration.
 var breaker = {};
-var dockerOpts;
 var args = [];
 
 var ArrayProto = Array.prototype, ObjProto = Object.prototype;
@@ -44,7 +43,6 @@ Helper.TYPE = {
     APPLICATION: "application",
     APPLICATION_SERVER: "application-server",
     MODULE: "module",
-    THEME: "theme",
     CUSTOM: "custom",
     COMPOSANT: "composant"
 }
@@ -56,19 +54,11 @@ Helper.RELEASE_TYPE = {
 
 // Variables statiques stockant la valeur du répertoire d"installation des dépendances nodejs
 Helper.NODE_MODULES = "node_modules";
-Helper.NODE_MODULES_APP = path.join(Helper.NODE_MODULES, "app");
-Helper.NODE_MODULES_TEST = path.join(Helper.NODE_MODULES, "test");
-Helper.NODE_MODULES_BUILD = path.join(Helper.NODE_MODULES, "build");
-Helper.NODE_MODULES_TMP = path.join(Helper.NODE_MODULES, "tmp");
-Helper.TS_DEFINITIONS_DEPENDENCIES_PATH = "definition-ts";
 Helper.BUILDER_DEPENDENCIES = path.join(__dirname, "..", Helper.NODE_MODULES);
 
 // Variables statiques stockant le nom des clés des dépendances du package.json
-Helper.TS_DEFINITIONS_DEPENDENCIES = "tsDefinitionDependencies";
-Helper.APP_DEPENDENCIES = "appDependencies";
-Helper.TEST_DEPENDENCIES = "testDependencies";
-Helper.BUILD_DEPENDENCIES = "buildDependencies";
-Helper.HB_JSON_KEY = "____HORNET-BUILDER____DO_NOT_MODIFY_THIS_OBJECT____";
+Helper.DEPENDENCIES = "dependencies";
+Helper.DEV_DEPENDENCIES = "devDependencies";
 
 Helper.allowJSON5 = function () {
     if (!JSON["__oldParse"]) {
@@ -102,34 +92,17 @@ Helper.getCommandArgs = function () {
     return args;
 }
 
+Helper.setRemainingArgs = function (value) {
+    process.remaining = value;
+}
+
+Helper.getRemainingArgs = function () {
+    return process.remaining;
+}
+
 Helper.getVorpal = function () {
     return vorpal;
 }
-
-Helper.setDocker = function (value) {
-    dockerOpts = value;
-
-    if (!_.isUndefined(value)) {
-        if (value == true) {
-            dockerOpts = {};
-            dockerOpts["cmd"] = "run";
-        } else {
-            var opts = value.split(',');
-            dockerOpts = {};
-            for (var i = 0; i < opts.length; i++) {
-                if (opts[i] !== undefined) {
-                    var property = opts[i].split('=')[0];
-                    var val = opts[i].split('=')[1];
-                    dockerOpts[property] = val;
-                }
-            }
-        }
-    }
-};
-
-Helper.getDocker = function () {
-    return dockerOpts;
-};
 
 Helper.getTaskInfo = function (value) {
     return taskInfo[value];
@@ -148,6 +121,16 @@ Helper.setList = function (value) {
 };
 Helper.isDebug = function () {
     return process.env.IS_DEBUG_ENABLED ? true : false;
+};
+
+Helper.setActiveExternal = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.IS_EXTERNAL_ENABLED = value;
+    }
+};
+
+Helper.isActiveExternal = function () {
+    return process.env.IS_EXTERNAL_ENABLED ? true : false;
 };
 
 Helper.setForce = function (value) {
@@ -185,6 +168,15 @@ Helper.isSkipTests = function () {
     return process.env.HB_SKIP_TESTS || false;
 };
 
+Helper.setSkipDedupe = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.HB_SKIP_DEDUPE = value;
+    }
+};
+Helper.isSkipDedupe = function () {
+    return process.env.HB_SKIP_DEDUPE || false;
+};
+
 Helper.setSkipMinified = function (value) {
     if (!_.isUndefined(value)) {
         process.env.HB_SKIP_MINIFIED = value;
@@ -210,16 +202,6 @@ Helper.setIDE = function (value) {
 };
 Helper.isIDE = function () {
     return process.env.HB_IDE || false;
-};
-
-Helper.setJUnitReporter = function (value) {
-    if (!_.isUndefined(value)) {
-        process.env.HB_SONAR = value;
-    }
-};
-
-Helper.isJUnitReporter = function (value) {
-   return process.env.HB_SONAR || false;
 };
 
 Helper.setWebpackVisualizer = function (value) {
@@ -278,14 +260,14 @@ Helper.getLintReport = function () {
     return process.env.HB_LINT_REPORT || "prose";
 };
 
-Helper.setIgnoreAppDepVersion = function (ignore) {
-    if (!_.isUndefined(ignore)) {
-        process.env.IS_IGNORE_ENABLED = ignore;
+Helper.setPreInstallDev = function (skip) {
+    if (!_.isUndefined(skip)) {
+        process.env.IS_PRE_INSTALL_DEV = skip;
     }
 };
 
-Helper.isIgnoreAppDepVersion = function () {
-    return process.env.IS_IGNORE_ENABLED || false;
+Helper.isPreInstallDev = function () {
+    return process.env.IS_PRE_INSTALL_DEV || false;
 };
 
 Helper.setMultiType = function (value) {
@@ -383,13 +365,20 @@ Helper.getStopOnError = function () {
     return process.env.HB_STOP_ON_ERROR;
 };
 
+Helper.getEnvExternalModule = function () {
+    let envVar = process.env.HB_EXT_MODULES;
+    if (_.isUndefined(envVar)) {
+        return [];
+    }
+    return envVar.split(/\s*(;|$)\s*/)
+};
+
 Helper.logBuilderModes = function () {
     Helper.debug("Mode DEBUG [ON]");
     Helper.debug("Mode IDE:", (Helper.isIDE() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode FORCE:", (Helper.isForce() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode Offline:", (Helper.isOfflineMode() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode Dev:", (Helper.isDevMode() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode Ignore app dep version:", (Helper.isIgnoreAppDepVersion() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode ShowWebPackFiles:", (Helper.isShowWebPackFiles() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode SkipTests:", (Helper.isSkipTests() ? "[ON]" : "[OFF]"));
     Helper.debug("Mode SkipMinified:", (Helper.isSkipMinified() ? "[ON]" : "[OFF]"));
@@ -455,32 +444,32 @@ Helper.getStringBefore = function (str, searchString) {
 Helper.debug = function () {
     if (Helper.isDebug()) {
         var argsWithColors = chalk.grey.apply(chalk, Helper.processLogArgs(arguments));
-        gutil.log.call(gutil, argsWithColors);
+        log.call(log, argsWithColors);
     }
 };
 
 Helper.info = function () {
-    gutil.log.apply(gutil, Helper.processLogArgs(arguments));
+    log.call(log, chalk.white.apply(chalk, Helper.processLogArgs(arguments)));
 };
 
 Helper.warn = function () {
-    if(!Helper.isNoWarn()){
+    if (!Helper.isNoWarn()) {
         var argsWithColors = chalk.black.bgYellow.apply(chalk, ["[WARN]"].concat(Helper.processLogArgs(arguments)));
-        gutil.log.call(gutil, argsWithColors);
+        log.call(log, argsWithColors);
     }
 
 };
 
 Helper.error = function () {
     var argsWithColors = chalk.red.apply(chalk, ["[ERROR]"].concat(Helper.processLogArgs(arguments)));
-    gutil.log.call(gutil, argsWithColors);
+    log.call(log, argsWithColors);
 };
 
 Helper.processLogArgs = function (args) {
     //Les objets ne sont pas stringifiés avec chalk donc c'est fait main :(
     var processedArgs = _.map(args, function (arg) {
         if (_.isObject(arg)) {
-            if(arg instanceof Error) {
+            if (arg instanceof Error) {
                 return [os.EOL, arg.toString()];
             }
             return [os.EOL, JSON.stringify(arg, null, 2)];
@@ -562,7 +551,6 @@ Helper.getModuleList = function (dir, project) {
                     // pas de package.json, pas un module
                     return false;
                 }
-                var packageDef = require(packagePath);
                 let builderDef = Helper.ReadTypeBuilderJS(builderJsPath);
                 if (builderDef
                     && (builderDef == Helper.TYPE.APPLICATION || builderDef == Helper.TYPE.APPLICATION_SERVER)
@@ -634,376 +622,6 @@ Helper.getLastVersion = function (versions) {
     return lastVersion;
 };
 
-Helper.getDependenciesHash = function (module) {
-    var deps = {};
-    var dependencies = module[Helper.APP_DEPENDENCIES] || module.dependencies || {};
-    Object.keys(dependencies).forEach(function (name) {
-        deps[name] = dependencies[name];
-    });
-    deps = Helper.sortObj(deps);
-    return require("object-hash")(deps);
-};
-
-/**
- * Calcule le rapport de dépendances d'un module en prenant en compte les dépendances fixées
- * @param npm
- * @param root
- * @param resolved
- * @param cb
- * @returns {void}
- */
-Helper.getDependenciesReport = function (npm, root, keyDependencies, resolved, cb) {
-    var report = {};
-    var N = 0, j = 0;
-    var seen = {};
-    var timeExe = {};
-
-    function getModuleReport(module, modulekeyDependencies) {
-        var moduleReport = {
-            name: module.name,
-            version: module.version,
-            deps: {}, // key => module dependency name, value => version (comme dependencies du package.json)
-            deps2: {}, // key => module dependency name, value => objet<version, version string>
-            hash: null,
-            fixed: {}
-        };
-        var dependencies = module[modulekeyDependencies] || module.dependencies || {};
-        Object.keys(dependencies).forEach(function (name) {
-            moduleReport.deps[name] = dependencies[name];
-        });
-        moduleReport.hash = Helper.getDependenciesHash(module);
-
-        var hbj = module[Helper.HB_JSON_KEY] || {},
-            hbj_history = hbj.history || {},
-            hbj_hashdeps = hbj_history[moduleReport.hash] || null,
-            hbj_hashdeps_current = hbj_history[hbj.current || ""] || {};
-
-        moduleReport.fixed = (hbj_hashdeps || hbj_hashdeps_current).deps || {};
-        return moduleReport;
-    }
-
-    /**
-     * Fonction interrogeant le cache NPM pour trouver la dépendance, si non présente, on l'ajoute dans le cache.
-     * @param {String} name nom de la dépendance
-     * @param {String} version version de la dépendance
-     * @param {Function} cb callback après la recherche
-     */
-    function readDependency(name, version, cb) {
-        if (!version) version = '*';
-
-        // si la dependance est dans les modules externes, on ne la recupere pas du cache NPM
-        if (name in resolved && version == resolved[name].version && resolved[name].external) {
-            j++;
-            cb(resolved[name].packageJson);
-        } else if (State.reportNpmSearchVersion[name + "@" + version]) {
-            j++;
-            cb(State.reportNpmSearchVersion[name + "@" + version]);
-        } else {
-            console.log = function () {
-            };
-
-            if (Helper.isOfflineMode()) {
-                // TODO : n'est pas pris en compte pour le mode offline
-                npm.config.set("fetch-retries", 0);
-                //npm.config.set("fetch-retry-maxtimeout", 0);
-                //npm.config.set("fetch-retry-mintimeout", 0);
-                //npm.config.set("offline", true);
-                console.log(npm.config.get("fetch-retries"));
-            }
-
-            npm.commands.cache(["list", name + "@" + version], function (err, files) {
-                if (!err && files && files.length > 0) {
-                    readCache(name, version, cb);
-                } else {
-                    if (!timeExe[name + "@" + version]) timeExe[name + "@" + version] = new Date().getTime();
-                    npm.commands.cache.add(name, version, npm.config.root.cache, false, function (err, resolvedPackage) {
-                        if (timeExe[name + "@" + version]) {
-                            Helper.debug(name + "@" + version + " duration : ");
-                            Helper.debug(new Date().getTime() - timeExe[name + "@" + version]);
-                            delete timeExe[name + "@" + version];
-                        }
-                        j++;
-                        if (!err && resolvedPackage) {
-                            State.reportNpmSearchVersion[name + "@" + version] = resolvedPackage;
-                            cb(resolvedPackage);
-                        } else {
-                            console.log = oldCLog;
-                            Helper.error("Dépendance introuvable '" + name + "@" + version + "'");
-                            if (name.startsWith("@")) {
-                                cb(undefined);
-                            } else {
-                                if (!Helper.isOfflineMode()) {
-                                    Helper.error("Problème de récupération de la dépendance '" + name + "@" + version + "'");
-                                    throw err;
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    }
-
-    /**
-     * Fonction interrogeant le cache NPM pour trouver la dépendance, si non présente ou le fichier './package/package.json' non présent,
-     *  l'ajoute depuis le repository mais sans créer le fichier './package/package.json'. Il faut passer par 'add' pour ca.
-     * @param {String} name nom de la dépendance
-     * @param {String} version version de la dépendance
-     * @param {Function} cb callback après la recherche
-     */
-    function readCache(name, version, cb) {
-
-        npm.commands.cache.read(name, version, false, function (err, resolvedPackage) {
-            j++;
-            if (!err && resolvedPackage) {
-                State.reportNpmSearchVersion[name + "@" + version] = resolvedPackage;
-                cb(resolvedPackage);
-            } else {
-                console.log = oldCLog;
-                Helper.error("Dépendance introuvable '" + name + "@" + version + "'");
-                if (name.startsWith("@")) {
-                    cb(undefined);
-                } else {
-                    if (!Helper.isOfflineMode()) {
-                        Helper.error("Problème de récupération de la dépendance '" + name + "@" + version + "'");
-                        throw err;
-                    }
-                }
-            }
-        });
-    }
-
-    function mergeFixed(to, from) {
-        var to2 = Object.create(to);
-        Object.keys(from).forEach(function (fixed) {
-            if (!(fixed in to2)) to2[fixed] = from[fixed];
-        });
-        return to2;
-    }
-
-    function walk(module, fixed, moduleKeyDependencies) {
-
-        if (seen[module.name + "@" + module.version]) return;
-        seen[module.name + "@" + module.version] = true;
-
-        var moduleReport = getModuleReport(module, moduleKeyDependencies);
-
-        if (!(module.name in report)) report[module.name] = {};
-        report[module.name][module.version] = moduleReport;
-
-        fixed = mergeFixed(fixed, moduleReport.fixed);
-
-        Object.keys(moduleReport.fixed || {}).forEach(function (dep) {
-            if(!State.reportFixed) {
-                State.reportFixed={};
-            }
-            if(!State.reportFixed[root.name]) {
-                State.reportFixed[root.name]={};
-            }
-            if(!State.reportFixed[root.name][dep]) {
-                State.reportFixed[root.name][dep]={};
-            }
-            State.reportFixed[root.name][dep][moduleReport.fixed[dep]] = moduleReport.name;
-        });
-
-        Object.keys(moduleReport.deps || {}).forEach(function (dep) {
-            N++;
-            var version = fixed[dep] ? fixed[dep] : moduleReport.deps[dep];
-            readDependency(dep, version, function (dependency) {
-                if (dependency) {
-                    moduleReport.deps2[dep] = {};
-                    moduleReport.deps2[dep][dependency.version] = version;
-                    walk(dependency, fixed, Helper.APP_DEPENDENCIES);
-                }
-            })
-        });
-
-        return moduleReport;
-    }
-
-    walk(root, getModuleReport(root, keyDependencies).fixed, keyDependencies);
-
-    // attente de la fin des traitements asynchrones
-    var t = setInterval(function () {
-        if (j >= N) {
-            clearInterval(t);
-            console.log = oldCLog;
-            cb(Helper.sortObj(report));
-        }
-    }, 100);
-};
-
-/**
- * Renvoie les dépendances finales à installer
- * @param report
- * @param root
- * @returns {object}
- */
-Helper.getFinalDependencies = function (report, root) {
-    var dependencies = {};
-    var merged = Helper.mergeReportDependencies(root, report);
-    Helper.forEach2Depth(merged, function (name, version) {
-        if (name == root.name && version == root.version) return;
-        dependencies[name] = version;
-    });
-    return dependencies;
-};
-
-/**
- * Inverse le rapport de dépendances
- * @param root
- * @param report
- * @returns {object}
- */
-Helper.mergeReportDependencies = function (root, report) {
-    var merged = {};
-    var mergedFixed = {};
-
-    function add(name, version, versionQ, issuer) {
-        if (!merged[name]) merged[name] = {};
-        if (!merged[name][version]) merged[name][version] = {};
-        merged[name][version][issuer] = versionQ;
-    }
-
-    function addFixed(name, version, versionQ, issuer) {
-        if (!mergedFixed[name]) mergedFixed[name] = {};
-        if (!mergedFixed[name][version]) mergedFixed[name][version] = {};
-        mergedFixed[name][version][issuer] = versionQ;
-    }
-    function walk(module, mainModuleName) {
-        Object.keys(report[module.name][module.version].deps2).forEach(function (moduleName) {
-            if (mainModuleName && mainModuleName != moduleName) {
-                Object.keys(report[module.name][module.version].deps2[moduleName]).forEach(function (moduleVersion) {
-                    if (!merged[moduleName] || !merged[moduleName][moduleVersion] || !merged[moduleName][moduleVersion][module.name + '@' + module.version]) {
-                        add(moduleName, moduleVersion, report[module.name][module.version].deps2[moduleName][moduleVersion], module.name + '@' + module.version);
-                        walk({ name: moduleName, version: moduleVersion }, mainModuleName);
-                    }
-                    if(report[module.name][module.version].fixed) {
-                        Object.keys(report[module.name][module.version].fixed).forEach(function (moduleName) {
-                            let moduleVersion = report[module.name][module.version].fixed[moduleName];
-                            if (!merged[moduleName] || !merged[moduleName][moduleVersion] || merged[moduleName][moduleVersion][module.name + '@' + module.version]) {
-                                addFixed(moduleName, moduleVersion, report[module.name][module.version].fixed[moduleName][moduleVersion], module.name + '@' + module.version);
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    }
-
-    walk(root, root.name);
-
-    for(let modulename in mergedFixed) {
-        if (!merged[modulename]) merged[modulename] = {};
-        for(let version in mergedFixed[modulename]) {
-            if (!merged[modulename][version]) merged[modulename][version] = {};
-            for(let issuer in mergedFixed[modulename][version]) {
-                if (!merged[modulename][version][issuer]) merged[modulename][version][issuer] = mergedFixed[modulename][version][issuer];
-            }
-        }
-
-    }
-
-    // on filtre les deps restantes pour ne garder que la plus grande version
-    Helper.forEach1Depth(merged, function (name) {
-
-        function arbo(name, version) {
-            let report = [];
-            let reportObj = {};
-            reportObj[name+"@"+version] = {};
-            if(merged[name]) {
-                let currentReport = {};
-                let previous = Object.keys(merged[name][version])[0].split('@');
-                while(previous[0] != root.name && merged[previous[0]] && merged[previous[0]][previous[1]]) {
-                    report.push(previous[0]+"@"+previous[1])
-                    previous = Object.keys(merged[previous[0]][previous[1]])[0].split('@');
-                }
-            }
-
-            report.forEach((elt, idx)=> {
-                reportObj[elt] = {};
-                reportObj[elt][Object.keys(reportObj)[0]] = reportObj[Object.keys(reportObj)[0]];
-                delete reportObj[Object.keys(reportObj)[0]];
-            });
-            return reportObj;
-        }
-
-
-        var versions = Object.keys(merged[name]);
-        if (versions.length > 1) {
-
-            let lastVersionFixed = "";
-
-            // si la version est spécifiée dans les dépendances du module principale
-            // c'est cette version qu'on prend pour forcer le fix
-            for (let version in merged[name]) {
-                if (merged[name][version][root.name + "@" + root.version]) {
-                    lastVersionFixed = version;
-                    break;
-                }
-            }
-
-            let lastVersion = Helper.getLastVersion(versions);
-
-            if (lastVersionFixed) {
-                if (lastVersionFixed != lastVersion) {
-                    if (Helper.isIgnoreAppDepVersion()) {
-                        Helper.info("Version App ignorée pour la dépendance '" + name + "' : " + lastVersionFixed + " / " + lastVersion + " (" + JSON.stringify(merged[name], null, 2) + ")");
-                        lastVersion = lastVersionFixed;
-                    } else {
-                        Helper.info("Version fixée antérieure pour la dépendance '" + name + "' : " + lastVersionFixed + " / " + lastVersion + " (" + JSON.stringify(merged[name], null, 2) + ")");
-                        lastVersion = lastVersionFixed;
-                    }
-                } else {
-                    Helper.info("Version fixée par App pour la dépendance '" + name + "' : " + lastVersionFixed + " (" + JSON.stringify(merged[name], null, 2) + ")");
-                }
-            } else {
-                Helper.debug("Sélection de la plus grande version pour la dépendance '" + name + "' : '" + lastVersion + "' (" + JSON.stringify(merged[name], null, 2) + ")");
-            }
-
-            if(State.reportFixed && State.reportFixed[root.name] && State.reportFixed[root.name][name] && (Object.keys(State.reportFixed[root.name][name]).length > 1 || !State.reportFixed[root.name][name][lastVersion])) {
-                Helper.warn("Sélection de la plus grande version pour la dépendance '" + name + "' : '" + lastVersion + "' mais elle est fixée dans : " + JSON.stringify(State.reportFixed[root.name][name], null, 2));
-                Helper.warn("Cette dépendance '" + name + "' : '" + lastVersion + "' est tirée par :" + JSON.stringify(arbo(name, lastVersion), null, "  |-" ).replace(/[\{\}\":]*/g, "").replace(/  /g, "").replace(/[\|\-\n\s]+\s*$/g, ""));
-                
-            }
-
-            var save = merged[name][lastVersion];
-            merged[name] = {};
-            merged[name][lastVersion] = save;
-        }
-    });
-    return merged;
-
-};
-
-Helper.forEach3Depth = function (obj, cb) {
-    Object.keys(obj || {}).forEach(function (key1) {
-        Object.keys(obj[key1] || {}).forEach(function (key2) {
-            Object.keys(obj[key1][key2] || {}).forEach(function (key3) {
-                cb(key1, key2, key3, obj[key1][key2][key3]);
-            });
-        });
-    });
-};
-Helper.forEach2Depth = function (obj, cb) {
-    Object.keys(obj || {}).forEach(function (key1) {
-        Object.keys(obj[key1] || {}).forEach(function (key2) {
-            cb(key1, key2, obj[key1][key2]);
-        });
-    });
-};
-Helper.forEach1Depth = function (obj, cb) {
-    Object.keys(obj || {}).forEach(function (key1) {
-        cb(key1, obj[key1]);
-    });
-};
-
-Helper.cleanObj = function (obj) {
-    Helper.forEach1Depth(obj, function (key) {
-        if (Object.keys(obj[key]).length == 0) delete obj[key];
-    });
-};
-
 /**
  * Retourne le path du cache en l'ayant créé auparavant
  * @returns {*}
@@ -1039,91 +657,19 @@ Helper.getCachePathfolders = function () {
     return tryPaths;
 };
 
-/**
- * Installe une dépendance de test dans un répertoire spécifique avec instalallation des sous-dépendances
- * @param npm
- * @param dependencyName
- * @param dependencyVersion
- * @param tempDir
- * @param targetDir
- */
-Helper.installTestDependency = function (npm, dependencyName, dependencyVersion, tempDir, targetDir) {
-
-    return new Promise(function (resolve, reject) {
-        var oldPrefix = npm.prefix;
-        npm.prefix = tempDir;
-        npm.commands.install.Installer.prototype.printInstalled = function (cb) {
-            cb();
-        };
-        npm.commands.install(tempDir, [dependencyName + "@" + dependencyVersion], function (err, result) {
-            if (err) {
-                Helper.error("Erreur durant l'installation de la dépendance '" + dependencyName + "@" + dependencyVersion + "' dans le répertoire temporaire '" + tempDir + "' : ", err);
-                reject(err);
-            } else {
-                if (!Helper.folderExists(path.join(tempDir, Helper.NODE_MODULES, dependencyName, Helper.NODE_MODULES))) {
-                    fs.mkdirSync(path.join(tempDir, Helper.NODE_MODULES, dependencyName, Helper.NODE_MODULES));
-                }
-                var dirs = fs.readdirSync(path.join(tempDir, Helper.NODE_MODULES));
-                Helper.each(dirs, function (dir) {
-                    if (dir != dependencyName) {
-                        fs.renameSync(path.join(tempDir, Helper.NODE_MODULES, dir), path.join(tempDir, Helper.NODE_MODULES, dependencyName, Helper.NODE_MODULES, dir));
-                    }
-                });
-
-                //fs.renameSync(path.join(tempDir, Helper.NODE_MODULES, dependencyName), targetDir);
-                /////////////////////////////////////////////////////////
-                // Tout ce code juste pour déplacer un répertoire ...  //
-                var gulp = require("gulp");
-                Helper.stream(
-                    function () {
-                        Helper.removeDir(path.join(tempDir, Helper.NODE_MODULES, dependencyName));
-                        npm.prefix = oldPrefix;
-                        resolve();
-                    },
-                    gulp.src(path.join(tempDir, Helper.NODE_MODULES, dependencyName, "**/*"))
-                        .pipe(gulp.dest(targetDir))
-                );
-                /////////////////////////////////////////////////////////
-            }
-        });
-    });
-};
-
-Helper.readInstalledDependencies = function (nodeModulesPath) {
+Helper.readInstalledDependencies = function (nodeModulesPath, recursive = true) {
     var installed = {};
     if (Helper.folderExists(nodeModulesPath)) {
         var files = fs.readdirSync(nodeModulesPath);
         Helper.each(files, function (file) {
-            if (nodeModulesPath.indexOf("@") == -1 && file.indexOf("@") == -1) {
+            if (Helper.fileExists(path.join(nodeModulesPath, file, "package.json"))) {
                 var json = require(path.join(nodeModulesPath, file, "package.json"));
                 installed[json.name] = json.version;
+            } else {
+                installed = { ...installed, ...Helper.readInstalledDependencies(path.join(nodeModulesPath, file)) };
             }
         });
     }
-    return installed;
-};
-
-
-Helper.getInstalledAppDependencies = function (rootPath, resolvedFromParent) {
-    var installed = Helper.readInstalledDependencies(path.join(rootPath, Helper.NODE_MODULES_APP));
-    Object.keys(resolvedFromParent).forEach(function (name) {
-        installed[name] = resolvedFromParent[name].version;
-    });
-    return installed;
-};
-
-
-Helper.getInstalledTestDependencies = function (rootPath, resolvedFromParent) {
-    var installed = Helper.readInstalledDependencies(path.join(rootPath, Helper.NODE_MODULES_TEST));
-    // ajout des auto dépendances dans un projet parent
-    Object.keys(resolvedFromParent).forEach(function (name) {
-        installed[name] = resolvedFromParent[name].version;
-    });
-    return installed;
-};
-
-Helper.getInstalledTestBuildDependencies = function (rootPath, resolvedFromParent) {
-    var installed = Helper.readInstalledDependencies(path.join(rootPath, resolvedFromParent));
     return installed;
 };
 
@@ -1141,27 +687,45 @@ Helper.removeDir = function (dir) {
 };
 
 
-Helper.getExternalModuleDirectories = function (project) {
+Helper.getExternalModuleDirectories = function (project, addNodeModules, addOnlyParent) {
     var moduleDirectories = [];
     try {
         var builder = project.builderJs;
-        if (builder.externalModules && builder.externalModules.enabled &&
-            builder.externalModules.directories &&
-            builder.externalModules.directories.length > 0) {
+        let extDirectories = Helper.getEnvExternalModule().length > 0 ? Helper.getEnvExternalModule() : builder.externalModules && builder.externalModules.directories || [];
+        if (builder.externalModules && ((builder.externalModules && builder.externalModules.enabled) || Helper.isActiveExternal()) &&
+            extDirectories.length > 0) {
             let current = process.cwd();
-            let currentType = builder.type
-            builder.externalModules.directories.forEach((directory) => {
+            let currentType = builder.type;
+            extDirectories.forEach((directory) => {
                 try {
                     directory = directory.replace("~", os.homedir());
                     if (fs.statSync(directory).isDirectory()) {
-                        moduleDirectories.push(directory);
+
+                        let moduleTarget = directory;
+                        let typeScriptOption = Helper.resolveTypescriptConfig(directory, "tsconfig.json", null);
+                        if (typeScriptOption) {
+                            let tscOutDir = typeScriptOption.compilerOptions || {};
+                            tscOutDir = tscOutDir.outDir || undefined;
+                            if (tscOutDir) {
+                                moduleTarget = path.resolve(directory, tscOutDir);
+                            }
+                        }
+
+                        moduleDirectories.push(moduleTarget);
+
+                        if (addNodeModules) {
+                            let nModules = path.resolve(path.join(directory, Helper.NODE_MODULES));
+                            if (fs.existsSync(nModules) && fs.statSync(nModules).isDirectory()) {
+                                moduleDirectories.push(nModules);
+                            }
+                        }
+
                         // on vérifie si des répertoires du 1er niveau sont des modules nodejs pour les ajouter eux aussi
                         var files = fs.readdirSync(directory);
                         files.forEach((file) => {
                             var modPath = path.join(directory, file);
                             if (fs.statSync(modPath).isDirectory()) {
                                 if (file.indexOf(".") == 0) return;
-
                                 // si un fichier "package.json" existe, c"est un module nodejs
                                 if (fs.existsSync(path.join(modPath, "package.json"))) {
                                     let builderFile = path.join(modPath, Helper.BUILDER_FILE)
@@ -1169,6 +733,12 @@ Helper.getExternalModuleDirectories = function (project) {
                                         let path2addBuilderJS = Helper.ReadTypeBuilderJS(builderFile);
                                         if (path2addBuilderJS !== Helper.TYPE.APPLICATION && path2addBuilderJS !== Helper.TYPE.APPLICATION_SERVER || (currentType !== Helper.TYPE.APPLICATION && currentType !== Helper.TYPE.APPLICATION_SERVER && current === modPath)) {
                                             moduleDirectories.push(modPath);
+                                            if (addNodeModules) {
+                                                let nModules = path.resolve(path.join(modPath, Helper.NODE_MODULES));
+                                                if (fs.existsSync(nModules) && fs.statSync(nModules).isDirectory()) {
+                                                    moduleDirectories.push(nModules);
+                                                }
+                                            }
                                         } else {
                                             Helper.info("Exclusion : " + path2addBuilderJS);
                                         }
@@ -1185,18 +755,36 @@ Helper.getExternalModuleDirectories = function (project) {
         }
 
         if (builder && builder.type === Helper.TYPE.PARENT) {
-            Helper.getModuleList(project.dir, project).forEach(function (module) {
-                moduleDirectories.push(module.dir);
-            });
+            if (!addOnlyParent) {
+                Helper.getModuleList(project.dir, project).forEach(function (module) {
+                    moduleDirectories.push(module.dir);
+                });
+            } else {
+                moduleDirectories.push(project.dir, "..");
+            }
         } else {
             // si on traite un module dans un projet de type parent, on ajoute tous les modules de ce dernier
             let parentBuilderFile = path.join(project.dir, "../", Helper.BUILDER_FILE)
             if (fs.existsSync(parentBuilderFile)) {
                 let parentBuilderJs = require(parentBuilderFile);
                 if (parentBuilderJs.type === Helper.TYPE.PARENT) {
-                    Helper.getModuleList(path.join(project.dir, "../"), project).forEach(function (module) {
-                        moduleDirectories.push(module.dir);
-                    });
+                    moduleDirectories.push(path.resolve(project.dir, ".."));
+                    if (!addOnlyParent) {
+                        Helper.getModuleList(path.join(project.dir, "../"), project).forEach((module) => {
+                            if ((project.packageJson.dependencies && project.packageJson.dependencies[module.name]) || (project.packageJson.devDependencies && project.packageJson.devDependencies[module.name])) {
+                                let typeScriptOption = Helper.resolveTypescriptConfig(module.dir, "tsconfig.json", null);
+                                if (typeScriptOption) {
+                                    let tscOutDir = typeScriptOption.compilerOptions || {};
+                                    tscOutDir = tscOutDir.outDir || undefined;
+                                    if (tscOutDir) {
+                                        moduleDirectories.push(path.resolve(module.dir, tscOutDir));
+                                    }
+                                }
+                                moduleDirectories.push(module.dir);
+                                moduleDirectories.push(path.join(module.dir, Helper.NODE_MODULES));
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -1213,13 +801,25 @@ Helper.getExternalModules = function (project) {
     externalDirectories.forEach(function (dir) {
         var packageJsonPath = path.join(dir, "package.json");
         if (fs.existsSync(packageJsonPath)) {
+
+            let typeScriptOption = Helper.resolveTypescriptConfig(dir, "tsconfig.json", null);
+            let moduleTarget;
+            if (typeScriptOption) {
+                let tscOutDir = typeScriptOption.compilerOptions || {};
+                tscOutDir = tscOutDir.outDir || undefined;
+                if (tscOutDir) {
+                    moduleTarget = path.resolve(dir, tscOutDir);
+                }
+            }
+
             var packageJson = require(packageJsonPath);
             modules.push({
                 dir: dir,
                 name: packageJson.name,
                 version: packageJson.version,
                 packageJson: packageJson,
-                external: true
+                external: true,
+                moduleTarget: moduleTarget
             });
         }
     });
@@ -1272,18 +872,23 @@ Helper.getProject = function (dir) {
     builderJsType = Helper.ReadTypeBuilderJS(builderJsPath)
     let moduleResolver = require("./module-resolver");
     moduleResolver.addModuleDirectory(dir);
-    moduleResolver.addModuleDirectory(path.normalize(path.join(dir, Helper.NODE_MODULES_BUILD)));
 
     let packageJson = require(packageJsonPath);
     let configProject = {};
-    if (builderJsType === "application") {
+    if (builderJsType === Helper.TYPE.APPLICATION) {
         configProject = require(configProjectPath);
     }
     //retour arrière sur commit 187090, impossible à utiliser dans le cas ou le builder.js contient des requires
     //let builderJs = require(builderJsPath);
+    let contextRoot;
+    if (configProject) {
+        contextRoot = configProject.contextPath;
+    }
+
+    let staticPath = "/" + (contextRoot || packageJson.name) + "/static-" + packageJson.version + "/";
+
 
     moduleResolver.removeModuleDirectory(dir);
-    moduleResolver.removeModuleDirectory(path.normalize(path.join(dir, Helper.NODE_MODULES_BUILD)));
 
     return {
         name: packageJson.name,
@@ -1294,7 +899,9 @@ Helper.getProject = function (dir) {
         configJson: configProject,
         configJsonPath: configProjectPath,
         packageJsonPath: packageJsonPath,
-        builderJs: builderJsPath
+        builderJs: builderJsPath,
+        staticPath: staticPath,
+        tsConfig: Helper.resolveTypescriptConfig(dir, "tsconfig.json", null)
     };
 };
 
@@ -1334,40 +941,22 @@ Helper.stream = function (done, streams) {
     });
 };
 
-
-Helper.npmPublish = function (npm, rootPath, done) {
-    Helper.info("npm publish : " + rootPath)
-    var oldRegistry = npm.config.get("registry");
-    if (Helper.getPublishRegistry()) npm.config.set("registry", Helper.getPublishRegistry());
-    npm.config.set("force", "true");
-    npm.commands.publish([rootPath], function (err) {
-        npm.config.set("registry", oldRegistry);
-        npm.config.set("force", "false");
-        if (err) {
-            Helper.error("Erreur 'publish' : ", err);
-        }
-        done(err);
-    });
+Helper.setMainProcessDir = function (value) {
+    if (!_.isUndefined(value)) {
+        process.env.HB_MAIN_CWD = value;
+    } else {
+        process.env.HB_MAIN_CWD = process.cwd();
+    }
 };
 
-Helper.npmUnpublish = function (npm, name, version, done) {
-    var oldRegistry = npm.config.get("registry");
-    if (Helper.getPublishRegistry()) npm.config.set("registry", Helper.getPublishRegistry());
-    npm.config.set("force", "true");
-    npm.commands.unpublish([name + "@" + version], function (err) {
-        npm.config.set("registry", oldRegistry);
-        npm.config.set("force", "false");
-        if (err) {
-            Helper.error("Erreur 'unpublish' :", err);
-        }
-        done(err);
-    });
+Helper.getMainProcessDir = function () {
+    return process.env.HB_MAIN_CWD;
 };
 
 Helper.checkTasksExistence = function (gulp, tasks) {
     tasks.forEach(function (task) {
         if (!gulp.hasTask(task)) {
-            gutil.log(chalk.red("La tâche '" + task + "' n'existe pas"));
+            log(chalk.red("La tâche '" + task + "' n'existe pas"));
             process.exit(1);
         }
     });
@@ -1397,189 +986,115 @@ Helper.isValidVersion = function (version, moduleName) {
     }
 };
 
-Helper.checkOrInstallBuildDependencies = function (project, npm, cb) {
+/**
+ * Retourne la dépendance entre modules d'un projet dans un parent
+ */
+Helper.getModuleDependencies = function (project) {
+    let ParentDir = path.resolve(project.dir, "../");
+    let parentBuilderFile = path.join(ParentDir, Helper.BUILDER_FILE);
+    if (fs.existsSync(parentBuilderFile)) {
+        let parentBuilderJs = require(parentBuilderFile);
+        if (parentBuilderJs.type === Helper.TYPE.PARENT) {
+            Helper.debug("recherche des modules depuis : ", ParentDir);
+            State.parentBuilder.externalModules = parentBuilderJs.externalModules;
+            var moduleList = Helper.getModuleList(ParentDir);
 
-    if (!Helper.checkBuildAndTestDependencies(project)) {
-        process.exit(1);
+            //Extraction des dépendances entre les modules
+            moduleList.forEach(function (mod) {
+                mod.dependencies = [];
+                var json = mod.packageJson;
+                var dep = json[Helper.DEPENDENCIES] || {};
+                var testDep = json[Helper.DEV_DEPENDENCIES] || {};
+
+                moduleList.forEach(function (dependent) {
+                    if (dep[dependent.name] || testDep[dependent.name]) {
+                        mod.dependencies.push(dependent.name);
+                    }
+                });
+            });
+
+            // on trie les modules de façon à gérer les inter-dépendances
+            moduleList.sort(function (p1, p2) {
+                return (p1.dependencies.indexOf(p2.name) != -1) ? -1 : 1
+            });
+            moduleList.sort(function (p1, p2) {
+                return (p1.dependencies.indexOf(p2.name) != -1) ? -1 : 1
+            });
+
+            moduleList.reverse();
+            Helper.debug("Modules trouvés :", moduleList);
+            var subProjectTypes = {};
+            let idxProject = moduleList.findIndex((mod) => {
+                return mod.name === project.name;
+            });
+            let current = moduleList.splice(idxProject)[0];
+            return moduleList.filter((mod) => {
+                return current.dependencies.includes(mod.name);
+            });
+        }
     }
 
-    if (Helper.detectBuildOrTestDependenciesChanges(project, Helper.BUILD_DEPENDENCIES, Helper.NODE_MODULES_BUILD)) {
-        return Helper.installBuildOrTestDependencies(project, npm, Helper.BUILD_DEPENDENCIES, Helper.NODE_MODULES_BUILD, cb);
-    } else {
-        return Promise.resolve(true).then(() => {
-            cb()
-        });
-    }
-};
-
-Helper.checkBuildAndTestDependencies = function (project) {
-    var root = project.packageJson;
-    var ok = true;
-
-    // TODO, revoir le mode de fonctionnement de la fonction car pb avec builder.js qui possède un require
-    //Helper.each(root[Helper.TEST_DEPENDENCIES], function(version, key) {
-    //    if (!Helper.isValidVersion(version, key)) {
-    //        ok = false;
-    //        Helper.error("Version '" + version + "' interdite pour la dépendance de build/test '" + key + "' ==> vous devez utiliser une version figée");
-    //    }
-    //});
-    return ok;
 }
 
-Helper.detectBuildOrTestDependenciesChanges = function (project, dependenciesKey, nodeModulePath) {
-    var root = project.packageJson;
-    var installedTestDependencies = Helper.getInstalledTestBuildDependencies(project.dir, nodeModulePath);
-    var diff = false;
-    if (!(dependenciesKey in root) || Object.keys(root[dependenciesKey]).length == 0) {
-
-        Helper.debug("Aucune dépendances de build/test > rien à faire");
-    } else {
-        if (!Helper.folderExists(path.join(project.dir, Helper.NODE_MODULES)) || !Helper.folderExists(path.join(project.dir, nodeModulePath))) {
-
-            Helper.info(chalk.green("Dépendances de build/test à installer avant la 1ère exécution du builder"));
-            diff = true;
-        } else if (Helper.isForce()) {
-
-            Helper.debug("Dépendances de build/test à réinstaller en force");
-            diff = true;
-        } else {
-            Helper.each(installedTestDependencies, function (version, name) {
-                if (!(name in root[dependenciesKey])) {
-                    diff = true;
-                    Helper.info(chalk.green("Dépendances de build/test installée à supprimer : '" + name + "@" + version + "'"));
-
-                } else if (root[dependenciesKey][name] != version) {
-                    diff = true;
-                    Helper.info(chalk.green("Dépendances de build/test installée dans une version différente : '" + name + "@" + version + "' > version attendue '" + root[dependenciesKey][name] + "'"));
-                }
-            });
-            Helper.each(root[dependenciesKey], function (version, name) {
-                if (!(name in installedTestDependencies)) {
-                    diff = true;
-                    Helper.info(chalk.green("Dépendances de build/test non installée : '" + name + "@" + version + "'"));
-                }
-            });
-            if (diff) {
-                Helper.debug("Modification détectée sur les dépendances de build/test > on synchronise");
+/**
+ * Fonction retournant une fonction de mapping ajoutant les arguments avant ceux du tableau sur lequel s'applique le mapping
+ * @param ...args les arguments à ajouter
+ * @returns {Function}
+ */
+Helper.prepend = function () {
+    var args = Array.prototype.slice.call(arguments, 0);
+    return function (element) {
+        if (args.length === 1) {
+            if (args[0] === "!") {
+                return args[0] + element;
             } else {
-                Helper.debug("Dépendances de build/test à jour > rien à faire (si ce n'est pas le cas ajouter l'option -f pour forcer la réinstallation des dépendances)");
+                return path.join(args[0], element);
             }
+        } else {
+            return args.map(function (argElement) {
+                return path.join(argElement, element);
+            });
         }
-    }
-    return diff;
+    };
 }
 
-Helper.installBuildOrTestDependencies = function (project, npm, dependenciesKey, nodeModulePath, done) {
-    var root = project.packageJson;
-    var rootStr = root.name + '@' + root.version;
-    var dependencies = root[dependenciesKey] || {};
-    var toRemove = {}, toInstall = {}, toUpdate = {};
-
-    // on analyse ce qu'il y a à supprimer / installer
-    var installedDependencies = Helper.getInstalledTestBuildDependencies(project.dir, nodeModulePath);
-    Helper.each(installedDependencies, function (version, name) {
-        if (!(name in dependencies)) {
-            toRemove[name] = version;
-        } else if (version != dependencies[name]) {
-            toUpdate[name] = version;
-        }
-    });
-    Helper.each(dependencies, function (version, name) {
-        if (!(name in installedDependencies)) {
-            toInstall[name] = version;
-        }
-    });
-    toRemove = Helper.sortObj(toRemove);
-    toUpdate = Helper.sortObj(toUpdate);
-    toInstall = Helper.sortObj(toInstall);
-
-    Helper.debug("Dépendances de build/test à supprimer : ", toRemove);
-    Helper.debug("Dépendances de build/test à mettre à jour : ", toUpdate);
-    Helper.debug("Dépendances de build/test à installer : ", toInstall);
-
-    // on créé les répertoires si besoin
-    if (Object.keys(toInstall).length > 0) {
-        if (!Helper.folderExists(Helper.NODE_MODULES)) {
-            fs.mkdirSync(Helper.NODE_MODULES);
-        }
-        if (!Helper.folderExists(nodeModulePath)) {
-            fs.mkdirSync(nodeModulePath);
+/**
+ * Fonction copy de répertoire
+ * @param src répertoire source
+ * @param src répertoire destination
+ */
+Helper.copyDir = function (src, dest) {
+    fs.mkdirSync(dest);
+    var files = fs.readdirSync(src);
+    for (var i = 0; i < files.length; i++) {
+        var current = fs.lstatSync(path.join(src, files[i]));
+        if (current.isDirectory()) {
+            Helper.copyDir(path.join(src, files[i]), path.join(dest, files[i]));
+        } else if (current.isSymbolicLink()) {
+            var symlink = fs.readlinkSync(path.join(src, files[i]));
+            fs.symlinkSync(symlink, path.join(dest, files[i]));
+        } else {
+            fs.copyFileSync(path.join(src, files[i]), path.join(dest, files[i]));
         }
     }
+};
 
-    // suppression des dépendances installées inutiles
-    Helper.each(toRemove, function (version, name) {
-        Helper.info("Suppression de la dépendance de build/test installée '" + name + "@" + version + "' car inutile");
-        Helper.removeDir(path.join(project.dir, nodeModulePath, name));
-    });
+Helper.resolveTypescriptConfig = function (directory, configName, config) {
+    let tsconfigFile = path.join(directory, configName);
+    let actualConf = _.cloneDeep(config);
 
-    var tempDir = path.join(Helper.findCacheFolder(), "__tmp");
-    if (Helper.folderExists(tempDir)) {
-        Helper.removeDir(tempDir);
-        fs.mkdirSync(tempDir);
+    if (fs.existsSync(tsconfigFile)) {
+        let configTypescript = require(tsconfigFile);
+        if (configTypescript && configTypescript.extends) {
+            actualConf = _.merge(
+                actualConf,
+                Helper.resolveTypescriptConfig(path.resolve(directory, path.dirname(configTypescript.extends)), path.basename(configTypescript.extends) + ".json", actualConf)
+            );
+        }
+        actualConf = _.merge(actualConf, configTypescript);
     }
-    // suppression des dépendances à mettre à jour
-    Helper.each(toUpdate, function (version, name) {
-        var modulePath = path.join(project.dir, nodeModulePath, name);
-        Helper.info("Suppression de la dépendance de build/test installée '" + name + "@" + version + "' car à mettre à jour en version '" + dependencies[name] + "'");
-        Helper.removeDir(modulePath);
-        Helper.installTestDependency(npm, name, dependencies[name], tempDir, path.join(nodeModulePath, name))
-    });
-
-    var myPromise = Promise.resolve();
-    var idx = 0, nDeps = Object.keys(toInstall).length;
-    // installation des nouvelles dépendances de test
-    Helper.each(toInstall, function (version, name) {
-        myPromise = myPromise.then(function (resolve, reject) {
-            Helper.info("Installation de la dépendance de build/test " + (++idx) + "/" + nDeps + " : '" + name + "@" + version + "'");
-            return Helper.installTestDependency(npm, name, dependencies[name], tempDir, path.join(nodeModulePath, name));
-        });
-    });
-    myPromise.catch(function (err) {
-        Helper.error("Erreur durant l'installation des dépendances de build/test : " + err);
-        process.exit(1);
-    });
-    return myPromise.then(function (resolve) {
-        done();
-    });
+    Helper.debug(directory, configName, `extend : ${actualConf ? actualConf.extends: null}`);
+    return actualConf;
 }
-
-Helper.excludeNodeModulesFromWebpack = function (modulesName, webpackConfiguration) {
-    var regexps = [];
-    modulesName.forEach(function (moduleName) {
-        regexps.push(new RegExp(path.normalize(path.join(Helper.NODE_MODULES_APP, moduleName, ".*$")).replace(/\\/g, "\\\\")));
-    });
-
-    if (!webpackConfiguration.module) {
-        webpackConfiguration.module = {};
-    }
-
-    if (!webpackConfiguration.module.noParse || !_.isArray(webpackConfiguration.module.noParse)) {
-        webpackConfiguration.module.noParse = [];
-    }
-
-    regexps.forEach(function (regexp) {
-        webpackConfiguration.module.noParse.push(regexp);
-    })
-};
-
-Helper.excludeLocalFilesFromWebpack = function (fileNames, webpackConfiguration) {
-    var regexps = [];
-    fileNames.forEach(function (fileName) {
-        regexps.push(new RegExp(path.normalize(path.join(fileName, ".*$")).replace(/\\/g, "\\\\")));
-    });
-
-    if (!webpackConfiguration.module) {
-        webpackConfiguration.module = {};
-    }
-
-    if (!webpackConfiguration.module.noParse || !_.isArray(webpackConfiguration.module.noParse)) {
-        webpackConfiguration.module.noParse = [];
-    }
-
-    regexps.forEach(function (regexp) {
-        webpackConfiguration.module.noParse.push(regexp);
-    })
-};
 
 module.exports = Helper;

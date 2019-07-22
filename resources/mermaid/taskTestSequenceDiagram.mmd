@@ -1,0 +1,47 @@
+sequenceDiagram
+    test ->> cleanTest: suppression des js du répertoire test
+    activate cleanTest
+    cleanTest->>test: suppression ok
+    deactivate cleanTest
+    test->>install: installation des dépendances
+    activate install
+    install->>test: installation ok
+    deactivate install
+    test->>compileTs: transiplation des ts en js
+    activate compileTs
+    compileTs->>test: transiplation ok
+    deactivate compileTs
+    opt si project.type in [helper.TYPE.MODULE, project.type === helper.TYPE.COMPOSANT]
+        test->>generateIndexDts:génération de index.d.ts
+        activate generateIndexDts
+        generateIndexDts->> test: génération ok
+        deactivate generateIndexDts
+    end
+    opt si l'option --skipTests n'est pas activée
+        test->>testMochaRun: Lancement des tests mocha
+        activate testMochaRun
+        testMochaRun->>testMochaRun: exécution des tests mocha
+        testMochaRun->>test: tests mocha lancés
+        deactivate testMochaRun
+        test->>testKarmaRun: Lancement des tests karma
+        activate testKarmaRun
+        testKarmaRun->>testKarmaRun: Lecture de la conf webpack fournie par le projet
+        testKarmaRun->>testKarmaRun: Merge de la confwebpack projet avec celle du builder
+        testKarmaRun->>testKarmaRun: xécution des tests karma
+        testKarmaRun->>test: tests karma lancés
+        deactivate testKarmaRun
+    end
+    test->>testMergeReports: merge des rapports de tests
+    activate testMergeReports
+    testMergeReports->> test: merge ok
+    deactivate testMergeReports
+    test->>testRemapReports: Calcule la couverture sur les ts
+    activate testRemapReports
+    testRemapReports->> test: couverture ok
+    deactivate testRemapReports
+    opt si project.type in [helper.TYPE.MODULE, project.type === helper.TYPE.COMPOSANT]
+        test->>rewriteModule:réécriture des modules pour ajuster les imports
+        activate rewriteModule
+        rewriteModule->> test: réécriture ok
+        deactivate rewriteModule
+    end

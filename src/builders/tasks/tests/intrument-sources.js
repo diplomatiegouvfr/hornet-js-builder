@@ -17,16 +17,18 @@ class InstrumentSourcesTest extends Task {
                 return done();
             }
 
+            helper.debug("Intrumentation :", conf.instrumentableSources, " vers :", conf.testWorkDir , " / ", conf.instrumentableSourcesBase);
+
             helper.stream(
                 done,
                 gulp.src(conf.instrumentableSources, {
                     read: true,
                     base: conf.instrumentableSourcesBase
                 })
-                    .pipe(gulp.dest(conf.testWorkDir))
-                    // instrumentation du code
-                    .pipe(istanbul(conf.istanbulOpt))
-                    .pipe(istanbul.hookRequire()) // Force `require` to return covered files
+                .pipe(gulp.dest(conf.testWorkDir))
+                // instrumentation du code
+                .pipe(istanbul(conf.istanbulOpt))
+                .pipe(istanbul.hookRequire()) // Force `require` to return covered files
             );
         }
     }

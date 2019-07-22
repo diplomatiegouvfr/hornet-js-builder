@@ -1,14 +1,47 @@
-# Hornet JS Builder 1.6.4
-- EVOL : Mise en place plugin webpack pour remplacer du contenu dans les fichiers en mode production
-
-# Hornet JS Builder 1.6.3
-- EVOL : vérification du binary et script install dans le package.json en cache
-
-# Hornet JS Builder 1.6.2
-- FIX : suppression d'ecrasement de config npm pour récupération des binaires
-
-# Hornet JS Builder 1.6.1
-- FIX : gestion des tâches liées à Sass
+#Hornet JS Builder 2.0.0
+- EVOL : Suppression des clés appDependencies, buildDependencies et testDependencies: désormais, il faut utiliser la norme npm; dependencies, devDependencies etc. Utilisation aussi de la librairie npm installée et non celle tiré par le builder
+- EVOL : Suppression du theme et prise en charge de sass
+- EVOL : Ajout nouvelle tâches effectuant une action précise. Exemple: la tâche compile fait d'abord l'install avant de faire la transpilation. La nouvelle tâche compile:run suppose que l'install est déjà faite et ne le fait donc pas.
+- EVOL : Simplification pour la possibilité d'ajouter de la conf webpack dans un projet
+- EVOL : Simplification pour la possibilité d'ajouter de la conf karma dans un projet
+- EVOL : Montée de version des librairies:
+    - commander : 2.9.0 -> 2.20.0
+    - css-loader : 0.28.0 -> 2.1.1
+    - del : 2.2.2 -> 4.1.1
+    - event-stream : 3.3.4 -> 4.0.1
+    - express : 4.14.0 -> 4.16.4
+    - file-loader : 0.11.1 -> 3.0.1
+    - fs-extra : 2.0.0 -> 8.0.1
+    - glob : 7.1.2 -> 7.1.4
+    - gulp-concat : 2.6.0 -> 2.6.1
+    - gulp-ej : 3.0.1 -> 4.0.0
+    - gulp-eol : 0.1.2 -> 0.2.0
+    - gulp-header : 1.8.9 -> 2.0.7
+    - gulp-istanbul : 1.1.0 -> 1.1.3
+    - gulp-nodemon : 2.1.0 -> 2.4.2
+    - gulp-replace : 0.6.1 -> 1.0.0
+    - gulp-sourcemaps : 1.6.0 -> 2.6.5
+    - gulp-token-replace : 1.1.2 -> 1.1.5
+    - gulp-tslint : 8.1.2 -> 8.1.4
+    - gulp-typescript : 3.1.4 -> 5.0.1
+    - gulp-zip : 3.2.0 -> 4.2.0
+    - karma : 3.1.1 -> 4.1.0
+    - karma-coverage: 1.1.1 -> 1.1.2
+    - karma-firefox-launcher : 1.0.1 -> 1.1.0
+    - karma-mocha-reporter : 2.2.3 -> 2.2.5
+    - lodash : 4.13.1 -> 4.17.11
+    - nodemon : 1.11.0 -> 1.18.0
+    - through2 : 0.6.5 -> 3.0.1
+    - tslint : 5.11.0 -> 5.16.0
+    - typescript : 3.0.3 -> 3.4.5
+    - uglifycss  : 0.0.27 -> 0.0.29
+    - url-loader : 0.5.8 -> 1.1.2
+    - vinyl-fs : 2.4.3 -> 3.0.3
+    - webpack : 3.10.0 -> 4.31.0
+    - webpack-bundle-analyzer : 2.9.2 -> 3.3.2
+    - webpack-merge : 4.1.1 -> 4.2.1
+    - webpack-stream : 4.0.0 -> 5.2.1
+    - yamljs : 0.2.8 -> 0.3.0
 
 # Hornet JS Builder 1.6.0
 - EVOL : mode interactive

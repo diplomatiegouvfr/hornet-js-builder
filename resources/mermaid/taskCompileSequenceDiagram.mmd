@@ -1,0 +1,28 @@
+sequenceDiagram
+    compile ->> install: installation des dépendances
+    activate  install
+    install->>compile: installation ok
+    deactivate  install
+    compile ->>compile: lecture du fichier tsConfig
+    opt si l'option -i ou --ide n'est pas activée
+        compile->>compileTs: transiplation des ts en js
+        activate  compileTs
+        compileTs->>compile: transiplation des ok
+        deactivate  compileTs
+    end
+    opt si project.type in [helper.TYPE.MODULE, project.type === helper.TYPE.COMPOSANT]
+        compile->>cleanIndexDts: suppression de index.d.ts
+        activate cleanIndexDts
+        cleanIndexDts->>compile: suppression ok
+        deactivate cleanIndexDts
+        compile->>computeIndexDts: générer index.d.ts
+        activate computeIndexDts
+        computeIndexDts->>compile: génération ok
+        deactivate computeIndexDts
+
+        compile->>rewriteModule: réécriture des modules pour ajuster les imports
+        activate rewriteModule
+        rewriteModule->>compile: réécriture ok
+        deactivate rewriteModule
+    end
+    compile->>compile : création du dossier conteneant les fichier issus de la transpilation (tsConfig.tscOutDir)

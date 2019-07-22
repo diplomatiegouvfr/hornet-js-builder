@@ -2,9 +2,6 @@
 
 const path = require("path");
 const zip = require("gulp-zip");
-const State = require("./../../state");
-const fs = require('fs-extra');
-const npm = require("npm");
 const Task = require("./../task");
 
 class ZipTask extends Task {
@@ -32,7 +29,7 @@ class ZipTask extends Task {
                 fileList.push(path.join("./index.*"));
                 fileList.push(path.join(conf.src, "/**/*"));
                 fileList.push(staticPath);
-                fileList.push(path.join("./", helper.NODE_MODULES_APP + "/**/*"));
+                fileList.push(path.join("./", helper.NODE_MODULES + "/**/*"));
                 fileList.push(path.join(conf.config + "/**/*"));
                 fileList.push(path.join("./package.json"));
                 zipname = zipnameinit + "-dynamic";
@@ -46,7 +43,7 @@ class ZipTask extends Task {
 
                 gulp.src(fileListMap, {base: "./" + conf.static + "/js"})
                     .pipe(zip(zipname + "-map.zip"))
-                    .pipe(gulp.dest("./target/"));
+                    .pipe(gulp.dest(path.join(".", conf.buildWorkDir)));
             } else {
                 // map de la partie dynamique
                 fileListMap = fileList.slice(0);
@@ -57,7 +54,7 @@ class ZipTask extends Task {
                 var dep = helper.getExternalModuleDirectories(project);
 
                 /*for ( const nameDir of dep ) {
-                    fs.copy(nameDir, helper.NODE_MODULES_APP, function (err) {
+                    fs.copy(nameDir, helper.NODE_MODULES, function (err) {
                         if (err) return console.error("Erreur pour: "+dep+" ERROR: "+ err)
                         console.log("Copie OK pour: "+ nameDir);
                     })
@@ -72,7 +69,7 @@ class ZipTask extends Task {
 
                 gulp.src(fileListSources, {base: "."})
                     .pipe(zip(zipnameinit + "-sources.zip"))
-                    .pipe(gulp.dest("./target/"));
+                    .pipe(gulp.dest(path.join(".", conf.buildWorkDir)));
 
 
             }
@@ -87,7 +84,7 @@ class ZipTask extends Task {
                 cb,
                 gulp.src(fileList, {base: "."})
                     .pipe(zip(zipname + ".zip"))
-                    .pipe(gulp.dest("./target/"))
+                    .pipe(gulp.dest(path.join(".", conf.buildWorkDir)))
             );
         }
     }

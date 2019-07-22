@@ -15,8 +15,14 @@ class GenerateTestTemplate  extends Task {
     task(gulp, helper, conf, project) {
 
         return (done) => {
+            let confDir = path.join(conf.buildWorkDir, conf.testEnvironment.configuration);
+            if(!helper.folderExists(confDir)) {
+                helper.warn("Aucun répertoire de fichiers de configuration trouvé :", conf.testEnvironment.configuration);
+                return done();
+            }
             
-            let files = fs.readdirSync(path.join(conf.buildWorkDir, conf.testEnvironment.configuration));
+            let files = fs.readdirSync(confDir);
+
             let streams = [];
             let defaultDepautValue = {
                 INSTANCE:1,

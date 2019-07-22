@@ -2,7 +2,7 @@
 
 var chalk = require("chalk");
 var _ = require("lodash");
-var gutil = require("gulp-util");
+const log = require('fancy-log'); // remplacement gulp-util.log
 var prettyTime = require("pretty-hrtime");
 var helper = require("../helpers");
 const State = require("../builders/state");
@@ -233,7 +233,7 @@ module.exports = function (gulp) {
             // so when 5 tasks start at once it only logs one time with all 5
             inc++;
             let logShift = "_".repeat(inc);
-            gutil.log(logShift + "Starting", "'" + chalk.cyan(e.task) + "'...");
+            log(logShift + "Starting", "'" + chalk.cyan(e.task) + "'...");
 
         });
 
@@ -241,7 +241,7 @@ module.exports = function (gulp) {
             let logShift = "_".repeat(inc);
             inc--;
             var time = prettyTime(e.hrDuration);
-            gutil.log(logShift + 
+            log(logShift + 
                 "Finished", "'" + chalk.cyan(e.task) + "'",
                 "after", chalk.magenta(time)
             );
@@ -249,24 +249,24 @@ module.exports = function (gulp) {
 
         gulpInst.on("task_err", function (e) {
             if(e && e.err && e.err.console) {
-                gutil.log(e.err.data);
+                log(e.err.data);
             } else {
                 var msg = formatError(e);
                 var time = prettyTime(e.hrDuration);
-                gutil.log(
+                log(
                     "'" + chalk.cyan(e.task) + "'",
                     chalk.red("errored after"),
                     chalk.magenta(time)
                 );
-                gutil.log(msg);
+                log(msg);
             }
         });
 
         gulpInst.on("task_not_found", function (err) {
-            gutil.log(
+            log(
                 chalk.red("Task '" + err.task + "' is not in your gulpfile")
             );
-            gutil.log("Please check the documentation for proper gulpfile formatting");
+            log("Please check the documentation for proper gulpfile formatting");
             process.exit(1);
         });
     }

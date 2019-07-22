@@ -1,11 +1,10 @@
 "use strict";
 
 const _ = require("lodash");
-const gutil = require("gulp-util");
+const PluginError = require("plugin-error");
 const gulpTypescript = require("gulp-typescript");
 const sourcemaps = require("gulp-sourcemaps");
 const path = require("path");
-const through = require("through2");
 const Utils = require("../utils");
 const nodemon = require("nodemon");
 
@@ -15,6 +14,7 @@ class CompileTypeScript extends Task {
 
     task(gulp, helper, conf, project) {
         var timeout = null;
+
         return (doneFn) => {
             if (helper.isIDE()) {
                 // Ide: rien à compiler c'est l'IDE qui gère les .js, les .dts et les .maps
@@ -32,12 +32,13 @@ class CompileTypeScript extends Task {
 
             if (project.type === helper.TYPE.MODULE || project.type === helper.TYPE.COMPOSANT) {
                 configTS.declaration = true;
+                configTS.sourceMap = true;
             }
 
             var tsProject = gulpTypescript.createProject(path.join(project.dir, "tsconfig.json"), configTS);
 
             // Activation de la génération des sources maps
-            var tsResult = tsProject.src()//gulp.src(["**/*.ts", "**/*.tsx", "!./index.d.ts", "!node_modules/**/*", "definition-ts/**/*.d.ts"])
+            var tsResult = tsProject.src()
                 .pipe(sourcemaps.init());
 
             // Activation de la compilation typeScript
@@ -51,14 +52,12 @@ class CompileTypeScript extends Task {
 
             var jsPipe = tsResult.js
             // modifie les fichiers pour que le plugin sourcemaps génère correctement les fichiers de map
-                .pipe(Utils.rebase(conf.targetTS))
+                .pipe(Utils.rebase("." + path.sep/*conf.target.ts*/))
                 .pipe(sourcemaps.write(".", {
-                    includeContent: false, sourceRoot: (file) => {
-                        return "";// file.base;
-                    }
-                })) //
+                    includeContent: true
+                }))
                 // restaure le paramétrage des fichiers après la génration des fichiers de map
-                .pipe(Utils.rebase(conf.targetTS))
+                .pipe(Utils.rebase("." + path.sep/*conf.target.ts*/))
                 .pipe(gulp.dest((file) => {
                     return file.base;
                 }));
@@ -66,78 +65,46 @@ class CompileTypeScript extends Task {
             var dtsPipe = tsResult;
             if (project.type !== helper.TYPE.APPLICATION && project.type !== helper.TYPE.APPLICATION_SERVER) {
                 // Pour les applications les fichiers de définitions ne sont pas utiles
-                dtsPipe = tsResult.dts.pipe(gulp.dest((file) => {
+                dtsPipe = tsResult.dts
+                .pipe(Utils.absolutizeModuleRequire(helper, project))
+                .pipe(gulp.dest((file) => {
                     return file.base;
                 }));
             }
 
             // Merge des deux pipes pour terminer quand les deux sont terminés
+            let stream = [jsPipe];
+            if(conf.tscOutDir) {
+                stream.push(gulp.src([ "./package.json", "./src/**/*", "./test/**/*",
+                    "!./src/**/*.ts",
+                    "!./src/**/*.tsx",
+                    "!./test/**/*.ts",
+                    "!./test/**/*.tsx"
+                    
+                ], {base: "."})
+                .pipe(gulp.dest(conf.tscOutDir)));
+            }
+            
+            stream.push(dtsPipe);
+
             helper.stream(
                 () => {
-                    doneFn(hasError ? new gutil.PluginError("gulp-typescript", "Au moins une erreur de compilation typeScript s'est produite") : (() => {if (timeout) clearTimeout(timeout); timeout=setTimeout(function () {
-                        timeout = null;
-                        nodemon.restart();
-                    }, 1000);return undefined})());
+                    if(hasError && (project.type === helper.TYPE.MODULE || project.type === helper.TYPE.COMPOSANT)) {
+                        helper.info("Au moins une erreur de compilation typeScript s'est produite");
+                        doneFn();
+                    } else {
+                        doneFn(hasError ? new PluginError("gulp-typescript", "Au moins une erreur de compilation typeScript s'est produite") : (() => {if (timeout) clearTimeout(timeout); timeout=setTimeout(function () {
+                                timeout = null;
+                                nodemon.restart();
+                            }, 1000);
+                            return undefined;
+                        })())
+                    }
                 },
-                dtsPipe,
-                jsPipe
+                ...stream
             );
         }
     }
 }
-
-
-/**
- * Altère la description des fichiers pour la bonne génération des sourcemaps
- * @param defaultBase file.base à appliquer sur les fichier de map
- * @return {*}
- */
-function rebase(defaultMapBase) {
-    return through.obj((file, enc, cb) => {
-        if (file.isNull()) {
-            cb(null, file);
-            return;
-        }
-
-        if (file.isStream()) {
-            cb(new gutil.PluginError("hornetbuilder-rebase", "Streaming not supported"));
-            return;
-        }
-
-        try {
-            // nouvelles valeurs de 'file.base' et 'file.relative' à appliquer
-            var newbase = file.oldBase || path.join(file.base, path.dirname(file.relative));
-            //var newrelative = file.oldRelative || path.basename(file.relative);
-
-            var isMap = _.endsWith(file.relative, ".js.map");
-            var firstPass = !(file.oldBase); // premier passage
-            if (isMap) {
-                newbase = defaultMapBase;
-            } else if (firstPass && file.sourceMap && file.sourceMap.sources) {
-                // ne conserve dans l'attribut 'file.sourceMap.sources' que les noms des fichier,
-                // à la place du chemin relatif
-                var newSources = file.sourceMap.sources.map((sourceMapFile) => {
-                    return sourceMapFile.split("/").pop(); // extraction du nom de fichier
-                });
-                file.sourceMap.sources = newSources;
-            }
-
-            // permet de se rappeler des valeurs actuelles pour le prochain passage
-            file.oldBase = file.base;
-            file.oldRelative = file.relative;
-
-            file.base = newbase;
-            //file.relative = newrelative;
-            this.push(file);
-        } catch (err) {
-            this.emit("error", new gutil.PluginError("hornetbuilder-rebase", err, {
-                fileName: file.path
-            }));
-        }
-
-        cb();
-    });
-}
-
 
 module.exports = CompileTypeScript;

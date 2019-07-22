@@ -1,41 +1,27 @@
 {
-    "dependencies:clean-build": "Supprime les dépendances de construction/test (répertoire node_modules/buildntest)",
     "dependencies:clean-all": "Supprime toutes les dépendances",
-    "dependencies:clean-fix": "Supprime toutes les dépendances fixées, à utiliser avec l'option -f",
-    "dependencies:check-app": "Vérifie la conformité des versions des dépendances applicatives déclarées",
-    "dependencies:check-ts-definition": "vérifie la conformité des versions des fichiers de définition Typescript",
-    "dependencies:change-app": "vérifie si les dépendances applicatives ont été modifiées",
-    "dependencies:fix-app": "Calcule l'arbre de dépendances applicatives et fixe les versions des dépendances transitives déclarées avec un ^, ~ ou * ",
-    "dependencies:install-ts-definition": "Installe les fichiers de définition",
-    "dependencies:install-app": "Installe les dépendances applicatives",
-    "dependencies:install-test": "Installe les dépendances de test",
-    "dependencies:install-app-themes": "Installe des dépendances de thème embarqué",
-    "dependencies:install-community-themes": "Installe des dépendances de thème liés à hornet-js-community",
-    "dependencies:install": "Installe les dépendances applicatives et les fichiers de définitions",
-    "install": "Alias de 'dependencies:install' | dependencies:install",
-
+    "dependencies:install": "Lance la commande npm install --prod",
+    "dependencies:install-link": "Lance la commande npm link --prod",
+    "dependencies:install-dev": "Lance la commande npm install --dev",
+    "dependencies:install-dev-link": "Lance la commande npm link --dev",
+    "dependencies:install-ci-prod": "Lance la commande npm ci --prod",
+    "dependencies:install-ci-dev": "Lance la commande npm ci --dev",
+    "dependencies:dedupe": "Lance la commande npm dedupe afin de dédupliquer les dépendances présentes dans le node_modules",
+    "install": "Alias de 'dependencies:install' && 'dependencies:install-link' && 'dependencies:install-dev' && 'dependencies:install-dev-link' && 'dependencies:dedupe'",
     "compile:ts": "Transpile les sources TS en Javascript. S'exécute uniquement si l'option '-i' (--ide) n'est pas utilisée",
     "compile": "Transpile les sources TS en Javascript.",
-
     "prepare:testSources": "Copie les sources originales et compilées dans le répertoire de travail des tests : istanbul",
     "test:instrument": "Défini les instruments de couverture de code sur les sources",
     "test": "Exécute les tests unitaires et la mesure de couverture de code",
-
-    "clean:build": "Supprime le répertoire de build | ./target",
+    "clean:build": "Supprime le répertoire de build | ./build",
     "clean:test": "Supprime le dossier istanbul ainsi que les fichiers générés (.js, .map et .d.ts dans le dossier de tests)",
     "clean:static": "Supprime les fichiers statics générés par webpack | ./static/js",
     "clean:static-dll": "Supprime les fichiers statics dll générés par webpack | ./static/js/dll",
-    "clean:theme": "Supprime le thème de l'application dans le répêrtoire static | ./static/themeName",
-
     "clean:src": "Supprime les fichiers généré dans le répertoire source ./src| extended/*.js, **/*.json, **/*.jsx",
-
     "clean:template": "Supprime les templates générées dans la partie static | ./static/templateDir",
     "clean:static-all": "Supprime tous les fichiers statics générés par webpack + les dll | ./static/js/*",
     "clean": "Supprime les fichiers générés (.js, .map et .d.ts dans le dossier de sources)",
     "clean-all": "Supprime tous les fichiers et dépendances",
-
-    "pg": "Permet de lancer des commandes SQL à postgres, se base sur la conf du default.json 'database.config.uri' ou bien '--uri' , ex : hb pg -q 'select 1'",
-
     "pp": "Alias de 'prepare-package'",
     "ppc": "Alias de 'prepare-package-client'",
     "prepare-package": "Lance WebPack pour la construction du js client  (mode debug)",
@@ -46,7 +32,6 @@
     "package-zip-dynamic": "Construit le livrable dynamique",
     "package": "Lance les tests puis construit tous les livrables",
     "package:spa": "Lance les tests puis construit tous les livrables spa",
-
     "watch:ts": "Ecoute les modifications sur les fichiers TS et les recompile à la volée. S'exécute uniquement si l'option '-i' (--ide) n'est pas utilisée",
     "watch:serveur": "Ecoute les modifications sur les fichiers et redémarre le serveur node pour les prendre en compte. Démarre nodejs en mode development",
     "watch:serveur-prod": "Equivalent à watch:serveur mais avec nodejs en mode production",
@@ -59,9 +44,6 @@
     "wp": "Alias de 'watch-prod'",
     "ws": "Alias de 'watch:serveur'",
     "wsd": "Alias de 'watch:serveur-brk'",
-    "wp": "Alias de 'watch-prod'",
-
-    "lint": "Lance le tslint sur les sources ts (qualité de code)", 
-
+    "lint": "Lance le tslint sur les sources ts (qualité de code)",
     "versions:get": "Retourne la dernière version commencant par 5.0.2 du module hornet-js-core, exemple : 5.0.2-20180109183247, ex : hb versions:get --versionSearch=5.0.2 --module=hornet-js-core"
 }

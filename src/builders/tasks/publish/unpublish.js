@@ -1,13 +1,18 @@
 "use strict";
 
 const Task = require("./../task");
-const npm = require("npm");
-
+const commander = require("../../../gulp/commander");
 class UnPublishTask extends Task {
 
     task(gulp, helper, conf, project) {
         return (done) => {
-            helper.npmUnpublish(npm, project.name, project.version, done);
+            const args = ["unpublish", project.name + "@" + project.version];
+            return commander.toPromise({ cmd: "npm", args: args, cwd: helper.getMainProcessDir() }, true).then((data) => {
+                setTimeout(()=> {done();}, 2000)
+            }).catch((err) => {
+                helper.error(`La commande npm ${args} dans ${helper.getMainProcessDir()} est ko`);
+                done(err);
+            });
         }
     }
 }

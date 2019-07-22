@@ -2,9 +2,6 @@
 
 const path = require("path");
 const zip = require("gulp-zip");
-const State = require("./../../state");
-const fs = require('fs-extra');
-const npm = require("npm");
 const Task = require("./../task");
 
 class ZipStaticTask extends Task {

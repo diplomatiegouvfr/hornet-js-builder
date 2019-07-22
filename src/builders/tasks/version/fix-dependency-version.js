@@ -27,15 +27,11 @@ class FixDependencyVersion extends Task {
             
             helper.debug("FixDependencyVersion : " + project.packageJson.name, "@" , project.packageJson.version);
 
-            this.replaceInModules(project, helper.APP_DEPENDENCIES, helper);
-            this.replaceInModules(project, helper.TEST_DEPENDENCIES, helper);
-            this.replaceInModules(project, helper.BUILD_DEPENDENCIES, helper);
-            this.replaceInModules(project, helper.TS_DEFINITIONS_DEPENDENCIES, helper);
+            this.replaceInModules(project, helper.DEPENDENCIES, helper);
+            this.replaceInModules(project, helper.DEV_DEPENDENCIES, helper);
 
-            this.replaceInDependency(project, helper.APP_DEPENDENCIES, helper);
-            this.replaceInDependency(project, helper.TEST_DEPENDENCIES, helper);
-            this.replaceInDependency(project, helper.BUILD_DEPENDENCIES, helper);
-            this.replaceInDependency(project, helper.TS_DEFINITIONS_DEPENDENCIES, helper);
+            this.replaceInDependency(project, helper.DEPENDENCIES, helper);
+            this.replaceInDependency(project, helper.DEV_DEPENDENCIES, helper);
 
             return helper.stream(
                 done,

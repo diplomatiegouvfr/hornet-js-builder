@@ -1,0 +1,385 @@
+<svg id="mermaid-1562579298160" width="100%" xmlns="http://www.w3.org/2000/svg" height="100%" style="max-width:2250px;" viewBox="-50 -10 2250 1056"><style>
+
+
+#mermaid-1562579298160 .label {
+  font-family: 'trebuchet ms', verdana, arial;
+  color: #333; }
+
+#mermaid-1562579298160 .node rect,
+#mermaid-1562579298160 .node circle,
+#mermaid-1562579298160 .node ellipse,
+#mermaid-1562579298160 .node polygon {
+  fill: #ECECFF;
+  stroke: #9370DB;
+  stroke-width: 1px; }
+
+#mermaid-1562579298160 .node.clickable {
+  cursor: pointer; }
+
+#mermaid-1562579298160 .arrowheadPath {
+  fill: #333333; }
+
+#mermaid-1562579298160 .edgePath .path {
+  stroke: #333333;
+  stroke-width: 1.5px; }
+
+#mermaid-1562579298160 .edgeLabel {
+  background-color: #e8e8e8; }
+
+#mermaid-1562579298160 .cluster rect {
+  fill: #ffffde;
+  stroke: #aaaa33;
+  stroke-width: 1px; }
+
+#mermaid-1562579298160 .cluster text {
+  fill: #333; }
+
+#mermaid-1562579298160 div.mermaidTooltip {
+  position: absolute;
+  text-align: center;
+  max-width: 200px;
+  padding: 2px;
+  font-family: 'trebuchet ms', verdana, arial;
+  font-size: 12px;
+  background: #ffffde;
+  border: 1px solid #aaaa33;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 100; }
+
+#mermaid-1562579298160 .actor {
+  stroke: #CCCCFF;
+  fill: #ECECFF; }
+
+#mermaid-1562579298160 text.actor {
+  fill: black;
+  stroke: none; }
+
+#mermaid-1562579298160 .actor-line {
+  stroke: grey; }
+
+#mermaid-1562579298160 .messageLine0 {
+  stroke-width: 1.5;
+  stroke-dasharray: '2 2';
+  stroke: #333; }
+
+#mermaid-1562579298160 .messageLine1 {
+  stroke-width: 1.5;
+  stroke-dasharray: '2 2';
+  stroke: #333; }
+
+#mermaid-1562579298160 #arrowhead {
+  fill: #333; }
+
+#mermaid-1562579298160 #crosshead path {
+  fill: #333 !important;
+  stroke: #333 !important; }
+
+#mermaid-1562579298160 .messageText {
+  fill: #333;
+  stroke: none; }
+
+#mermaid-1562579298160 .labelBox {
+  stroke: #CCCCFF;
+  fill: #ECECFF; }
+
+#mermaid-1562579298160 .labelText {
+  fill: black;
+  stroke: none; }
+
+#mermaid-1562579298160 .loopText {
+  fill: black;
+  stroke: none; }
+
+#mermaid-1562579298160 .loopLine {
+  stroke-width: 2;
+  stroke-dasharray: '2 2';
+  stroke: #CCCCFF; }
+
+#mermaid-1562579298160 .note {
+  stroke: #aaaa33;
+  fill: #fff5ad; }
+
+#mermaid-1562579298160 .noteText {
+  fill: black;
+  stroke: none;
+  font-family: 'trebuchet ms', verdana, arial;
+  font-size: 14px; }
+
+#mermaid-1562579298160 .activation0 {
+  fill: #f4f4f4;
+  stroke: #666; }
+
+#mermaid-1562579298160 .activation1 {
+  fill: #f4f4f4;
+  stroke: #666; }
+
+#mermaid-1562579298160 .activation2 {
+  fill: #f4f4f4;
+  stroke: #666; }
+
+
+#mermaid-1562579298160 .section {
+  stroke: none;
+  opacity: 0.2; }
+
+#mermaid-1562579298160 .section0 {
+  fill: rgba(102, 102, 255, 0.49); }
+
+#mermaid-1562579298160 .section2 {
+  fill: #fff400; }
+
+#mermaid-1562579298160 .section1,
+#mermaid-1562579298160 .section3 {
+  fill: white;
+  opacity: 0.2; }
+
+#mermaid-1562579298160 .sectionTitle0 {
+  fill: #333; }
+
+#mermaid-1562579298160 .sectionTitle1 {
+  fill: #333; }
+
+#mermaid-1562579298160 .sectionTitle2 {
+  fill: #333; }
+
+#mermaid-1562579298160 .sectionTitle3 {
+  fill: #333; }
+
+#mermaid-1562579298160 .sectionTitle {
+  text-anchor: start;
+  font-size: 11px;
+  text-height: 14px; }
+
+
+#mermaid-1562579298160 .grid .tick {
+  stroke: lightgrey;
+  opacity: 0.3;
+  shape-rendering: crispEdges; }
+
+#mermaid-1562579298160 .grid path {
+  stroke-width: 0; }
+
+
+#mermaid-1562579298160 .today {
+  fill: none;
+  stroke: red;
+  stroke-width: 2px; }
+
+
+
+#mermaid-1562579298160 .task {
+  stroke-width: 2; }
+
+#mermaid-1562579298160 .taskText {
+  text-anchor: middle;
+  font-size: 11px; }
+
+#mermaid-1562579298160 .taskTextOutsideRight {
+  fill: black;
+  text-anchor: start;
+  font-size: 11px; }
+
+#mermaid-1562579298160 .taskTextOutsideLeft {
+  fill: black;
+  text-anchor: end;
+  font-size: 11px; }
+
+
+#mermaid-1562579298160 .task.clickable {
+  cursor: pointer; }
+
+#mermaid-1562579298160 .taskText.clickable {
+  cursor: pointer;
+  fill: #003163 !important;
+  font-weight: bold; }
+
+#mermaid-1562579298160 .taskTextOutsideLeft.clickable {
+  cursor: pointer;
+  fill: #003163 !important;
+  font-weight: bold; }
+
+#mermaid-1562579298160 .taskTextOutsideRight.clickable {
+  cursor: pointer;
+  fill: #003163 !important;
+  font-weight: bold; }
+
+
+#mermaid-1562579298160 .taskText0,
+#mermaid-1562579298160 .taskText1,
+#mermaid-1562579298160 .taskText2,
+#mermaid-1562579298160 .taskText3 {
+  fill: white; }
+
+#mermaid-1562579298160 .task0,
+#mermaid-1562579298160 .task1,
+#mermaid-1562579298160 .task2,
+#mermaid-1562579298160 .task3 {
+  fill: #8a90dd;
+  stroke: #534fbc; }
+
+#mermaid-1562579298160 .taskTextOutside0,
+#mermaid-1562579298160 .taskTextOutside2 {
+  fill: black; }
+
+#mermaid-1562579298160 .taskTextOutside1,
+#mermaid-1562579298160 .taskTextOutside3 {
+  fill: black; }
+
+
+#mermaid-1562579298160 .active0,
+#mermaid-1562579298160 .active1,
+#mermaid-1562579298160 .active2,
+#mermaid-1562579298160 .active3 {
+  fill: #bfc7ff;
+  stroke: #534fbc; }
+
+#mermaid-1562579298160 .activeText0,
+#mermaid-1562579298160 .activeText1,
+#mermaid-1562579298160 .activeText2,
+#mermaid-1562579298160 .activeText3 {
+  fill: black !important; }
+
+
+#mermaid-1562579298160 .done0,
+#mermaid-1562579298160 .done1,
+#mermaid-1562579298160 .done2,
+#mermaid-1562579298160 .done3 {
+  stroke: grey;
+  fill: lightgrey;
+  stroke-width: 2; }
+
+#mermaid-1562579298160 .doneText0,
+#mermaid-1562579298160 .doneText1,
+#mermaid-1562579298160 .doneText2,
+#mermaid-1562579298160 .doneText3 {
+  fill: black !important; }
+
+
+#mermaid-1562579298160 .crit0,
+#mermaid-1562579298160 .crit1,
+#mermaid-1562579298160 .crit2,
+#mermaid-1562579298160 .crit3 {
+  stroke: #ff8888;
+  fill: red;
+  stroke-width: 2; }
+
+#mermaid-1562579298160 .activeCrit0,
+#mermaid-1562579298160 .activeCrit1,
+#mermaid-1562579298160 .activeCrit2,
+#mermaid-1562579298160 .activeCrit3 {
+  stroke: #ff8888;
+  fill: #bfc7ff;
+  stroke-width: 2; }
+
+#mermaid-1562579298160 .doneCrit0,
+#mermaid-1562579298160 .doneCrit1,
+#mermaid-1562579298160 .doneCrit2,
+#mermaid-1562579298160 .doneCrit3 {
+  stroke: #ff8888;
+  fill: lightgrey;
+  stroke-width: 2;
+  cursor: pointer;
+  shape-rendering: crispEdges; }
+
+#mermaid-1562579298160 .milestone {
+  transform: rotate(45deg) scale(0.8, 0.8); }
+
+#mermaid-1562579298160 .milestoneText {
+  font-style: italic; }
+
+#mermaid-1562579298160 .doneCritText0,
+#mermaid-1562579298160 .doneCritText1,
+#mermaid-1562579298160 .doneCritText2,
+#mermaid-1562579298160 .doneCritText3 {
+  fill: black !important; }
+
+#mermaid-1562579298160 .activeCritText0,
+#mermaid-1562579298160 .activeCritText1,
+#mermaid-1562579298160 .activeCritText2,
+#mermaid-1562579298160 .activeCritText3 {
+  fill: black !important; }
+
+#mermaid-1562579298160 .titleText {
+  text-anchor: middle;
+  font-size: 18px;
+  fill: black; }
+
+#mermaid-1562579298160 g.classGroup text {
+  fill: #9370DB;
+  stroke: none;
+  font-family: 'trebuchet ms', verdana, arial;
+  font-size: 10px; }
+
+#mermaid-1562579298160 g.classGroup rect {
+  fill: #ECECFF;
+  stroke: #9370DB; }
+
+#mermaid-1562579298160 g.classGroup line {
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 .classLabel .box {
+  stroke: none;
+  stroke-width: 0;
+  fill: #ECECFF;
+  opacity: 0.5; }
+
+#mermaid-1562579298160 .classLabel .label {
+  fill: #9370DB;
+  font-size: 10px; }
+
+#mermaid-1562579298160 .relation {
+  stroke: #9370DB;
+  stroke-width: 1;
+  fill: none; }
+
+#mermaid-1562579298160 #compositionStart {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 #compositionEnd {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 #aggregationStart {
+  fill: #ECECFF;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 #aggregationEnd {
+  fill: #ECECFF;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 #dependencyStart {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 #dependencyEnd {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 #extensionStart {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 #extensionEnd {
+  fill: #9370DB;
+  stroke: #9370DB;
+  stroke-width: 1; }
+
+#mermaid-1562579298160 .commit-id,
+#mermaid-1562579298160 .commit-msg,
+#mermaid-1562579298160 .branch-label {
+  fill: lightgrey;
+  color: lightgrey; }
+</style><style>#mermaid-1562579298160 {
+    color: rgba(0, 0, 0, 0.65);
+    font: ;
+  }</style><g></g><g><line id="actor378" x1="75" y1="5" x2="75" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="0" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="75" dy="0">package</tspan></text></g><g><line id="actor379" x1="275" y1="5" x2="275" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="200" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="275" dy="0">templateHtml</tspan></text></g><g><line id="actor380" x1="475" y1="5" x2="475" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="400" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="475" dy="0">compile</tspan></text></g><g><line id="actor381" x1="675" y1="5" x2="675" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="600" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="675" dy="0">test</tspan></text></g><g><line id="actor382" x1="875" y1="5" x2="875" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="800" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="875" dy="0">depInstallCiProd</tspan></text></g><g><line id="actor383" x1="1075" y1="5" x2="1075" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1000" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1075" dy="0">preparePackage</tspan></text></g><g><line id="actor384" x1="1275" y1="5" x2="1275" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1200" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1275" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1275" dy="0">prepareAllPackage</tspan></text></g><g><line id="actor385" x1="1475" y1="5" x2="1475" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1400" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1475" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1475" dy="0">zipStatic</tspan></text></g><g><line id="actor386" x1="1675" y1="5" x2="1675" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1600" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1675" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1675" dy="0">zipDynamic</tspan></text></g><g><line id="actor387" x1="1875" y1="5" x2="1875" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1800" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1875" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1875" dy="0">zipEnv</tspan></text></g><g><line id="actor388" x1="2075" y1="5" x2="2075" y2="1045" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="2000" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="2075" y="32.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="2075" dy="0">zipDb</tspan></text></g><defs><marker id="arrowhead" refX="5" refY="2" markerWidth="6" markerHeight="4" orient="auto"><path d="M 0,0 V 4 L6,2 Z"></path></marker></defs><defs><marker id="crosshead" markerWidth="15" markerHeight="8" orient="auto" refX="16" refY="4"><path fill="black" stroke="#000000" style="stroke-dasharray: 0, 0;" stroke-width="1px" d="M 9,2 V 6 L16,4 Z"></path><path fill="none" stroke="#000000" style="stroke-dasharray: 0, 0;" stroke-width="1px" d="M 0,1 L 6,7 M 6,1 L 0,7"></path></marker></defs><g><text x="175" y="118" style="text-anchor: middle;" class="messageText">lancement du templating html</text><line x1="75" y1="125" x2="275" y2="125" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="270" y="127" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="172.5" y="153" style="text-anchor: middle;" class="messageText">templating ok</text><line x1="270" y1="160" x2="75" y2="160" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><line x1="65" y1="75" x2="290" y2="75" class="loopLine"></line><line x1="290" y1="75" x2="290" y2="170" class="loopLine"></line><line x1="65" y1="170" x2="290" y2="170" class="loopLine"></line><line x1="65" y1="75" x2="65" y2="170" class="loopLine"></line><polygon points="65,75 115,75 115,88 106.6,95 65,95" class="labelBox"></polygon><text x="72.5" y="90" class="labelText"><tspan x="72.5">opt</tspan></text><text x="177.5" y="90" style="text-anchor: middle;" class="loopText"><tspan x="177.5">[ si projet.type === application ]</tspan></text></g><g><text x="275" y="223" style="text-anchor: middle;" class="messageText">lancement de la tâche compile</text><line x1="75" y1="230" x2="475" y2="230" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="470" y="232" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="272.5" y="258" style="text-anchor: middle;" class="messageText">compile ok</text><line x1="470" y1="265" x2="75" y2="265" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><line x1="65" y1="180" x2="490" y2="180" class="loopLine"></line><line x1="490" y1="180" x2="490" y2="275" class="loopLine"></line><line x1="65" y1="275" x2="490" y2="275" class="loopLine"></line><line x1="65" y1="180" x2="65" y2="275" class="loopLine"></line><polygon points="65,180 115,180 115,193 106.6,200 65,200" class="labelBox"></polygon><text x="72.5" y="195" class="labelText"><tspan x="72.5">opt</tspan></text><text x="277.5" y="195" style="text-anchor: middle;" class="loopText"><tspan x="277.5">[ si projet.type === application-server ]</tspan></text></g><g><text x="375" y="328" style="text-anchor: middle;" class="messageText">lancement des tests</text><line x1="75" y1="335" x2="675" y2="335" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="670" y="337" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="372.5" y="363" style="text-anchor: middle;" class="messageText">test ok</text><line x1="670" y1="370" x2="75" y2="370" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><line x1="65" y1="285" x2="690" y2="285" class="loopLine"></line><line x1="690" y1="285" x2="690" y2="380" class="loopLine"></line><line x1="65" y1="380" x2="690" y2="380" class="loopLine"></line><line x1="65" y1="285" x2="65" y2="380" class="loopLine"></line><polygon points="65,285 115,285 115,298 106.6,305 65,305" class="labelBox"></polygon><text x="72.5" y="300" class="labelText"><tspan x="72.5">opt</tspan></text><text x="377.5" y="300" style="text-anchor: middle;" class="loopText"><tspan x="377.5">[ si projet.type !== application et l'option --skiptests n'est pas activée ]</tspan></text></g><g><text x="475" y="433" style="text-anchor: middle;" class="messageText">lancement de la commande npm ci --only=prod</text><line x1="75" y1="440" x2="875" y2="440" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="870" y="442" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="472.5" y="468" style="text-anchor: middle;" class="messageText">npm ci ok</text><line x1="870" y1="475" x2="75" y2="475" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="575" y="528" style="text-anchor: middle;" class="messageText">construction des chunks</text><line x1="75" y1="535" x2="1075" y2="535" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="1070" y="537" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="572.5" y="563" style="text-anchor: middle;" class="messageText">construction ok</text><line x1="1070" y1="570" x2="75" y2="570" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="675" y="618" style="text-anchor: middle;" class="messageText">copie des livrables vers dans le target</text><line x1="75" y1="625" x2="1275" y2="625" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="1270" y="627" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="672.5" y="653" style="text-anchor: middle;" class="messageText">copie ok</text><line x1="1270" y1="660" x2="75" y2="660" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><line x1="65" y1="485" x2="1290" y2="485" class="loopLine"></line><line x1="1290" y1="485" x2="1290" y2="670" class="loopLine"></line><line x1="65" y1="670" x2="1290" y2="670" class="loopLine"></line><line x1="65" y1="485" x2="65" y2="670" class="loopLine"></line><line x1="65" y1="580" x2="1290" y2="580" class="loopLine" style="stroke-dasharray: 3, 3;"></line><polygon points="65,485 115,485 115,498 106.6,505 65,505" class="labelBox"></polygon><text x="72.5" y="500" class="labelText"><tspan x="72.5">alt</tspan></text><text x="677.5" y="500" style="text-anchor: middle;" class="loopText"><tspan x="677.5">[ si projet.type === application ]</tspan></text></g><g><text x="775" y="698" style="text-anchor: middle;" class="messageText">construit le livrable static</text><line x1="75" y1="705" x2="1475" y2="705" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="1470" y="707" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="772.5" y="733" style="text-anchor: middle;" class="messageText">construction ok</text><line x1="1470" y1="740" x2="75" y2="740" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="875" y="768" style="text-anchor: middle;" class="messageText">construit le livrable dynamique</text><line x1="75" y1="775" x2="1675" y2="775" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="1670" y="777" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="872.5" y="803" style="text-anchor: middle;" class="messageText">construction ok</text><line x1="1670" y1="810" x2="75" y2="810" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="975" y="838" style="text-anchor: middle;" class="messageText">construit le livrable environnement</text><line x1="75" y1="845" x2="1875" y2="845" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="1870" y="847" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="972.5" y="873" style="text-anchor: middle;" class="messageText">construction ok</text><line x1="1870" y1="880" x2="75" y2="880" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><text x="1075" y="908" style="text-anchor: middle;" class="messageText">construit le livrable database</text><line x1="75" y1="915" x2="2075" y2="915" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><rect x="2070" y="917" fill="#EDF2AE" stroke="#666" width="10" height="33" rx="0" ry="0" class="activation0"></rect></g><g><text x="1072.5" y="943" style="text-anchor: middle;" class="messageText">construction ok</text><line x1="2070" y1="950" x2="75" y2="950" class="messageLine0" stroke-width="2" stroke="black" style="fill: none;" marker-end="url(#arrowhead)"></line></g><g><line x1="55" y1="390" x2="2090" y2="390" class="loopLine"></line><line x1="2090" y1="390" x2="2090" y2="960" class="loopLine"></line><line x1="55" y1="960" x2="2090" y2="960" class="loopLine"></line><line x1="55" y1="390" x2="55" y2="960" class="loopLine"></line><polygon points="55,390 105,390 105,403 96.6,410 55,410" class="labelBox"></polygon><text x="62.5" y="405" class="labelText"><tspan x="62.5">opt</tspan></text><text x="1072.5" y="405" style="text-anchor: middle;" class="loopText"><tspan x="1072.5">[ si projet.type in [application, application-server] ]</tspan></text></g><g><rect x="0" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="75" dy="0">package</tspan></text></g><g><rect x="200" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="275" dy="0">templateHtml</tspan></text></g><g><rect x="400" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="475" dy="0">compile</tspan></text></g><g><rect x="600" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="675" dy="0">test</tspan></text></g><g><rect x="800" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="875" dy="0">depInstallCiProd</tspan></text></g><g><rect x="1000" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1075" dy="0">preparePackage</tspan></text></g><g><rect x="1200" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1275" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1275" dy="0">prepareAllPackage</tspan></text></g><g><rect x="1400" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1475" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1475" dy="0">zipStatic</tspan></text></g><g><rect x="1600" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1675" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1675" dy="0">zipDynamic</tspan></text></g><g><rect x="1800" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1875" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="1875" dy="0">zipEnv</tspan></text></g><g><rect x="2000" y="980" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="2075" y="1012.5" style="text-anchor: middle; font-family: &quot;Open-Sans&quot;, &quot;sans-serif&quot;;" dominant-baseline="central" alignment-baseline="central" class="actor"><tspan x="2075" dy="0">zipDb</tspan></text></g></svg>

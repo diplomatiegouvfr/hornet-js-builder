@@ -13,9 +13,6 @@ class ValidateJson extends Task {
 
     task(gulp, helper, conf, project) {
         return (done) => {
-            var myCustomReporter = (file) => {
-                log("File " + file.path + " is not valid JSON.");
-            };
 
             helper.stream(
                 done,

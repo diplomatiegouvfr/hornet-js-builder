@@ -1,7 +1,6 @@
 "use strict";
 
 const Task = require("../task");
-//const ejs = require("ejs");
 const ejs = require("gulp-ejs")
 const _ = require("lodash");
 const path = require("path");
@@ -10,7 +9,6 @@ class Template extends Task {
 
     constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project) {
         super(name, taskDepend, taskDependencies, gulp, helper, conf, project);
-
 
         this.launchDir = conf.template.dir || project.dir + "/template";
         this.targetDir = path.join(project.dir,conf.static, conf.templateDir) ;
@@ -26,8 +24,6 @@ class Template extends Task {
             let tmpPackage = require(project.packageJsonPath)
             this.templateContext.project.version = tmpPackage.version;
             this.templateContext.project.static = "static-" + project.version + "/";
-
-            
 
             let streams = [];
 
@@ -57,9 +53,6 @@ class Template extends Task {
                     .pipe(gulp.dest(this.targetDir + (conf.template.dest || "")))
                 );
             }
-
-
-
 
             helper.debug("Template context :", this.templateContext);
 

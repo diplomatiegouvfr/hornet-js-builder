@@ -2,7 +2,6 @@
 
 const _ = require("lodash");
 const nodemon = require("gulp-nodemon");
-
 const Task = require("./../task");
 
 /**
@@ -29,16 +28,14 @@ class WatchServer extends Task {
         }
 
         return (done) => {
-
             var confNodemon = {
                 watch: [conf.config, conf.static].concat(helper.getExternalModuleDirectories(project)),
-                ignore: [conf.src + "/**/*.js*"],
+                ignore: [conf.tscOutDir ? conf.tscOutDir + "/**/*.js*" : conf.src + "/**/*.js*", conf.targetClientJs],
                 script: project.packageJson.main,
                 ext: "html js json css",
-                ignore: [conf.targetClientJs],
                 nodeArgs: args,
                 delay: 3,
-                env: {"NODE_ENV": this.env},
+                env: { "NODE_ENV": this.env },
                 execMap: {
                     js: "node"
                 }
@@ -46,8 +43,7 @@ class WatchServer extends Task {
 
             nodemon(confNodemon).on('restart', function (files) {
                 console.log('restarted :', files)
-              });
-            done();
+            });
         }
     }
 }

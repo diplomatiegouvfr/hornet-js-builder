@@ -2,7 +2,7 @@
 
 const del = require("del");
 const path = require("path");
-const gutil = require("gulp-util");
+const PluginError = require("plugin-error");
 const through = require("through2");
 const _ = require("lodash");
 const os = require("os");
@@ -81,45 +81,15 @@ Utils.getDescendantProp = (obj, desc) => {
     return obj;
 }
 
-/**
- * Résoud dans un objet JSON les propriétés référençant d'autre propriétés. (ex: myProp: ${x.y.z})
- *
- * @param obj Object sous format JSON
- */
-Utils.checkVariables = (obj) => {
-    var parent = obj;
-    var isModeDockerGoOn_check = function (obj, parent) {
-        var retry = false;
-        for (var i in obj) {
-            var type = typeof obj[i];
-            if (type === "function")
-                continue;
-            if (type === "object") {
-                retry |= isModeDockerGoOn_check(obj[i], parent);
-            }
-            else if (type === "string") {
-                var variables = obj[i].match(/\$\{[^\}]+\}/g);
-                if (variables && variables.length > 0) {
-                    retry = true;
-                    variables.forEach(function (variable) {
-                        obj[i] = obj[i].replace(variable, Utils.getDescendantProp(parent, variable.substring(2, variable.length - 1)));
-                    });
-                }
-            }
-        }
-        return retry;
-    };
-    if (isModeDockerGoOn_check(obj, parent)) {
-        Utils.checkVariables(obj);
-    }
-};
-
-
 Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) => {
     // require('src/aaa/bbb') > require('hornet-js-core/src/aaa/bbb')
     var regexRequire = /require\(["'](src\/[\w\-\/\.]*)["']\)/;
     var regexImportExportFrom = /(import|export)[\s]*(.*)[\s]*from[\s]*["'](src\/[\w\-\/]*)["']/;
-    var extensionAbsolutize = extensions || [".js", ".tsx", ".jsx", ".json"]
+    var extensionAbsolutize = extensions || [".js", ".tsx", ".ts", ".json"]
+
+    let tscOutDir = project.tsConfig.compilerOptions || {};
+    tscOutDir = tscOutDir.outDir || undefined;
+    var dest = tscOutDir ? path.resolve(project.dir, tscOutDir) : project.dir;
 
     var testFileExistWithExtensions = function (fileName, lExt) {
         if (path.extname(fileName).length > 0) {
@@ -134,13 +104,14 @@ Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) =>
     }
 
     return through.obj(function(file, enc, cb) {
+
         if (file.isNull()) {
             cb(null, file);
             return;
         }
 
         if (file.isStream()) {
-            cb(new gutil.PluginError("absolutizeModuleRequire", "Streaming not supported"));
+            cb(new PluginError("absolutizeModuleRequire", "Streaming not supported"));
             return;
         }
 
@@ -159,15 +130,16 @@ Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) =>
 
                     if (matches) {
                         var required = matches[1];
-                        if (testFileExistWithExtensions(path.join(project.dir, required), extensionAbsolutize)) {
+                        if (testFileExistWithExtensions(path.join(dest, required), extensionAbsolutize)) {
                             required = project.name + "/" + required;
                             processedLine = line.replace(regexRequire, "require(\"" + required + "\")");
                         }
                     } else if (matches2) {
+                        
                         var requiredType = matches2[1],
                             required = matches2[2],
                             requiredSrc = matches2[3];
-                        if (testFileExistWithExtensions(path.join(project.dir, requiredSrc), extensionAbsolutize)) {
+                        if (testFileExistWithExtensions(path.join(dest, requiredSrc), extensionAbsolutize)) {
                             requiredSrc = project.name + "/" + requiredSrc;
                             processedLine = line.replace(regexImportExportFrom, requiredType + " " + required + " from \"" + requiredSrc + "\"");
                         }
@@ -176,11 +148,11 @@ Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) =>
                     return processedLine;
                 });
 
-                file.contents = new Buffer(lines.join("\n"));
+                file.contents = Buffer.from(lines.join("\n"));
             }
             this.push(file);
         } catch (err) {
-            this.emit("error", new gutil.PluginError("absolutizeModuleRequire", err, {
+            this.emit("error", new PluginError("absolutizeModuleRequire", err, {
                 fileName: file.path
             }));
         }
@@ -207,7 +179,7 @@ Utils.rebase = (defaultMapBase) => {
         }
 
         if (file.isStream()) {
-            cb(new gutil.PluginError("hornetbuilder-rebase", "Streaming not supported"));
+            cb(new PluginError("hornetbuilder-rebase", "Streaming not supported"));
             return;
         }
 
@@ -237,7 +209,7 @@ Utils.rebase = (defaultMapBase) => {
             //file.relative = newrelative;
             this.push(file);
         } catch (err) {
-            this.emit("error", new gutil.PluginError("hornetbuilder-rebase", err, {
+            this.emit("error", new PluginError("hornetbuilder-rebase", err, {
                 fileName: file.path
             }));
         }
@@ -254,42 +226,17 @@ Utils.packageJsonFormatter = (helper, project) => {
         }
 
         if (file.isStream()){
-            cb(new gutil.PluginError("packageJsonFormatter", "Streaming not supported"));
+            cb(new PluginError("packageJsonFormatter", "Streaming not supported"));
             return;
         }
 
         try {
-            let hashes = [];
             let packageJsonCopy = _.merge({}, project.packageJson);
-            if (packageJsonCopy[helper.HB_JSON_KEY]) {
-                Object.keys(packageJsonCopy[helper.HB_JSON_KEY].history).forEach(function(hash) {
-                    packageJsonCopy[helper.HB_JSON_KEY].history[hash].deps = {};
-                    hashes.push(hash);
-                });
-            }
-            let checkreplace = false;
-            let replaceIdx = -1;
             let lines = JSON.stringify(packageJsonCopy, null, 2).split("\n");
-            let hashIdx = 0;
-            for (let i=0;i<lines.length;i++) {
-                if (lines[i].indexOf(helper.HB_JSON_KEY) != -1) {
-                    for (let j=0;j<5;j++) {
-                        lines.splice(i, 0, "");
-                        i++;
-                    }
-                    checkreplace = true;
-                } else if (lines[i].indexOf(hashes[hashIdx]) != -1) {
-                    replaceIdx = hashIdx;
-                } else if (replaceIdx != -1 && lines[i].indexOf("\"deps\": {}") != -1) {
-                    lines[i] = lines[i].replace("{}", JSON.stringify(project.packageJson[helper.HB_JSON_KEY].history[hashes[hashIdx]].deps));
-                    hashIdx++;
-                    replaceIdx = -1;
-                }
-            }
-            file.contents = new Buffer(lines.join(os.EOL));
+            file.contents = Buffer.from(lines.join(os.EOL));
             this.push(file);
         } catch (err) {
-            this.emit("error", new gutil.PluginError("packageJsonFormatter", err, {
+            this.emit("error", new PluginError("packageJsonFormatter", err, {
                 fileName: file.path
             }));
         }

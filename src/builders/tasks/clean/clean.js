@@ -1,10 +1,7 @@
 "use strict";
 
-const path = require("path");
-const del = require("del");
 const Task = require("./../task");
 const Utils = require("../utils");
-const State = require("../../state");
 
 class CleanTask extends Task {
 

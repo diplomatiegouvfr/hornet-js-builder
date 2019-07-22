@@ -1,8 +1,5 @@
 "use strict";
 
-const path = require("path");
-const fs = require("fs");
-const mocha = require("gulp-mocha");
 const istanbul = require("istanbul");
 const through = require('through2');
 
@@ -36,11 +33,11 @@ class MergeReportsTests extends Task {
         function merge(file, encoding, done) {
             if (file.isBuffer()) {
                 let instruResult = JSON.parse(file.contents.toString('utf-8'));
-                if(Object.keys(instruResult).length != 0) {helper.info("instruResult", Object.keys(instruResult).length);
+                if(Object.keys(instruResult).length != 0) {
                     for(let file in instruResult) {
                         let newResult = instruResult[file];
                         
-                        newResult.path = newResult.path.replace("/istanbul/", "/");
+                        newResult.path = newResult.path.replace("/istanbul/", conf.target.base.substring(1));
                         
                         if(!helper.fileExists(newResult.path)) {
                             newResult.path = newResult.path + "x";
@@ -48,7 +45,7 @@ class MergeReportsTests extends Task {
 
                         delete instruResult[file];
 
-                        instruResult[file.replace("/istanbul/", "/")] = newResult;
+                        instruResult[file.replace("/istanbul/", conf.target.base.substring(1))] = newResult;
 
                     }
                     collector.add(instruResult);

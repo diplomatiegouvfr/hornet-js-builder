@@ -2,8 +2,6 @@
 
 const Task = require("./../task");
 const path = require("path");
-const fs = require("fs");
-
 const replace = require('gulp-replace');
 
 class FindUnusedTemplateVar extends Task {

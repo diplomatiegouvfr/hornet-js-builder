@@ -8,6 +8,7 @@ const merge = require('webpack-merge');
 const staticDir = "static";
 const testReportDir = "test_report";
 const testWorkDir = "istanbul";
+
 const defaultConf = {
     src: "src",
     test: "test",
@@ -37,45 +38,33 @@ const defaultConf = {
     testReportDir: testReportDir,
     testWorkDir: testWorkDir,
     templateDir: "html",
-    sassConfiguration: {
-        sass: {
-            merge: true,
-            inputFilter: "./src/**/*.scss",
-            options: {
-                outputStyle: process.env.NODE_ENV !== "production" ? "expanded": "compressed",
-                data: ""
-            },
-            output: {
-                dir: path.join(staticDir, "css"),
-                fileName: process.env.NODE_ENV !== "production" ? "appli.css": "appli.min.css"
-            }
-        },
-        img: {
-            inputFilter: "./img/**/*.+(jpeg|jpg|png|gif|svg|ttf)",
-            output: {
-                dir: path.join(staticDir, "img")
-            },
-            template: path.join(__dirname, "..", "builders", "tasks", "sass", "sass-image-template.mustache")
-        }
-    },
     mocha: {
-        quiet: false,
-        reporter: process.env.NODE_ENV === "integration" ? require("../mocha/mocha-sonarqube-file-name-reporter") : "spec",
+        reporter: "mocha-multi-reporters",
         reporterOptions: {
-            output: path.join(testReportDir, "mocha", "test-results.xml"),
-            filenameFormatter: (currentPath) => {
-                let newFilePAth = path.join(process.cwd(), currentPath).replace("istanbul" + path.sep, "");
-                let exts = ["tsx", "ts", "js"];
-                if (path.extname(newFilePAth) == ".js") {
-                    let originalFile = path.parse(newFilePAth);
-                    originalFile.base = undefined;
-                    let extIdx = 0;
-                    do {
-                        originalFile.ext = "." + exts[extIdx++];
-                    } while (!fs.existsSync(path.format(originalFile)) && extIdx < exts.length);
-                    return path.format(originalFile).replace(process.cwd() + path.sep, '');
+            "reporterEnabled": "spec, xunit, mocha-sonarqube-file-name-reporter",//'../mocha/mocha-sonarqube-file-name-reporter'
+            "specReporterOptions": {
+                output: path.join(testReportDir, "mocha", "spec-results.xml"),
+            },
+            "xunitReporterOptions": {
+                output: path.join(testReportDir, "mocha", "xunit-results.xml"),
+            },
+            "mochaSonarqubeFileNameReporterReporterOptions": {
+                output: path.join(testReportDir, "mocha", "test-results.xml"),
+                filenameFormatter: (currentPath) => {
+                    let newFilePAth = path.join(process.cwd(), currentPath).replace("istanbul" + path.sep, "");
+                    let exts = ["tsx", "ts", "js"];
+                    if (path.extname(newFilePAth) == ".js") {
+                        let originalFile = path.parse(newFilePAth);
+                        originalFile.base = undefined;
+                        let extIdx = 0;
+                        do {
+                            originalFile.ext = "." + exts[extIdx++];
+                        } while (!fs.existsSync(path.format(originalFile)) && extIdx < exts.length);
+                        return path.format(originalFile).replace(process.cwd() + path.sep, '');
+                    }
                 }
-            }
+            },
+            
         }
         //,"grep": "Router constructor"
     },
@@ -114,9 +103,7 @@ const defaultConf = {
             lcovonly: { dir: path.join(testReportDir, "remap", "lcov"), file: "lcov.info" },
             html: { dir: path.join(testReportDir, "remap", "html") },
             json: { dir: path.join(testReportDir, "remap"), file: "coverage.json" },
-            cobertura: { dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml" },
-            text: { dir: path.join(testReportDir, "remap"), file: "coverage.txt" },
-            "text-summary": { dir: path.join(testReportDir, "remap"), file: "coverage_summary.txt" }
+            cobertura: { dir: path.join(testReportDir, "remap"), file: "cobertura-coverage.xml" }
         }
 
     },
@@ -141,9 +128,14 @@ function buildConf(project, conf, helper) {
         defaultConf.template = [];
     }
 
-    if (helper.isJUnitReporter() && process.env.NODE_ENV === "integration") {
-        defaultConf.mocha.reporter = "xunit";
+    let tscOutDir;
+
+    if (project && project.tsConfig && project.tsConfig.compilerOptions) {
+        tscOutDir = project.tsConfig.compilerOptions || {};
+        tscOutDir = tscOutDir.outDir || undefined;
+        defaultConf.generatedTypings.dir = tscOutDir ? tscOutDir : ".";
     }
+
     // Cas particulier pour conf sass: limites de la méthode merge de lodash....
     defaultConf.sassConfiguration = merge(defaultConf.sassConfiguration, conf.sassConfiguration);
 
@@ -154,12 +146,38 @@ function buildConf(project, conf, helper) {
         conf.webPackLogAddedFiles = false;
     }
 
-    conf.sourcesDTS = ["**/*.d.ts"].map(prepend(conf.src));
+    conf.sourcesDTS = ["**/*.d.ts"].map(helper.prepend(conf.src));
 
-    var sourcesAndTestsDts = _.flatten(["**/*.d.ts"].map(prepend(conf.src, conf.test)));
 
-    conf.sourcesTS = _.flatten(["**/*.ts", "**/*.tsx"].map(prepend(conf.src, conf.test))).concat("index.ts");
-    conf.targetTS = "." + path.sep;
+    conf.testSourcesBase = conf.testWorkDir;
+    conf.testSources = ["**/*{-spec,-test}.{js,tsx}"]
+        .map(helper.prepend(path.join(conf.testSourcesBase, conf.test)));
+
+    if (helper.getFile()) {
+        if(tscOutDir) {
+            conf.testSources = [path.resolve("/" + project.name, tscOutDir, helper.getFile().replace(/\.tsx?$/, ".js").replace(/^\.\//, "")).substring(project.name.length + 2)];
+        } else {
+            conf.testSources = [path.join(conf.testSourcesBase, helper.getFile().replace(/\.tsx?$/, ".js").replace(/^\.\//, ""))];
+        }
+    }
+
+    conf.target = {};
+    
+    if(tscOutDir) {
+        conf.target.src = path.resolve("/" + project.name, tscOutDir, conf.src).substring(project.name.length + 2);
+        conf.target.test = path.resolve("/" + project.name, tscOutDir, conf.test).substring(project.name.length + 2);
+        conf.target.ts = path.resolve("/" + project.name, tscOutDir).substring(project.name.length + 2);
+        conf.target.base = "./" + (path.resolve("/" + project.name, tscOutDir).substring(project.name.length + 2)) + "/";
+        conf.tscOutDir = "./" + (path.resolve("/" + project.name, tscOutDir).substring(project.name.length + 2));
+    } else {
+        conf.target.src = conf.src;
+        conf.target.test = conf.test;
+        conf.target.ts = "." + path.sep;
+        conf.target.base = "." + path.sep;
+        conf.tscOutDir = undefined;
+    }
+
+    conf.sourcesTS = _.flatten(["**/*.ts", "**/*.tsx"].map(helper.prepend(conf.src, conf.test))).concat("index.ts");
 
     var extensionsToClean = [];
     if (helper.isIDE()) {
@@ -167,41 +185,29 @@ function buildConf(project, conf, helper) {
         conf.postTSClean = [];
     } else {
         extensionsToClean = ["**/*.js*", "**/*.d.ts"].concat("index.js").concat("index.js.map");
-        conf.postTSClean = sourcesAndTestsDts;
-    }
-
-    conf.testSourcesBase = conf.testWorkDir;
-    conf.testSources = ["**/*{-spec,-test}.{js,tsx}"]
-        .map(prepend(path.join(conf.testSourcesBase, conf.test)));
-
-    if (helper.getFile()) {
-        conf.testSources = [path.join(conf.testSourcesBase, helper.getFile().replace(/\.tsx?$/, ".js").replace(/^\.\//, ""))];
+        conf.postTSClean = _.flatten(["**/*.d.ts"].map(helper.prepend(conf.target.src, conf.target.test)));
     }
 
 
-    conf.allSources = _.flatten(["**/*.*js*", "!**/*.js.map"].map(prepend(conf.src, conf.test))).concat("index.js");
+
+    conf.allSources = _.flatten(["**/*.*js*", "!**/*.js.map"].map(helper.prepend(conf.target.src, conf.target.test))).concat("index.js");
 
     // Fichiers JS à instrumenter pour la mesure de la couverture de code
     conf.instrumentableSourcesBase = conf.testSourcesBase;
-    conf.instrumentableSources = ["**/*.{js,jsx}"].map(prepend(path.join(conf.instrumentableSourcesBase, conf.src)));
+    conf.instrumentableSources = ["**/*.{js,jsx}"].map(helper.prepend(path.join(conf.instrumentableSourcesBase, conf.src)));
 
     // Build webpack
-    conf.targetClientJs = path.join(conf.src, conf.clientJs);
+    conf.targetClientJs = path.join(conf.target.src, conf.clientJs);
 
     // Gestion du clean
     conf.cleanElements =
-        extensionsToClean.map(prepend(conf.src))
+        extensionsToClean.map(helper.prepend(conf.target.src))
             // sauf les fichiers JS "forkés", les JSX, les fichiers JSON
-            .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(prepend("!" + conf.src)));
+            .concat(["extended/*.js", "extend/*.js", "**/*.json", "**/*.jsx"].map(helper.prepend("!" + conf.target.src)));
 
     // Gestion du clean
     conf.cleanStaticElements = [path.join(conf.static, conf.js) + "/*.js"];
     conf.cleanStaticDllElements = [path.join(conf.static, conf.js, conf.dll)];
-
-    conf.cleanThemeElements = []
-    if (project.configJson["themeName"]) {
-        conf.cleanThemeElements.push(path.join(conf.static, project.configJson["themeName"]));
-    }
 
     conf.cleanBuildElements = [conf.buildWorkDir];
     conf.cleanTestElements = [
@@ -209,19 +215,19 @@ function buildConf(project, conf, helper) {
         conf.testReportDir,
         "karma_html"
     ]
-        .concat(extensionsToClean.map(prepend(conf.test)))
-        .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(prepend("!" + conf.test)));
+        .concat(extensionsToClean.map(helper.prepend(conf.target.test)))
+        .concat(["extended/*.js", "**/*.json", "**/*.jsx"].map(helper.prepend("!" + conf.target.test)));
 
     conf.cleanTemplateElements = [path.join(conf.static, conf.templateDir)];
 
-    conf.cleanIndexElements = [
-        path.join(path.join(conf.generatedTypings.dir, "index.ts")),
-        path.join(path.join(conf.generatedTypings.dir, "index.js")),
-        path.join(path.join(conf.generatedTypings.dir, "index.d.ts"))
-    ]
+    conf.cleanIndexElements = {
+        "ts": path.resolve(project.dir, path.join(conf.generatedTypings.dir, "index.ts")),
+        "js": path.resolve(project.dir, path.join(conf.generatedTypings.dir, "index.js")),
+        "dts":path.resolve(project.dir, path.join(conf.generatedTypings.dir, "index.d.ts"))
+    };
 
-    conf.complementarySpaSources = ["*.json"].map(prepend(path.join(conf.src, "resources")))
-        .concat(["*.json"].map(prepend(conf.config)));
+    conf.complementarySpaSources = ["*.json"].map(helper.prepend(path.join(conf.target.src, "resources")))
+        .concat(["*.json"].map(helper.prepend(conf.config)));
 
 
     conf.istanbulOpt["coverageVariable"] = conf.istanbul["coverageVariable"] = "___" + project.name.replace(/-/g, "_") + "___";
@@ -234,27 +240,4 @@ function buildConf(project, conf, helper) {
 
     return conf;
 }
-
-/**
- * Fonction retournant une fonction de mapping ajoutant les arguments avant ceux du tableau sur lequel s'applique le mapping
- * @param ...args les arguments à ajouter
- * @returns {Function}
- */
-function prepend() {
-    var args = Array.prototype.slice.call(arguments, 0);
-    return function (element) {
-        if (args.length === 1) {
-            if (args[0] === "!") {
-                return args[0] + element;
-            } else {
-                return path.join(args[0], element);
-            }
-        } else {
-            return args.map(function (argElement) {
-                return path.join(argElement, element);
-            });
-        }
-    };
-}
-
 module.exports = { buildConf: buildConf };

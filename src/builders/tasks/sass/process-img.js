@@ -1,9 +1,7 @@
 "use strict";
 
-const concat = require("gulp-concat");
 const Task = require("../task");
-const path = require("path");
-var rename = require("gulp-rename");
+const rename = require("gulp-rename");
 
 class ProcessImg extends Task {
     constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project, watchMode, watchTasks) {
@@ -14,6 +12,7 @@ class ProcessImg extends Task {
 
     task(gulp, helper, conf, project) {
         return (done) => {
+
 
             if (this.watchMode) {
 
@@ -42,7 +41,7 @@ class ProcessImg extends Task {
         try {
             sassImage = require("gulp-sass-image");
         } catch (e) {
-            helper.error(e);
+            console.error(e);
             done();
         }
         const templatePath = conf.sassConfiguration.img.template;

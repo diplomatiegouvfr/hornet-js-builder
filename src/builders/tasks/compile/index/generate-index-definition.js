@@ -3,34 +3,44 @@ const Utils = require("../../utils");
 const path = require("path");
 const through = require("through2");
 const concat = require("gulp-concat");
-const gutil = require("gulp-util");
+const PluginError = require("plugin-error");
 const _ = require("lodash");
-
 
 const Task = require("../../task");
 
 class GenerateIndexDefinition extends Task {
 
     task(gulp, helper, conf, project) {
-        return (doneFn) => {
-            var moduleName = project.packageJson.name;
-            var dest = path.join(conf.generatedTypings.dir);
-            helper.debug("[buildTypeScriptDefinition] dest:", dest);
-
-            if(!conf.autoGenerateIndex) {
-                helper.info("Fichier d'index typescript 'index.ts' non généré (configuration) !!");
-                return doneFn();
+        return (done) => {
+            let streams = [];
+            if (!helper.fileExists(path.join(project.dir, "tsconfig.json"))) {
+                return done(new Error("Le fichier 'tsconfig.json' est introuvable dans le répertoire '" + project.dir + "'"));
             }
+            let tscOutDir = project.tsConfig.compilerOptions || {};
+            tscOutDir = tscOutDir.outDir || undefined;
+            var dest = tscOutDir ? path.resolve(project.dir, tscOutDir) : project.dir;
+            var srcDTS = (tscOutDir ? ["**/*.d.ts"].map(helper.prepend(tscOutDir)) : conf.sourcesDTS).concat("!index.d/ts");
+            
+            if (!project.packageJson.types) {
+                project.packageJson.types = "./index.d.ts"
+                streams.push(gulp.src(["package.json"])
+                            .pipe(Utils.packageJsonFormatter(helper, project))
+                            .pipe(gulp.dest(".")));
+            }
+
+            streams.push(gulp.src(srcDTS, tscOutDir ? {base: tscOutDir} : {})
+                    .pipe(modularizeDTS(helper, conf, project, tscOutDir, dest))
+                    .pipe(concat("index.d.ts"))
+                    .pipe(Utils.absolutizeModuleRequire(helper, project))
+                    .pipe(gulp.dest(dest)));
+
+            helper.debug("[buildTypeScriptDefinition] dest:", dest);
 
             helper.stream(
                 function () {
-                    Utils.gulpDelete(helper, conf.postTSClean)(doneFn);
+                    Utils.gulpDelete(helper, conf.postTSClean)(done);
                 },
-                gulp.src(conf.sourcesDTS)
-                    .pipe(modularizeDTS(helper, conf, project))
-                    .pipe(concat("index.d.ts"))
-                    .pipe(Utils.absolutizeModuleRequire(helper, project))
-                    .pipe(gulp.dest(project.dir))
+                streams
             );
         }
     }
@@ -44,13 +54,13 @@ class GenerateIndexDefinition extends Task {
          * }
  * </pre>
  */
-function modularizeDTS(helper, conf, project) {
+function modularizeDTS(helper, conf, project, tscOutDir, dest) {
     // require("./aaa")
     // require("../aaa")
     // require("../../aaa")
     // require("../../aaa/bbb")
     // require("src/aaa/bbb")
-    var regexRequire = /require\(["'](([\.\/]+|src\/)[\w\-\/]*)["']\)/;
+    var regexRequire = /require\(["'](([\.\/]+|src|test\/)[\w\-\/]*)["']\)/;
 
     return through.obj(function (file, enc, cb) {
         if (file.isNull()) {
@@ -59,7 +69,7 @@ function modularizeDTS(helper, conf, project) {
         }
 
         if (file.isStream()) {
-            cb(new gutil.PluginError("modularizeDTS", "Streaming not supported"));
+            cb(new PluginError("modularizeDTS", "Streaming not supported"));
             return;
         }
 
@@ -77,11 +87,21 @@ function modularizeDTS(helper, conf, project) {
                 substrTo = absolutePath.indexOf(".d.ts"),
                 moduleName = path.join(project.name, absolutePath.substring(substrFrom, substrTo)),
                 content = file.contents.toString().replace(/declare /g, "").replace(/\r\n/g, "\n"),
-                lines = content.split("\n"),
-                moduleContent = "declare module ";
+                lines = content.split("\n");
+            let moduleContent = "declare module ";
 
-            helper.debug("[modularizeDTS] absolutePath: ", absolutePath);
-            helper.debug("[modularizeDTS] moduleName: ", moduleName);
+                helper.debug("[modularizeDTS] absolutePath: ", absolutePath);
+                helper.debug("[modularizeDTS] moduleName: ", moduleName);
+
+            if (tscOutDir) {
+                let tscOutPath = path.resolve("/" + project.name, tscOutDir).substring(1);
+                helper.debug("[modularizeDTS] relative: ", tscOutPath);
+
+                if (helper.startsWith(moduleName, tscOutPath)) {
+                    moduleName = moduleName.replace(tscOutPath, project.name);
+                }
+            }
+
 
             moduleName = Utils.systemPathToRequireName(moduleName);
 
@@ -89,6 +109,8 @@ function modularizeDTS(helper, conf, project) {
             if (fileName === "index") {
                 moduleName = moduleName.substr(0, moduleName.indexOf("/"));
             }
+
+            helper.debug("[modularizeDTS] new moduleName: ", moduleName);
 
             // remplacement des require("<cheminRelatif>") par require("<moduleName>/src/ts/<cheminRelatif>")
             lines = _.map(lines, function (line) {
@@ -102,6 +124,7 @@ function modularizeDTS(helper, conf, project) {
                             || helper.fileExists(path.join(project.dir, required + ".jsx"))) {
                             required = project.name + "/" + required;
                             // mise à jour du require()
+                            helper.debug("[modularizeDTS] raw required:", required);
                             processedLine = line.replace(regexRequire, "require(\"" + required + "\")");
                         }
                     } else {
@@ -129,10 +152,11 @@ function modularizeDTS(helper, conf, project) {
             moduleContent += "\"" + moduleName + "\" {" + "\n";
             moduleContent += lines.join("\n");
             moduleContent += "\n" + "}" + "\n";
-            file.contents = new Buffer(moduleContent);
+            file.contents = Buffer.from(moduleContent);
             this.push(file);
         } catch (err) {
-            this.emit("error", new gutil.PluginError("modularizeDTS", err, {
+            helper.error("erreur :", err);
+            this.emit("error", new PluginError("modularizeDTS", err, {
                 fileName: file.path
             }));
         }
@@ -175,10 +199,10 @@ function postProcessDTS(helper) {
             var newContent = lines.join(os.EOL);
             newContent = references + os.EOL + newContent;
 
-            file.contents = new Buffer(newContent);
+            file.contents = Buffer.from(newContent);
             this.push(file);
         } catch (err) {
-            this.emit("error", new gutil.PluginError("postProcessDTS", err, {
+            this.emit("error", new PluginError("postProcessDTS", err, {
                 fileName: file.path
             }));
         }

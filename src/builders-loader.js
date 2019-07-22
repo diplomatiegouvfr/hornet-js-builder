@@ -4,14 +4,11 @@ var path = require("path");
 var chalk = require("chalk");
 var _ = require("lodash");
 
-var npm = require("npm");
-
 Error.stackTraceLimit = Infinity;
 var gulp = require("gulp");
 
 // Les builders
 var parentBuilder = require("./builders/parent-builder");
-var themesBuilder = require("./builders/themes-builder");
 var commonTaskBuilder = require("./builders/common-tasks-builder");
 var applicationAndModuleBuilder = require("./builders/application-and-module-builder.js");
 const State = require("./builders/state");
@@ -22,6 +19,7 @@ module.exports = function (project, done) {
         baseDir: project.dir
     };
 
+    
     function callProjectBuilderAndGulpTasks() {
         if (_.isFunction(project.builderJs.gulpTasks)) {
             helper.debug("Execution de la fonction 'gulpTasks' fournie par le projet");
@@ -31,14 +29,14 @@ module.exports = function (project, done) {
         }
 
         // lancement des tâches gulp
-        done();
+        //done();
     }
 
     helper.info(chalk.cyan("Chargement des tâches du projet '" + project.name + "'"));
-    helper.checkOrInstallBuildDependencies(project, npm, function() {
+    return new Promise((resolve, reject) => {
+        
         // on déclare le répertoire temporairement le temps de charger le fichier "builder.js" du projet
-        var moduleResolver = require("./module-resolver");
-        moduleResolver.addModuleDirectory(path.normalize(path.join(project.dir, helper.NODE_MODULES_BUILD)));
+        const moduleResolver = require("./module-resolver");
 
         //on install les dépendances de test dans le cas ou le builder.js comprend des requieres vers des modules
 
@@ -47,29 +45,49 @@ module.exports = function (project, done) {
 
         _.merge(conf, project.builderJs.config);
 
-        // on supprime la déclaration car le fichier "builder.js" a été chargé
-        moduleResolver.removeModuleDirectory(path.normalize(path.join(project.dir, helper.NODE_MODULES_BUILD)));
-
         // on charge les tâche gulp prédéfinies par hornet-js-builder
         commonTaskBuilder.gulpTasks(gulp, project, conf, helper);
         if (project.type === helper.TYPE.PARENT) {
             State.parentBuilder.externalModules = project.builderJs.externalModules;
             applicationAndModuleBuilder.gulpTasks(gulp, project, conf, helper);
-            parentBuilder.gulpTasks(gulp, project, conf, helper, callProjectBuilderAndGulpTasks);
-
+            parentBuilder.gulpTasks(gulp, project, conf, helper, () => {
+                if(helper.isPreInstallDev()) {
+                    require("run-sequence").apply(gulp, ["dependencies:install-dev"].concat(
+                        function (err) {
+                            callProjectBuilderAndGulpTasks();
+                            if (err) {
+                                reject(err)
+                            }
+                            resolve();
+                        }
+                    ));
+                } else {
+                    callProjectBuilderAndGulpTasks() & resolve();
+                }
+            });
         } else {
             if (project.type === helper.TYPE.CUSTOM) {
 
-            } else if (project.type === helper.TYPE.THEME) {
-
-                // Le theme est tellement différent qu"on lui fourni un objet de conf personnel
-                themesBuilder.gulpTasks(gulp, project, conf, helper);
             } else {
                 applicationAndModuleBuilder.gulpTasks(gulp, project, conf, helper);
             }
-            callProjectBuilderAndGulpTasks();
+            if(helper.isPreInstallDev()) {
+                require("run-sequence").apply(gulp, ["dependencies:install-dev"].concat(
+                    function (err) {
+                        callProjectBuilderAndGulpTasks();
+                        if (err) {
+                            reject(err)
+                        }
+                        resolve();
+                    }
+                ));
+            } else {
+                callProjectBuilderAndGulpTasks() & resolve();
+            }
         }
     }).catch((err) => {
         console.error(err);
+    }).then(()=> {
+        done();
     });
 };

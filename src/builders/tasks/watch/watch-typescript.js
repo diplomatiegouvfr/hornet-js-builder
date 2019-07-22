@@ -1,7 +1,5 @@
 "use strict";
 
-const path = require("path");
-
 const Task = require("./../task");
 
 class WatchTypeScript extends Task {
@@ -14,9 +12,12 @@ class WatchTypeScript extends Task {
                 done();
             };
         } else {
+            const watchOptions = {
+            };
             return (done) => {
+                project.watch = true;
                 helper.debug("Activation de watchTypeScript");
-                gulp.watch(helper.getFile() || conf.sourcesTS.concat(conf.postTSClean.map((elt)=>{return "!"+elt})), ["compile-no-clean:ts"]);
+                gulp.watch(helper.getFile() || conf.sourcesTS.concat(conf.postTSClean.map((elt) => { return "!" + elt })), watchOptions, ["compile-no-clean:ts"]);
                 done();
             };
         }
