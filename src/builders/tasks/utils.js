@@ -4,7 +4,9 @@ const del = require("del");
 const path = require("path");
 const PluginError = require("plugin-error");
 const through = require("through2");
-const _ = require("lodash");
+const merge = require ("lodash.merge");
+const map = require ("lodash.map");
+const endsWith = require ("lodash.endswith");
 const os = require("os");
 
 const Utils = function () {
@@ -123,7 +125,7 @@ Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) =>
                 // remplacement des require("src/...") par require("<moduleName>/src/...") OU
                 // remplacement des import ... from "src/..." par import ... from "<moduleName>/src/..." OU
                 // remplacement des export from "src/..." par export from "<moduleName>/src/..." OU
-                lines = _.map(lines, function (line) {
+                lines = map(lines, function (line) {
                     var processedLine = line,
                         matches = regexRequire.exec(line),
                         matches2 = regexImportExportFrom.exec(line);
@@ -188,7 +190,7 @@ Utils.rebase = (defaultMapBase) => {
             var newbase = file.oldBase || path.join(file.base, path.dirname(file.relative));
             //var newrelative = file.oldRelative || path.basename(file.relative);
 
-            var isMap = _.endsWith(file.relative, ".js.map");
+            var isMap = endsWith(file.relative, ".js.map");
             var firstPass = !(file.oldBase); // premier passage
             if (isMap) {
                 newbase = defaultMapBase;
@@ -231,7 +233,7 @@ Utils.packageJsonFormatter = (helper, project) => {
         }
 
         try {
-            let packageJsonCopy = _.merge({}, project.packageJson);
+            let packageJsonCopy = merge({}, project.packageJson);
             let lines = JSON.stringify(packageJsonCopy, null, 2).split("\n");
             file.contents = Buffer.from(lines.join(os.EOL));
             this.push(file);

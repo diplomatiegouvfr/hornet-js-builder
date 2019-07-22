@@ -4,7 +4,9 @@ const path = require("path");
 const through = require("through2");
 const concat = require("gulp-concat");
 const PluginError = require("plugin-error");
-const _ = require("lodash");
+const map = require ("lodash.map");
+const filter = require ("lodash.filter");
+const uniq = require ("lodash.uniq");
 
 const Task = require("../../task");
 
@@ -113,7 +115,7 @@ function modularizeDTS(helper, conf, project, tscOutDir, dest) {
             helper.debug("[modularizeDTS] new moduleName: ", moduleName);
 
             // remplacement des require("<cheminRelatif>") par require("<moduleName>/src/ts/<cheminRelatif>")
-            lines = _.map(lines, function (line) {
+            lines = map(lines, function (line) {
                 var processedLine = line,
                     matches = regexRequire.exec(line);
                 //helper.debug("line: ", line, "match:", matches);
@@ -145,7 +147,7 @@ function modularizeDTS(helper, conf, project, tscOutDir, dest) {
                 return processedLine;
             });
 
-            lines = _.map(lines, function (line) {
+            lines = map(lines, function (line) {
                 return "\t" + line;
             });
 
@@ -180,20 +182,20 @@ function postProcessDTS(helper) {
                 lines = content.split("\n");
 
             // extraction des "/// <reference path="..." />"
-            var references = _.filter(lines, function (line) {
+            var references = filter(lines, function (line) {
                 return regexReferences.test(line);
             });
-            lines = _.filter(lines, function (line) {
+            lines = filter(lines, function (line) {
                 return !regexReferences.test(line);
             });
 
             // (../)*hornet-js-ts-typings/aaa/ -> ../aaa
-            references = _.map(references, function (reference) {
+            references = map(references, function (reference) {
                 return reference.replace(regexTypings, "path=\"../");
             });
 
             // dé-duplication des "/// <reference path="..." />"
-            references = _.uniq(references);
+            references = uniq(references);
             references = references.join(os.EOL);
 
             var newContent = lines.join(os.EOL);

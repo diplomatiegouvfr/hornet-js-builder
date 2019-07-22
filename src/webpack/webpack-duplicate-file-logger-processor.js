@@ -3,7 +3,8 @@ module.exports = WebPackFileLogger;
 var path = require("path");
 var fs = require("fs");
 var helper = require("../helpers");
-var _ = require("lodash");
+const isEmpty = require("lodash.isempty");
+const find = require("lodash.find");
 
 /**
  * Plugin permettant de détecter les doublons de dépendances
@@ -17,7 +18,7 @@ function WebPackFileLogger(content) {
     var currentDir = path.dirname(ressourcePath);
     var continueLoop = true;
 
-    while (!_.isEmpty(currentDir) && continueLoop) {
+    while (!isEmpty(currentDir) && continueLoop) {
         var currentPackageFile = path.join(currentDir, "package.json");
         //helper.debug('Test package:', currentPackageFile);
         if (helper.fileExists(currentPackageFile)) {
@@ -27,10 +28,10 @@ function WebPackFileLogger(content) {
             var relativeFileName = path.relative(currentDir, ressourcePath);
             //helper.debug('relativeFileName:', relativeFileName);
 
-            var sameVersionDep = _.find(fileList, byNameAndVersionPredicate(currentPackage));
+            var sameVersionDep = find(fileList, byNameAndVersionPredicate(currentPackage));
             if (sameVersionDep) {
                 //On check la même version importée 2 fois
-                var sameFileInfos = _.find(sameVersionDep.files, byFileNamePredicate(relativeFileName));
+                var sameFileInfos = find(sameVersionDep.files, byFileNamePredicate(relativeFileName));
                 if (sameFileInfos && sameFileInfos.filePath === ressourcePath) {
                     //Même fichier
                     continue;
@@ -44,10 +45,10 @@ function WebPackFileLogger(content) {
                 }
             } else {
                 //On check quand même une autre version au cas où
-                var nameDep = _.find(fileList, byNamePredicate(currentPackage));
+                var nameDep = find(fileList, byNamePredicate(currentPackage));
                 if (nameDep) {
                     //helper.info('Librairie ', nameDep.name, ' importée dans 2 versions différentes');
-                    var sameFileInfos = _.find(nameDep.files, byFileNamePredicate(relativeFileName));
+                    var sameFileInfos = find(nameDep.files, byFileNamePredicate(relativeFileName));
                     if (sameFileInfos) {
                         helper.warn("[webpack]: Fichier importé 2 fois dans des versions différentes (",
                             nameDep.version, "=>", currentPackage.version, "):", sameFileInfos.filePath, "=>", ressourcePath);

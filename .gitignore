@@ -7,3 +7,4 @@ target
 definition-ts
 npm-debug.log
 .vscode
+.history

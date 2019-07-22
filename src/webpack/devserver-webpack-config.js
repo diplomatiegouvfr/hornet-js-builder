@@ -1,7 +1,7 @@
 "use strict";
 var webpack = require("webpack");
 var helper = require("../helpers");
-var _ = require("lodash");
+const merge = require("lodash.merge");
 var path = require("path");
 var jsxLoaderName = require.resolve("jsx-loader");
 
@@ -43,7 +43,7 @@ function configWebPackDevServer(project, conf, debug) {
     };
 
 
-    var configuration = _.merge(defaultConfiguration, webPackDevConfiguration);
+    var configuration = merge(defaultConfiguration, webPackDevConfiguration);
 
     // configuration.plugins.push(new webpack.HotModuleReplacementPlugin());
     configuration.plugins.push(new webpack.IgnorePlugin(/regenerator|nodent|js\-beautify/, /ajv/));

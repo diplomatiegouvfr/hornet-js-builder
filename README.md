@@ -834,10 +834,10 @@ Le diagramme de séquence suivant explique les enchaînements  effectués par la
 | clean:test | Supprime le dossier istanbul ainsi que les fichiers générés (.js, .map et .d.ts dans le dossier de tests) | test, test_report, karma_html|  |*|
 | clean:static | Supprime les fichiers statics générés par webpack | ./static/js | |*|
 | clean:static-dll | Supprime les fichiers dll statics générés par webpack | ./static/js/dll | |*|
-| clean:static-all | Supprime les fichiers dll statics générés par webpack + les dll | ./static/js/dll/* | clean:static, clean:static-dll||*|
+| clean:static-all | Supprime les fichiers dll statics générés par webpack + les dll | ./static/js/dll/* | clean:static, clean:static-dll|*|
 | clean:src | Supprime les fichiers généré dans le répertoire source ./src| extended/*.js", "**/*.json", "**/*.jsx | |*|
-| clean:template | Supprime les templates générées dans la partie static | ./static/templateDir  |*|
-| clean:publish | Supprime le tmpPublish généré suite à la pubbkication | ./tmpPublish  |*|
+| clean:template | Supprime les templates générées dans la partie static | ./static/templateDir  | |*|
+| clean:publish | Supprime le tmpPublish généré suite à la pubbkication | ./tmpPublish  | |*|
 | clean-all | Supprime tous les fichiers et dépendances | | clean, clean:build, dependencies:clean-all, clean:static, clean:template, clean:publish |*|
 
 
@@ -898,11 +898,11 @@ Le diagramme suivant montre les enchainements effecués lors du lancement de la 
 | watch:run | Equivalent à  watch:exe mais effectue en plus l'install et la compile des fichier | dependencies:install, compile, watch:ts:exe, watch:serveur:exe | application-server |
 | watch:client:exe | Ecoute les modifications sur les fichiers et relance WebPack à la volée.<br />Lance WebPack en mode development. |clean:static, prepare-package-dll | application|
 | watch:client:run | Ecoute les modifications sur les fichiers et relance WebPack à la volée.<br />Lance WebPack en mode development. |clean:static, prepare-package-dll, watch:ts:run | application|
-| watch:client-prod | Equivalent à watch:client mais avec WebPack en mode production | watch:ts |
-| watch | Compile et écoute les modifications pour redémarrer nodejs et relancer WebPack si besoin.<br />mode : development | compile<br />watch:client<br />watch:serveur |
-| watch-prod | Compile et écoute les modifications pour redémarrer nodejs et relancer WebPack si besoin.<br />mode : production  | compile<br />watch:client-prod<br />watch:serveur-prod |
+| watch:client-prod | Similaire à watch:client:run mais avec WebPack en mode production sans lancer prepare-package-dll | clean:static, watch:ts | application|
+| watch-prod | Compile et écoute les modifications pour redémarrer nodejs et relancer WebPack si besoin.<br />mode : production  | dependencies:install, compile, watch:client-prod, watch:serveur-prod | application|
+| watch-prod | Compile et écoute les modifications pour redémarrer nodejs et relancer WebPack si besoin.<br />mode : production  | dependencies:install, compile, watch:serveur-prod | application-server|
 | w | Alias de "watch:exe" | watch:exe |*|
-| wp | Alias de "watch-prod" | watch-prod |
+| wp | Alias de "watch-prod" | watch-prod |application, application-server|
 
 Le diagramme suivant explique les enchaînements de la tâche watch:exe
 

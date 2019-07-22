@@ -13,11 +13,11 @@ class PreparePackageSpa extends Task {
 
             let base = undefined;
 
-            if (_.isArray(conf.spaResources)) {
+            if (Array.isArray(conf.spaResources)) {
                 Array.prototype.push.apply(conf.complementarySpaSources, conf.spaResources);
             }
 
-            if (conf.spaFilter && _.isArray(conf.spaFilter)) {
+            if (conf.spaFilter && Array.isArray(conf.spaFilter)) {
                 let resultFilter;
                 conf.spaFilter.map((filter) => {
                     let reg = new RegExp(filter);

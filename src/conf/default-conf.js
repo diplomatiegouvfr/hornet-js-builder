@@ -2,7 +2,8 @@
 
 const path = require("path");
 const fs = require("fs");
-const _ = require("lodash");
+const lodashMerge = require ("lodash.merge");
+const flatten = require ("lodash.flatten");
 const merge = require('webpack-merge');
 
 const staticDir = "static";
@@ -124,7 +125,7 @@ const defaultConf = {
  */
 function buildConf(project, conf, helper) {
 
-    if (_.isArray(conf.template)) {
+    if (Array.isArray(conf.template)) {
         defaultConf.template = [];
     }
 
@@ -139,7 +140,7 @@ function buildConf(project, conf, helper) {
     // Cas particulier pour conf sass: limites de la méthode merge de lodash....
     defaultConf.sassConfiguration = merge(defaultConf.sassConfiguration, conf.sassConfiguration);
 
-    conf = _.merge(conf, defaultConf);
+    conf = lodashMerge(conf, defaultConf);
 
     conf.webPackConfiguration = merge(defaultConf.webPackConfiguration, conf.webpack);
     if (!conf.webPackLogAddedFiles) {
@@ -177,7 +178,7 @@ function buildConf(project, conf, helper) {
         conf.tscOutDir = undefined;
     }
 
-    conf.sourcesTS = _.flatten(["**/*.ts", "**/*.tsx"].map(helper.prepend(conf.src, conf.test))).concat("index.ts");
+    conf.sourcesTS = flatten(["**/*.ts", "**/*.tsx"].map(helper.prepend(conf.src, conf.test))).concat("index.ts");
 
     var extensionsToClean = [];
     if (helper.isIDE()) {
@@ -185,12 +186,12 @@ function buildConf(project, conf, helper) {
         conf.postTSClean = [];
     } else {
         extensionsToClean = ["**/*.js*", "**/*.d.ts"].concat("index.js").concat("index.js.map");
-        conf.postTSClean = _.flatten(["**/*.d.ts"].map(helper.prepend(conf.target.src, conf.target.test)));
+        conf.postTSClean = flatten(["**/*.d.ts"].map(helper.prepend(conf.target.src, conf.target.test)));
     }
 
 
 
-    conf.allSources = _.flatten(["**/*.*js*", "!**/*.js.map"].map(helper.prepend(conf.target.src, conf.target.test))).concat("index.js");
+    conf.allSources = flatten(["**/*.*js*", "!**/*.js.map"].map(helper.prepend(conf.target.src, conf.target.test))).concat("index.js");
 
     // Fichiers JS à instrumenter pour la mesure de la couverture de code
     conf.instrumentableSourcesBase = conf.testSourcesBase;

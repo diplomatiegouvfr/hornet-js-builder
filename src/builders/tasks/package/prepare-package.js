@@ -20,7 +20,7 @@ class PreparePackage extends Prepare {
             path.join("./package.json"),
             "!**/*.ts"
         ]
-        if(conf.ressources && _.isArray(conf.ressources)) {
+        if(conf.ressources && Array.isArray(conf.ressources)) {
             Array.prototype.push.apply(this.fileList, conf.ressources);
         }
     }

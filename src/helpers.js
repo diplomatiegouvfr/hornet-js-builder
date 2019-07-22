@@ -2,7 +2,12 @@
 const log = require('fancy-log'); // remplacement gulp-util.log
 const fs = require("fs");
 const chalk = require("chalk");
-const _ = require("lodash");
+const isObject = require("lodash.isobject");
+const isUndefined = require("lodash.isundefined");
+const map = require("lodash.map");
+const flatten = require("lodash.flatten");
+const cloneDeep = require("lodash.clonedeep");
+const merge = require("lodash.merge");
 const os = require("os");
 const path = require("path");
 const semver = require("semver");
@@ -79,7 +84,7 @@ Helper.allowJSON5 = function () {
 
 // Getter & Setter pour les modes du builder (options)
 Helper.setDebug = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.IS_DEBUG_ENABLED = value;
     }
 };
@@ -110,7 +115,7 @@ Helper.getTaskInfo = function (value) {
 
 Helper.setList = function (value) {
 
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         let taskInfoPrint;
         Object.keys(taskInfo).forEach((key) => {
             taskInfoPrint += "\n " + chalk.blue.bold(key) + " | " + taskInfo[key];
@@ -124,7 +129,7 @@ Helper.isDebug = function () {
 };
 
 Helper.setActiveExternal = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.IS_EXTERNAL_ENABLED = value;
     }
 };
@@ -134,7 +139,7 @@ Helper.isActiveExternal = function () {
 };
 
 Helper.setForce = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.IS_FORCE_ENABLED = value;
     }
 };
@@ -143,12 +148,12 @@ Helper.isForce = function () {
 };
 
 Helper.setRegistry = function (url) {
-    if (!_.isUndefined(url)) {
+    if (!isUndefined(url)) {
         process.env.HB_RETRIEVE_REGISTRY = process.env.HB_PUBLISH_REGISTRY = url;
     }
 };
 Helper.setPublishRegistry = function (url) {
-    if (!_.isUndefined(url)) {
+    if (!isUndefined(url)) {
         process.env.HB_PUBLISH_REGISTRY = url;
     }
 };
@@ -160,7 +165,7 @@ Helper.getPublishRegistry = function () {
 };
 
 Helper.setSkipTests = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_SKIP_TESTS = value;
     }
 };
@@ -169,7 +174,7 @@ Helper.isSkipTests = function () {
 };
 
 Helper.setSkipDedupe = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_SKIP_DEDUPE = value;
     }
 };
@@ -178,7 +183,7 @@ Helper.isSkipDedupe = function () {
 };
 
 Helper.setSkipMinified = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_SKIP_MINIFIED = value;
     }
 };
@@ -187,7 +192,7 @@ Helper.isSkipMinified = function () {
 };
 
 Helper.setNoWarn = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_NO_WARN = value;
     }
 };
@@ -196,7 +201,7 @@ Helper.isNoWarn = function () {
 };
 
 Helper.setIDE = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_IDE = value;
     }
 };
@@ -205,7 +210,7 @@ Helper.isIDE = function () {
 };
 
 Helper.setWebpackVisualizer = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_WEBPACK_VISUALIZER = value;
     }
 };
@@ -214,7 +219,7 @@ Helper.isWebpackVisualizer = function () {
 };
 
 Helper.setModule = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_MODULE = value;
     }
 };
@@ -224,7 +229,7 @@ Helper.getModule = function () {
 };
 
 Helper.setShowWebPackFiles = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_SHOW_WEBPACK_FILES = value;
     }
 };
@@ -232,7 +237,7 @@ Helper.isShowWebPackFiles = function () {
     return process.env.HB_SHOW_WEBPACK_FILES || false;
 };
 Helper.setDebugPort = function (port) {
-    if (!_.isUndefined(port)) {
+    if (!isUndefined(port)) {
         process.env.HB_DEBUG_PORT = port;
     }
 };
@@ -241,7 +246,7 @@ Helper.getDebugPort = function () {
 };
 
 Helper.setLintRules = function (rules) {
-    if (!_.isUndefined(rules)) {
+    if (!isUndefined(rules)) {
         process.env.HB_LINT_RULES = rules;
     }
 };
@@ -251,7 +256,7 @@ Helper.getLintRules = function () {
 };
 
 Helper.setLintReport = function (report) {
-    if (!_.isUndefined(report)) {
+    if (!isUndefined(report)) {
         process.env.HB_LINT_REPORT = report;
     }
 };
@@ -261,7 +266,7 @@ Helper.getLintReport = function () {
 };
 
 Helper.setPreInstallDev = function (skip) {
-    if (!_.isUndefined(skip)) {
+    if (!isUndefined(skip)) {
         process.env.IS_PRE_INSTALL_DEV = skip;
     }
 };
@@ -271,7 +276,7 @@ Helper.isPreInstallDev = function () {
 };
 
 Helper.setMultiType = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.IS_MULTI_TYPE = value;
     }
 };
@@ -280,7 +285,7 @@ Helper.isMultiType = function () {
 };
 
 Helper.setFile = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_FILE = value;
     }
 };
@@ -289,7 +294,7 @@ Helper.getFile = function () {
 };
 
 Helper.setDevMode = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.IS_DEV_MODE_ENABLED = value;
     }
 };
@@ -298,7 +303,7 @@ Helper.isDevMode = function () {
 };
 
 Helper.setOfflineMode = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.IS_OFFLINE_MODE_ENABLED = value;
     }
 };
@@ -307,7 +312,7 @@ Helper.isOfflineMode = function () {
 };
 
 Helper.setRelease = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.RELEASE = value;
     }
 };
@@ -316,7 +321,7 @@ Helper.getRelease = function () {
 };
 
 Helper.setVersion = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.VERSION = value;
     }
 };
@@ -326,7 +331,7 @@ Helper.getVersion = function () {
 };
 
 Helper.setDependency = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.DEPENDENCY = value;
     }
 };
@@ -336,7 +341,7 @@ Helper.getDependency = function () {
 };
 
 Helper.setQuery = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.QUERY = value;
     }
 };
@@ -346,7 +351,7 @@ Helper.getQuery = function () {
 };
 
 Helper.setUri = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.URI = value;
     }
 };
@@ -356,7 +361,7 @@ Helper.getUri = function () {
 };
 
 Helper.setStopOnError = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_STOP_ON_ERROR = value;
     }
 }
@@ -367,7 +372,7 @@ Helper.getStopOnError = function () {
 
 Helper.getEnvExternalModule = function () {
     let envVar = process.env.HB_EXT_MODULES;
-    if (_.isUndefined(envVar)) {
+    if (isUndefined(envVar)) {
         return [];
     }
     return envVar.split(/\s*(;|$)\s*/)
@@ -467,8 +472,8 @@ Helper.error = function () {
 
 Helper.processLogArgs = function (args) {
     //Les objets ne sont pas stringifiés avec chalk donc c'est fait main :(
-    var processedArgs = _.map(args, function (arg) {
-        if (_.isObject(arg)) {
+    var processedArgs = map(args, function (arg) {
+        if (isObject(arg)) {
             if (arg instanceof Error) {
                 return [os.EOL, arg.toString()];
             }
@@ -478,7 +483,7 @@ Helper.processLogArgs = function (args) {
         }
     });
 
-    return _.flatten(processedArgs);
+    return flatten(processedArgs);
 };
 
 //
@@ -942,7 +947,7 @@ Helper.stream = function (done, streams) {
 };
 
 Helper.setMainProcessDir = function (value) {
-    if (!_.isUndefined(value)) {
+    if (!isUndefined(value)) {
         process.env.HB_MAIN_CWD = value;
     } else {
         process.env.HB_MAIN_CWD = process.cwd();
@@ -1081,17 +1086,17 @@ Helper.copyDir = function (src, dest) {
 
 Helper.resolveTypescriptConfig = function (directory, configName, config) {
     let tsconfigFile = path.join(directory, configName);
-    let actualConf = _.cloneDeep(config);
+    let actualConf = cloneDeep(config);
 
     if (fs.existsSync(tsconfigFile)) {
         let configTypescript = require(tsconfigFile);
         if (configTypescript && configTypescript.extends) {
-            actualConf = _.merge(
+            actualConf = merge(
                 actualConf,
                 Helper.resolveTypescriptConfig(path.resolve(directory, path.dirname(configTypescript.extends)), path.basename(configTypescript.extends) + ".json", actualConf)
             );
         }
-        actualConf = _.merge(actualConf, configTypescript);
+        actualConf = merge(actualConf, configTypescript);
     }
     Helper.debug(directory, configName, `extend : ${actualConf ? actualConf.extends: null}`);
     return actualConf;

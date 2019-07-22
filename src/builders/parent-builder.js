@@ -2,7 +2,7 @@
 
 var path = require("path");
 var fs = require("fs");
-var _ = require("lodash");
+const cloneDeep = require ("lodash.clonedeep");
 const State = require("./state");
 
 const FixVersion = require("./tasks/version/fix-version");
@@ -58,7 +58,7 @@ module.exports = {
         helper.debug("Modules trouvés :", moduleList);
         var subProjectTypes = {};
         moduleList.forEach(function (project) {
-            State.moduleList[project.name] = _.cloneDeep(project)
+            State.moduleList[project.name] = cloneDeep(project)
             if (project.type) {
                 subProjectTypes[project.type] = true;
             }

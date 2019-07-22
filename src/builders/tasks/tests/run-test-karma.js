@@ -1,6 +1,6 @@
 const path = require("path");
 const Server = require('karma').Server;
-const _ = require("lodash");
+const lodashmerge = require ("lodash.merge");
 
 let fs = require("fs");
 const merge = require("webpack-merge");
@@ -74,7 +74,7 @@ class RunTestKarma extends PreparePackageClient {
             if(this.karmaConfigFile) {
                 this.configuration = require(this.karmaConfigFile)(project, conf, helper, webpackConfigPart);
             } else {
-                this.configuration = _.merge(this.configuration, conf.karma);
+                this.configuration = lodashmerge(this.configuration, conf.karma);
 
                 if (this.configuration.browsers && this.configuration.browsers[0] == "PhantomJS") {
                     this.configuration.files.unshift(path.join(project.dir, "node_modules", "babel-polyfill", "dist", "polyfill.min.js"))

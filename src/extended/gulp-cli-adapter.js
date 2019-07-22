@@ -1,7 +1,8 @@
 'use strict';
 
 var chalk = require("chalk");
-var _ = require("lodash");
+const isFunction = require("lodash.isfunction");
+const isUndefined = require("lodash.isundefined");
 const log = require('fancy-log'); // remplacement gulp-util.log
 var prettyTime = require("pretty-hrtime");
 var helper = require("../helpers");
@@ -36,9 +37,9 @@ module.exports = function (gulp) {
         gulp.task = function(taskName, deps, cb) {
 
             
-            cb = _.isArray(deps) ? cb : deps;
-            cb = _.isFunction(cb) ? cb : function(done){done();};
-            deps = _.isArray(deps) ? deps : [];
+            cb = Array.isArray(deps) ? cb : deps;
+            cb = isFunction(cb) ? cb : function(done){done();};
+            deps = Array.isArray(deps) ? deps : [];
 
             var currentDir = process.cwd();
             var subModule = helper.getCurrentSubModule();
@@ -52,7 +53,7 @@ module.exports = function (gulp) {
 
             tasksHistory[taskName] = {
                 deps: [],
-                fn: _.isUndefined(cb) ? function(done) { done(); } : cb
+                fn: isUndefined(cb) ? function(done) { done(); } : cb
             };
 
             if (deps.length > 0) {
@@ -79,7 +80,7 @@ module.exports = function (gulp) {
                     process.chdir(currentDir);
                     
                         
-                    if ( _.isArray(tasksHistory[taskName].deps) &&  tasksHistory[taskName].deps.length > 0 ) {
+                    if ( Array.isArray(tasksHistory[taskName].deps) &&  tasksHistory[taskName].deps.length > 0 ) {
                             var arr = tasksHistory[taskName].deps.slice(0);
                             helper.checkTasksExistence(gulp, arr);
                             arr.push(function(err) {
@@ -126,11 +127,11 @@ module.exports = function (gulp) {
 
 
 
-            if (_.isUndefined(gulpTask)) {
+            if (isUndefined(gulpTask)) {
                 throw new Error("La tâche '" + name + "' n'existe pas");
             }
 
-            if (_.isUndefined(gulp.tasks[preTaskName+subName]) && _.isUndefined(gulp.tasks[doTaskName+subName]) && _.isUndefined(gulp.tasks[postTaskName+subName])) {
+            if (isUndefined(gulp.tasks[preTaskName+subName]) && isUndefined(gulp.tasks[doTaskName+subName]) && isUndefined(gulp.tasks[postTaskName+subName])) {
                 // Génération de la tâche 'post'
                 new Task(postTaskName, "", [], gulp, helper, null, null, (done) => {return done()});
 
@@ -175,13 +176,13 @@ module.exports = function (gulp) {
             var moduleTaskName = taskName + (helper.getCurrentSubModule() ? ("/" + helper.getCurrentSubModule().name) : "");
             var moduleSubTaskName = subTaskName + (helper.getCurrentSubModule() ? ("/" + helper.getCurrentSubModule().name) : "");
 
-            if (_.isUndefined(gulp.tasks[moduleTaskName]) || _.isUndefined(tasksHistory[moduleTaskName])) {
+            if (isUndefined(gulp.tasks[moduleTaskName]) || isUndefined(tasksHistory[moduleTaskName])) {
                 throw new Error("La tâche '" + taskName + "' n'existe pas");
             }
-            if (_.isUndefined(gulp.tasks[moduleSubTaskName]) || _.isUndefined(tasksHistory[moduleSubTaskName])) {
+            if (isUndefined(gulp.tasks[moduleSubTaskName]) || isUndefined(tasksHistory[moduleSubTaskName])) {
                 throw new Error("La sous-tâche '" + moduleSubTaskName + "' n'existe pas");
             }
-            idx = _.isUndefined(idx) ? tasksHistory[moduleTaskName].deps.length : idx;
+            idx = isUndefined(idx) ? tasksHistory[moduleTaskName].deps.length : idx;
             tasksHistory[moduleTaskName].deps.splice(idx, 0, moduleSubTaskName);
             //gulp.task(taskName, tasksHistory[moduleTaskName].deps, tasksHistory[moduleTaskName].fn)
         };

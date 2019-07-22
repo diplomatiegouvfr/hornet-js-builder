@@ -3,7 +3,7 @@
 const path = require("path");
 const through = require("through2");
 const PluginError = require("plugin-error");
-const _ = require("lodash");
+const map = require ("lodash.map");
 
 const Task = require("./../task");
 const Utils = require("../utils");
@@ -64,7 +64,7 @@ function relativizeModuleRequire(helper, project) {
                 lines = content.split("\n");
 
             // remplacement des require("src/...") par require("../...")
-            lines = _.map(lines, function (line) {
+            lines = map(lines, function (line) {
                 var processedLine = line,
                     matches = regexRequire.exec(line);
 

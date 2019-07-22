@@ -63,25 +63,25 @@ class PreparePackageClient extends Task {
 
         if (conf.clientExclude) {
 
-            if (conf.clientExclude.dirs && _.isArray(conf.clientExclude.dirs)) {
+            if (conf.clientExclude.dirs && Array.isArray(conf.clientExclude.dirs)) {
                 conf.clientExclude.dirs.forEach((excludeDir) => {
                     externals.push(new RegExp(excludeDir + "/.*"));
                 });
             }
 
-            if (conf.clientExclude.filters && _.isArray(conf.clientExclude.filters)) {
+            if (conf.clientExclude.filters && Array.isArray(conf.clientExclude.filters)) {
                 conf.clientExclude.filters.forEach((excludeFilter) => {
                     externals.push(new RegExp(excludeFilter));
                 });
             }
 
-            if (conf.clientExclude.modules && _.isArray(conf.clientExclude.modules)) {
+            if (conf.clientExclude.modules && Array.isArray(conf.clientExclude.modules)) {
                 conf.clientExclude.modules.forEach((excludeModules) => {
                     externals.push(excludeModules);
                 });
             }
 
-            if (conf.clientNoParse && _.isArray(conf.clientNoParse)) {
+            if (conf.clientNoParse && Array.isArray(conf.clientNoParse)) {
                 confWebpack = { externals: undefined, module: { noParse: conf.clientNoParse } };
             }
         } else {
@@ -167,13 +167,13 @@ class PreparePackageClient extends Task {
 
             this.configuration.watch = this.watchMode === true;
 
-            if (this.configuration.resolve.modules && _.isArray(this.configuration.resolve.modules)) {
+            if (this.configuration.resolve.modules && Array.isArray(this.configuration.resolve.modules)) {
                 this.configuration.resolve.modules.forEach(function (dir) {
                     helper.warn("WEBPACK MODULE RESOLVER > répertoire déclaré :", dir);
                 });
             }
 
-            if (this.configuration.module && this.configuration.module.noParse && _.isArray(this.configuration.module.noParse)) {
+            if (this.configuration.module && this.configuration.module.noParse && Array.isArray(this.configuration.module.noParse)) {
                 this.configuration.module.noParse.forEach(function (regexp) {
                     helper.warn("WEBPACK CONF > exclusions de :", regexp.toString());
                 });

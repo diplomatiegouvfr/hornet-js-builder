@@ -2,7 +2,8 @@
 var helper = require("./helpers");
 var path = require("path");
 var chalk = require("chalk");
-var _ = require("lodash");
+const isfunction = require ("lodash.isfunction");
+const merge = require ("lodash.merge");
 
 Error.stackTraceLimit = Infinity;
 var gulp = require("gulp");
@@ -21,7 +22,7 @@ module.exports = function (project, done) {
 
     
     function callProjectBuilderAndGulpTasks() {
-        if (_.isFunction(project.builderJs.gulpTasks)) {
+        if (isfunction(project.builderJs.gulpTasks)) {
             helper.debug("Execution de la fonction 'gulpTasks' fournie par le projet");
             project.builderJs.gulpTasks(gulp, project, conf, helper);
         } else {
@@ -43,7 +44,7 @@ module.exports = function (project, done) {
         project.builderJs = require(path.join(project.dir, helper.BUILDER_FILE));
         project.type = project.builderJs.type;
 
-        _.merge(conf, project.builderJs.config);
+        merge(conf, project.builderJs.config);
 
         // on charge les tâche gulp prédéfinies par hornet-js-builder
         commonTaskBuilder.gulpTasks(gulp, project, conf, helper);

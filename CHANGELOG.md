@@ -1,3 +1,24 @@
+#Hornet JS Builder 2.0.2
+- Déplacement de 'npm ci' après le packaging webpack.
+- passage en lodash (4.17.11) modules :
+  - lodash.clonedeep: 4.5.0",
+  - lodash.endswith: 4.2.1",
+  - lodash.filter: 4.6.0",
+  - lodash.find: 4.6.0",
+  - lodash.flatten: 4.4.0",
+  - lodash.foreach: 4.5.0",
+  - lodash.groupby: 4.6.0",
+  - lodash.isempty: 4.4.0",
+  - lodash.isfunction: 3.0.9",
+  - lodash.isobject: 3.0.2",
+  - lodash.isnan: 3.0.2",
+  - lodash.isnumber: 3.0.3",
+  - lodash.isundefined: 3.0.1",
+  - lodash.map: 4.6.0",
+  - lodash.merge: 4.6.2",
+  - lodash.sortby: 4.7.0",
+  - lodash.uniq: 4.5.0",
+
 #Hornet JS Builder 2.0.0
 - EVOL : Suppression des clés appDependencies, buildDependencies et testDependencies: désormais, il faut utiliser la norme npm; dependencies, devDependencies etc. Utilisation aussi de la librairie npm installée et non celle tiré par le builder
 - EVOL : Suppression du theme et prise en charge de sass
@@ -42,6 +63,7 @@
     - webpack-merge : 4.1.1 -> 4.2.1
     - webpack-stream : 4.0.0 -> 5.2.1
     - yamljs : 0.2.8 -> 0.3.0
+
 
 # Hornet JS Builder 1.6.0
 - EVOL : mode interactive

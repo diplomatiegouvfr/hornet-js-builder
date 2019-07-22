@@ -1,6 +1,6 @@
 var createInnerCallback = require("enhanced-resolve/lib/createInnerCallback");
 var popPathSeqment = require("enhanced-resolve/lib/getPaths").basename;
-var _ = require("lodash");
+const uniq = require("lodash.uniq");
 
 function HornetModulesInDirectoriesPlugin(moduleType, directories) {
     this.moduleType = moduleType;
@@ -54,7 +54,7 @@ HornetModulesInDirectoriesPlugin.prototype.apply = function(resolver) {
             array.push.apply(array, p);
             return array;
         }, []);
-        addrs = _.uniq(addrs);
+        addrs = uniq(addrs);
         this.forEachBail(addrs, function(addr, callback) {
             fs.stat(addr, function(err, stat) {
                 if(!err && stat && stat.isDirectory()) {

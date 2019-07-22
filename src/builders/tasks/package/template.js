@@ -2,7 +2,7 @@
 
 const Task = require("../task");
 const ejs = require("gulp-ejs")
-const _ = require("lodash");
+const merge = require ("lodash.merge");
 const path = require("path");
 
 class Template extends Task {
@@ -27,18 +27,18 @@ class Template extends Task {
 
             let streams = [];
 
-            if (_.isArray(conf.template)) {
+            if (Array.isArray(conf.template)) {
                 conf.template.forEach((templateConf, index) => {
-                    if (_.isArray(conf.template[index].context)) {
+                    if (Array.isArray(conf.template[index].context)) {
                         conf.template[index].context.forEach((templateContext, indexContext) => {
-                            conf.template[index].context[indexContext] = _.merge(conf.template[index].context[indexContext], this.templateContext);
+                            conf.template[index].context[indexContext] = merge(conf.template[index].context[indexContext], this.templateContext);
                             streams.push(gulp.src((conf.template[index].dir || this.launchDir) + "/*.html")
                                 .pipe(ejs(conf.template[index].context[indexContext], {}, {ext: conf.template[index].context[indexContext].suffixe+".html" }))
                                 .pipe(gulp.dest(this.targetDir + (conf.template[index].dest || "")))
                             );
                         });
                     } else {
-                        conf.template[index].context = _.merge(conf.template[index].context, this.templateContext);
+                        conf.template[index].context = merge(conf.template[index].context, this.templateContext);
                         streams.push(gulp.src((conf.template[index].dir || this.launchDir) + "/*.html")
                             .pipe(ejs(conf.template[index].context))
                             .pipe(gulp.dest(this.targetDir + (conf.template[index].dest || "")))
@@ -47,7 +47,7 @@ class Template extends Task {
                 });
 
             } else {
-                this.templateContext = _.merge(conf.template.context, this.templateContext);
+                this.templateContext = merge(conf.template.context, this.templateContext);
                 streams.push(gulp.src(this.launchDir + "/**/*.html")
                     .pipe(ejs(this.templateContext))
                     .pipe(gulp.dest(this.targetDir + (conf.template.dest || "")))

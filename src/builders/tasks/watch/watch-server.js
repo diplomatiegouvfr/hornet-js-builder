@@ -1,6 +1,7 @@
 "use strict";
 
-const _ = require("lodash");
+const isNumber = require ("lodash.isnumber");
+const isNaN = require ("lodash.isnan");
 const nodemon = require("gulp-nodemon");
 const Task = require("./../task");
 
@@ -19,7 +20,7 @@ class WatchServer extends Task {
 
         var args = [];
         var debugPort = helper.getDebugPort();
-        if (_.isNumber(debugPort) && !_.isNaN(debugPort)) {
+        if (isNumber(debugPort) && !isNaN(debugPort)) {
             if (this.breakOnStart) {
                 args.push("--debug-brk=" + debugPort);
             } else {
@@ -31,7 +32,7 @@ class WatchServer extends Task {
             var confNodemon = {
                 watch: [conf.config, conf.static].concat(helper.getExternalModuleDirectories(project)),
                 ignore: [conf.tscOutDir ? conf.tscOutDir + "/**/*.js*" : conf.src + "/**/*.js*", conf.targetClientJs],
-                script: project.packageJson.main,
+                script: conf.tscOutDir ? path.join(conf.tscOutDir + project.packageJson.main) : project.packageJson.main,
                 ext: "html js json css",
                 nodeArgs: args,
                 delay: 3,

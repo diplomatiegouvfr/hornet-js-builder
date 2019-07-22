@@ -155,8 +155,8 @@ module.exports = {
             new Task("package-zip-static", "", ["prepare-package:minified", "zip-static"], gulp, helper, conf, project);
             new Task("package-zip-dynamic", "", ["prepare-package:minified", "zip-dynamic"], gulp, helper, conf, project);
 
-            new Task("package", "", ["template-html", "dependencies:install-ci-prod", "prepare-package", "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
-            new Task("package:spa", "", ["compile", "test", "template-html", "dependencies:install-ci-prod", "prepare-package-spa", "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
+            new Task("package", "", ["template-html", "prepare-package", "dependencies:install-ci-prod", "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
+            new Task("package:spa", "", ["compile", "test", "template-html", "prepare-package-spa", "dependencies:install-ci-prod", "zip-static", "zip-dynamic", "zip-environment", "zip-database"], gulp, helper, conf, project);
 
             // inclusion des themes en static applicatif
             new Task("process:sass", "", ["process:img", "process:scss"], gulp, helper, conf, project);

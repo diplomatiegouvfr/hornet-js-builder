@@ -4,7 +4,9 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require("webpack");
 const path = require("path");
 const fs = require("fs");
-const _ = require("lodash");
+const map = require ("lodash.map");
+const sortBy = require ("lodash.sortby");
+const forEach = require ("lodash.foreach");
 const jsonLoaderName = require.resolve("json-loader");
 const jsxLoaderName = require.resolve("jsx-loader");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
@@ -279,6 +281,8 @@ exp.addScssLoader = function (project, conf, helper) {
         importer: function(url, prev, done) {
             if(fs.existsSync(path.resolve(project.dir, "sass", url) + (path.extname(url) ? "" : ".scss"))) {
               return {file: path.resolve(project.dir, "sass", url) + (path.extname(url) ? "" : ".scss")};
+            } else if(fs.existsSync(path.resolve(project.dir, url) + (path.extname(url) ? "" : ".scss"))) {
+              return {file: path.resolve(project.dir, url) + (path.extname(url) ? "" : ".scss")};
             } else if(fs.existsSync(path.resolve(project.dir, "node_modules", url) + (path.extname(url) ? "" : ".scss"))) {
               return {file: path.resolve(project.dir, "node_modules", url) + (path.extname(url) ? "" : ".scss")};
             }
@@ -366,14 +370,14 @@ exp.addReportFileSizePlugin = function (project, conf, helper) {
           "apply": function (compiler) {
             compiler.hooks.done.tap("Stats Plugins", function (stats) {
               var infos = stats.toJson();
-              var files = _.map(infos.modules, function (chunk) {
+              var files = map(infos.modules, function (chunk) {
                 return {
                   "file": chunk.name,
                   "size": chunk.size
                 }
               });
-              files = _.sortBy(files, "size");
-              _.forEach(files, function (chunk) {
+              files = sortBy(files, "size");
+              forEach(files, function (chunk) {
                 var fileSizeInKilobytes = Math.round(chunk.size / 1000.0);
                 helper.info("[WEBPACK] [", fileSizeInKilobytes, "ko]: ", chunk.file);
               });
@@ -409,7 +413,7 @@ exp.addConfContextReplacement = function (project, conf, helper) {
   let plugins = [];
 
   // Activation du context
-  if (conf.clientContext && _.isArray(conf.clientContext)) {
+  if (conf.clientContext && Array.isArray(conf.clientContext)) {
     conf.clientContext.forEach((contextElt) => {
       plugins.push(new webpack.ContextReplacementPlugin(...contextElt));
     });
