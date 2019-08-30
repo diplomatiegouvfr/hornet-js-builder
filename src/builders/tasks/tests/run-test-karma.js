@@ -110,6 +110,7 @@ class RunTestKarma extends PreparePackageClient {
         let configuration = webpackConfigPart.getDefaultConf(project, conf, helper);
         delete configuration["entry"];
         delete configuration["output"];
+        delete configuration["optimization"];
 
         configuration = merge( configuration, webpackConfigPart.addJsxLoader(project, conf, helper));
         // on force le loader de style pour mode embarqué dans les tests

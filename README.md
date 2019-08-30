@@ -76,8 +76,11 @@ En cas de MAJ à partir d'une version antérieure de `hornet-js-builder`: suppri
 Suite à cette installation, les commandes `hornetbuilder` et `hb` (alias de la première) sont accessibles en globale dans les scripts, sauf dans le cas où le builder est installée en tant que dépendance de l'application
 
 ## Variables d'environnement utilisées par le builder
-Le builder prend en compte la variable d'environnement `HB_EXT_MODULES`.
++ `HB_EXT_MODULES` :
 Cette variable contient les chemins, séparés par un point virgule, des répertoires des externalModules utilisés par l'application. L'utilisation de cette variable est préconisée plutôt en cas d'utilisation de modules externes.
+
++ `HB_WATCH_DELAY` :
+Permet de surcharger la clé de configuration *delay* de nodemon.
 
 ## Principe de gestion des dépendances
 
@@ -135,6 +138,26 @@ hb --help
 | --offline | active le mode offline pour la récupération des dépendances, ex : coupure réseau. Prerequis avoir les node_modules, ajouter fetch-retries=0 dans .npmrc |
 | --versionFix | Indique la version ou suffixe si commence par '-', '.' ou si null calcule un suffixe avec timestamp, si 'RC' calucle la prochaine RC. |      
 | --versionSearch | préfixe de la dernière version"|
+
+Toutes les autres options non prises en charge par le builder, sont passées directement aux outils tiers. Pour le moment seul NPM est concerné par ce principe (donc les taches d'installation), exemple :
+
+```shell
+hb install --no-package-lock
+```
+ne sauvegardera pas les dépendances installées de le fichier package-lock.json.
+
+```shell
+hb install -E
+```
+sauvegardera les dépendances installées en version exacte dans le package.json mais qu'avec la présence d'external module, car chaque module est installé avec la commande 'npm i <modulename>@<versoin>' sinon c'est la commande 'npm i' donc pas besoin de présicer le -E (save exact)
+
+au même titre que :
+```shell
+hb compile -E
+```
+exécutera l'installation des dépendances de dev avec l'option 'exact' sur le même principe que vu précédemment (suivant la présence de module externe).
+
+donc cf https://docs.npmjs.com/misc/config.html et https://docs.npmjs.com/cli/install.html
 
 ## Utiliser hornetbuilder en mode interactive
 
@@ -1182,7 +1205,7 @@ hb versions:get --versionSearch=snapshot --module=hornet-js-core
 
 ```
 
-Permet d'avoir la dernière version snapshot d'un module présent dans les dépendances du projet (appDependencies, buildDependencies, ...).
+Permet d'avoir la dernière version snapshot d'un module présent dans les dépendances du projet (dependencies, devDependencies, ...).
 
 ##### Tâches SASS
 

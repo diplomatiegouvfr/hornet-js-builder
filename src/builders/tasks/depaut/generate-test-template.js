@@ -17,7 +17,7 @@ class GenerateTestTemplate  extends Task {
         return (done) => {
             let confDir = path.join(conf.buildWorkDir, conf.testEnvironment.configuration);
             if(!helper.folderExists(confDir)) {
-                helper.warn("Aucun répertoire de fichiers de configuration trouvé :", conf.testEnvironment.configuration);
+                helper.warn(`Aucun répertoire de fichiers de configuration depaut trouvé : ${conf.testEnvironment.configuration}`);
                 return done();
             }
             

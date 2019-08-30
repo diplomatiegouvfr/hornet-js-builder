@@ -1,4 +1,12 @@
-#Hornet JS Builder 2.0.2
+#Hornet JS Builder 2.0.3
+- Ajout var env HB_WATCH_DELAY et modification de la valeur par défaut (attention c'est en ms)
+- Fix "watch:client:run" ne lance plus le watch:ts
+- Ajout doc RemainingArgs
+- Fix erreur ejs rename file
+- Correction calcul des RC précis pour une verison
+- Correction doc builder
+
+#Hornet JS Builder 2.0.1
 - Déplacement de 'npm ci' après le packaging webpack.
 - passage en lodash (4.17.11) modules :
   - lodash.clonedeep: 4.5.0",

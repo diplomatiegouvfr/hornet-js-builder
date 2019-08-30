@@ -177,7 +177,7 @@ exp.autoCodeSplittingChunks = function (project, conf, helper) {
   var componentsText = "// WEBPACK_AUTO_GENERATE_CLIENT_ROUTING";
 
   var routesDirs = arrayToString("sourcesDirs", conf.routesDirs);
-  var routesSuffix = "-routes.js";
+  var routesSuffix = conf.routesSuffix || "-routes.js";
   var routesText = "// WEBPACK_AUTO_GENERATE_CLIENT_ROUTE_LOADING";
 
 
@@ -448,6 +448,7 @@ exp.addUglifyPlugins = function (project, conf, helper) {
       minimizer: [new TerserPlugin({
         terserOptions: {
           sourceMap: false,
+          cache: true,
           output: {
             comments: false,
           },

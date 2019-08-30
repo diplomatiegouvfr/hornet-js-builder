@@ -225,8 +225,8 @@ module.exports = {
             //
             // Gestion de la construction et de l'écoute des fichiers clients
             //
-            new PreparePackageClient("watch:client:exe", "", ["clean:static", "prepare-package-dll", /*"watch:sass",*/], gulp, helper, conf, project, true, true);
-            new PreparePackageClient("watch:client:run", "", ["clean:static", "prepare-package-dll", "watch:ts:run", /*"watch:sass",*/], gulp, helper, conf, project, true, true);
+            new PreparePackageClient("watch:client:exe", "", ["clean:static", "prepare-package-dll", /*"watch:sass",*/], gulp, helper, conf, project, true, true, true);
+            new PreparePackageClient("watch:client:run", "", ["clean:static", "prepare-package-dll", /*"watch:sass",*/], gulp, helper, conf, project, true, true, false);
             new PreparePackageClient("watch:client-prod", "", ["clean:static", "watch:ts:run"], gulp, helper, conf, project, false, true);
             new Task("watch-prod", "", ["dependencies:install", "compile", "watch:client-prod", "watch:serveur-prod"], gulp, helper, conf, project);
 

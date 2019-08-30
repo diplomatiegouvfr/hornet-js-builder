@@ -35,7 +35,7 @@ class WatchServer extends Task {
                 script: conf.tscOutDir ? path.join(conf.tscOutDir + project.packageJson.main) : project.packageJson.main,
                 ext: "html js json css",
                 nodeArgs: args,
-                delay: 3,
+                delay: process.env.HB_WATCH_DELAY || 250, // attention ms
                 env: { "NODE_ENV": this.env },
                 execMap: {
                     js: "node"

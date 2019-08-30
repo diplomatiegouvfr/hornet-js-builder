@@ -1,4 +1,4 @@
-# Montée de version vers 2.0.0
+# Montée de version vers 2.0.x
 
 # NPM
 

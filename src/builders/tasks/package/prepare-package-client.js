@@ -10,11 +10,12 @@ const webpackConfigPart = require("../../configuration/webpack/config-parts");
 const Task = require("../task");
 
 class PreparePackageClient extends Task {
-    constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project, debugMode, watchMode) {
+    constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project, debugMode, watchMode, exitWatch) {
         super(name, taskDepend, taskDependencies, gulp, helper, conf, project);
 
         this.debugMode = debugMode;
         this.watchMode = watchMode;
+        this.exitWatch = exitWatch;
         this.done = false;
         this.configuration = webpackConfigPart.getDefaultConf(project, conf, helper);
 
@@ -35,15 +36,15 @@ class PreparePackageClient extends Task {
         } else {
             this.webpackAddonsConfigFile = undefined;
         }
-        this.buildWebpackConfiguration(project, conf, helper);
     }
     
     task(gulp, helper, conf, project) {
         return (done) => {
+            this.buildWebpackConfiguration(project, conf, helper);
             webpack(this.configuration, (err, stats) => {
                 if (err) done(err);
                 log(stats.toString(this.configuration.stats));
-                if (!this.done) {
+                if (!this.done && (!this.watchMode || this.exitWatch) ) {
                     this.done = true;
                     done();
                 }
@@ -150,8 +151,10 @@ class PreparePackageClient extends Task {
                 this.configuration = merge(this.configuration, webpackConfigPart.addGlobalPluginsOption(project, conf, helper));
                 this.configuration["devtool"] = "eval-source-map";//inline-source-map eval-source-map
                 this.configuration["mode"] = "development";
-    
+                helper.info("WEBPACK MODE DEV activé(optimizatoin désactivée).");
+                this.configuration["optimization"] = {};
             }
+
             if(helper.isDebug()) {
                 this.configuration = merge(this.configuration, webpackConfigPart.addReportFileSizePlugin(project, conf, helper));
             }

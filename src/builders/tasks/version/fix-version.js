@@ -42,7 +42,7 @@ class FixVersion extends Task {
                                 npmReturn = [npmReturn];
                             }
                             npmReturn.forEach((ver) => {
-                                let variables = ver.match(/\-RC(\w+)$/);
+                                let variables = ver.match(new RegExp(project.version + "-RC(\\w+)$"));
 
                                 if (variables && variables.length > 0 && oldLastVersion < Number.parseInt(variables[1])) {
                                     oldLastVersion = variables[1];

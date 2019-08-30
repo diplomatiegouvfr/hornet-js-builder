@@ -3,6 +3,7 @@
 const Task = require("../task");
 const ejs = require("gulp-ejs")
 const merge = require ("lodash.merge");
+const rename = require('gulp-rename');
 const path = require("path");
 
 class Template extends Task {
@@ -33,7 +34,8 @@ class Template extends Task {
                         conf.template[index].context.forEach((templateContext, indexContext) => {
                             conf.template[index].context[indexContext] = merge(conf.template[index].context[indexContext], this.templateContext);
                             streams.push(gulp.src((conf.template[index].dir || this.launchDir) + "/*.html")
-                                .pipe(ejs(conf.template[index].context[indexContext], {}, {ext: conf.template[index].context[indexContext].suffixe+".html" }))
+                                .pipe(ejs(conf.template[index].context[indexContext]))
+                                .pipe(rename({ extname: conf.template[index].context[indexContext].suffixe+".html" }))
                                 .pipe(gulp.dest(this.targetDir + (conf.template[index].dest || "")))
                             );
                         });
