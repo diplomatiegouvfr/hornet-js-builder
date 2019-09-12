@@ -1,3 +1,9 @@
+#Hornet JS Builder 2.0.4
+- Ajout d'une tache watch:client pour compile typescript + génération de la partie client
+- Ajout d'une tache watch pour install, compile et activation des watch et watch:run pour compile et activation des watch
+- Ajout de la possibilité de mettre la configuration dans un fichier js
+
+
 #Hornet JS Builder 2.0.3
 - Ajout var env HB_WATCH_DELAY et modification de la valeur par défaut (attention c'est en ms)
 - Fix "watch:client:run" ne lance plus le watch:ts

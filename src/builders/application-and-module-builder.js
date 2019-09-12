@@ -220,20 +220,23 @@ module.exports = {
             new WatchServer("watch:serveur-brk", "", ["watch:ts:run"], gulp, helper, conf, project, true, "development");
             new WatchServer("watch:serveur-prod", "", ["watch:ts:run"], gulp, helper, conf, project, false, "production");
             new Task("watch:exe", "", ["watch:ts:exe", "watch:client:exe", "watch:serveur:exe"], gulp, helper, conf, project);
-            new Task("watch:run", "", ["dependencies:install", "compile", "watch:ts:exe", "watch:client:exe", "watch:serveur:exe"], gulp, helper, conf, project);
+            new Task("watch:run", "", ["compile", "watch:ts:exe", "watch:client:exe", "watch:serveur:exe"], gulp, helper, conf, project);
+            new Task("watch", "", ["dependencies:install", "compile", "watch:ts:exe", "watch:client:exe", "watch:serveur:exe"], gulp, helper, conf, project);
 
             //
             // Gestion de la construction et de l'écoute des fichiers clients
             //
-            new PreparePackageClient("watch:client:exe", "", ["clean:static", "prepare-package-dll", /*"watch:sass",*/], gulp, helper, conf, project, true, true, true);
-            new PreparePackageClient("watch:client:run", "", ["clean:static", "prepare-package-dll", /*"watch:sass",*/], gulp, helper, conf, project, true, true, false);
+            new PreparePackageClient("watch:client:exe", "", ["clean:static", "prepare-package-dll"], gulp, helper, conf, project, true, true, true);
+            new PreparePackageClient("watch:client:run", "", ["clean:static", "prepare-package-dll"], gulp, helper, conf, project, true, true, false);
+            new PreparePackageClient("watch:client", "", ["clean:static", "prepare-package-dll", "watch:ts:run"], gulp, helper, conf, project, true, true, false);
             new PreparePackageClient("watch:client-prod", "", ["clean:static", "watch:ts:run"], gulp, helper, conf, project, false, true);
             new Task("watch-prod", "", ["dependencies:install", "compile", "watch:client-prod", "watch:serveur-prod"], gulp, helper, conf, project);
 
             // raccourcis
             new Task("ws", "", ["watch:serveur:run"], gulp, helper, conf, project);
             new Task("wsd", "", ["watch:serveur-brk"], gulp, helper, conf, project);
-            new Task("wc", "", ["watch:client:run"], gulp, helper, conf, project);
+            new Task("wc", "", ["watch:client"], gulp, helper, conf, project);
+            new Task("wcr", "", ["watch:client:run"], gulp, helper, conf, project);
             new Task("wp", "", ["watch-prod"], gulp, helper, conf, project);
             new Task("pp", "", ["prepare-package"], gulp, helper, conf, project);
             new Task("ppc", "", ["prepare-package-client"], gulp, helper, conf, project);
@@ -245,7 +248,8 @@ module.exports = {
             new WatchServer("watch:serveur-prod", "", ["watch:ts:run"], gulp, helper, conf, project, false, "production");
 
             new Task("watch:exe", "", ["watch:ts:exe", "watch:serveur:exe"], gulp, helper, conf, project);
-            new Task("watch:run", "", ["dependencies:install", "compile", "watch:ts:exe", "watch:serveur:exe"], gulp, helper, conf, project);
+            new Task("watch:run", "", ["compile", "watch:ts:exe", "watch:serveur:exe"], gulp, helper, conf, project);
+            new Task("watch", "", ["dependencies:install", "compile", "watch:ts:exe", "watch:serveur:exe"], gulp, helper, conf, project);
             new Task("watch-prod", "", ["dependencies:install", "compile", "watch:serveur-prod"], gulp, helper, conf, project);
             new Task("wp", "", ["watch-prod"], gulp, helper, conf, project);
             new Task("pp", "", ["prepare-package"], gulp, helper, conf, project);
@@ -255,6 +259,8 @@ module.exports = {
             new Task("watch:exe", "", ["compile"/*, "watch:dts"*/], gulp, helper, conf, project);
         }
 
-        new Task("w", "", ["watch:exe"], gulp, helper, conf, project);
+        new Task("w", "", ["watch"], gulp, helper, conf, project);
+        new Task("wr", "", ["watch:run"], gulp, helper, conf, project);
+        new Task("we", "", ["watch:exe"], gulp, helper, conf, project);
     }
 };

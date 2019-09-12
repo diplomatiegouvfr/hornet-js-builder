@@ -866,7 +866,11 @@ Helper.ReadTypeBuilderJS = function (path) {
 Helper.getProject = function (dir) {
     let packageJsonPath = path.join(dir, "package.json");
     let builderJsPath = path.join(dir, "builder.js");
-    let configProjectPath = path.join(dir, "config", "default.json");
+    // FIXME : Currently, only default configuration is used (override done by configjs are not used)
+    let configProjectPath = path.join(dir, "config", "default.js");
+    if (!fs.existsSync(configProjectPath)) {
+        configProjectPath = path.join(dir, "config", "default.json");
+    }
     let builderJsType;
 
     if (!fs.existsSync(packageJsonPath) || !fs.existsSync(builderJsPath)) {
