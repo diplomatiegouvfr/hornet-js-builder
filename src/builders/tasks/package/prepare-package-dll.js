@@ -1,12 +1,8 @@
-"use strict";
-
 const path = require("path");
-const _ = require("lodash");
+const log = require("fancy-log"); // remplacement gulp-util.log
 const webpack = require("webpack");
-const log = require('fancy-log'); // remplacement gulp-util.log
+const DependencyAnalyzerPlugin = require("../../../webpack/dependency-analyzer-plugin");
 const State = require("../../state");
-const merge = require('webpack-merge');
-
 const PreparePackageClient = require("./prepare-package-client");
 
 class PreparePackageDll extends PreparePackageClient {
@@ -16,55 +12,69 @@ class PreparePackageDll extends PreparePackageClient {
         this.debugMode = debugMode;
         this.watchMode = watchMode;
 
-
         // initialisation de la conf webpack
         delete this.configuration.entry;
         delete this.configuration.output;
 
-        this.webpackConf = {
-            entry: (conf.dev && conf.dev.dllEntry) || {},
-            output: {
-                path: path.join(project.dir, conf.static),
-                filename: path.join(conf.js, conf.dll, "dll_[name].js"),
-                library: "[name]_library",
-                //sourceType: "commonjs2", // remove for import script html
-                publicPath: "./static-" + project.packageJson.version + "/",
-            },
-            plugins: [
-                new webpack.DllPlugin({
-                    context: path.join(project.dir, "node_modules"),
-                    name: "[name]_library",
-                    path: path.join(project.dir, conf.static, conf.js, conf.dll, "[name]-manifest.json")
-                })
-            ]
-
-        }
-        this.configuration = merge(this.configuration, this.webpackConf);
-
+        /**
+         * @param pConfiguration configuration du projet
+         * @param wConfiguration configuration webpack du projet
+         */
+        this.webpackConf = (pConfiguration, wConfiguration, wProject) => {
+            return {
+                mode: "development",
+                entry: (pConfiguration.dev && pConfiguration.dev.dllEntry) || {},
+                output: {
+                    path: path.join(wProject.dir, conf.tscOutDir || "", pConfiguration.static),
+                    filename: path.join(pConfiguration.js, pConfiguration.dll, "[name]", "dll_[name].js"),
+                    library: "[name]_library",
+                    publicPath: `${wProject.staticPath || "static"}`,
+                },
+                plugins: [
+                    new webpack.DllPlugin({
+                        context: path.join(wProject.dir, "node_modules"),
+                        name: "[name]_library",
+                        path: path.join(wProject.dir, conf.tscOutDir || "", pConfiguration.static, pConfiguration.js, pConfiguration.dll, "[name]", "manifest.json"),
+                    }),
+                    ...wConfiguration.plugins.filter((elt) => {
+                        return !(elt instanceof DependencyAnalyzerPlugin);
+                    }),
+                ],
+                // mode: "development",
+                externals: [
+                    new RegExp(".+\\.scss"),
+                    { async_hooks: "{}", child_process: "{}", tls: "{}", net: "{}", fs: "{}", dns: "{}", v8: "{}", module: "{}", cluster: "{}" },
+                    wConfiguration.externals,
+                ],
+                resolve: wConfiguration.resolve,
+                resolveLoader: wConfiguration.resolveLoader,
+                module: wConfiguration.module,
+                optimization: {},
+            };
+        };
     }
 
     task(gulp, helper, conf, project) {
         return (done) => {
-            if ((!conf.dev || !conf.dev.dllEntry)) {
-                return done();
-            }
 
-            conf.dev && helper.each(Object.keys(conf.dev.dllEntry), (dllName) => {
-                conf.dev.dllEntry[dllName] = conf.dev.dllEntry[dllName].filter((name) => {
-                    return !State.externalDependencies[project.name][name];
-                });
-            });
-
-
-            if (helper.folderExists(path.join(project.dir, conf.static, conf.js, conf.dll))) {
+            if (helper.folderExists(path.join(project.dir, conf.tscOutDir || "", conf.static, conf.js, conf.dll))) {
                 helper.warn("Présence des dll vendor, pour les supprimer : 'hb clean:static-dll'");
-                return done();
             }
 
             this.buildWebpackConfiguration(project, conf, helper);
 
+            if (!conf.dev || !conf.dev.dllEntry) {
+                return done();
+            }
 
-            this.configuration = merge(this.configuration, { externals: { "child_process": "{}", "tls": "{}", "net": "{}", "fs": "{}", "dns": "{}", "v8": "{}", "module": "{}" } });
+            this.configuration.dev &&
+                helper.each(Object.keys(this.configuration.dev.dllEntry), (dllName) => {
+                    this.configuration.dev.dllEntry[dllName] = this.configuration.dev.dllEntry[dllName].filter((name) => {
+                        return !State.externalDependencies[project.name][name];
+                    });
+                });
+
+            this.configuration = this.webpackConf(conf, this.configuration, project);
 
             helper.debug("WEBPACK CONF DLL:", this.configuration);
 
@@ -75,9 +85,8 @@ class PreparePackageDll extends PreparePackageClient {
             });
 
             if (this.watchMode) done();
-        }
+        };
     }
 }
-
 
 module.exports = PreparePackageDll;

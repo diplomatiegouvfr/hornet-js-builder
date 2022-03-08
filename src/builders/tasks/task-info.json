@@ -44,6 +44,5 @@
     "wp": "Alias de 'watch-prod'",
     "ws": "Alias de 'watch:serveur'",
     "wsd": "Alias de 'watch:serveur-brk'",
-    "lint": "Lance le tslint sur les sources ts (qualité de code)",
     "versions:get": "Retourne la dernière version commencant par 5.0.2 du module hornet-js-core, exemple : 5.0.2-20180109183247, ex : hb versions:get --versionSearch=5.0.2 --module=hornet-js-core"
 }

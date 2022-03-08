@@ -1,3 +1,10 @@
+# Montée de version vers 2.0.5
+
+- configuration webpack : 
+  - passage extenals en Array si utilisation du mode DLL
+  - ajout "async_hooks" dasn les externals si c'est surchagé dans le projet
+
+
 # Montée de version vers 2.0.x
 
 # NPM
@@ -111,7 +118,7 @@ import { Server } from "src/server";
 Server.startApplication();
 ```
 
-# builder.js
+# .builder.js
 
 variabilisez la configuration clientContext et remplacez le:
 
@@ -132,7 +139,7 @@ clientContext: clientContext,
 
 Retirez : helper.excludeNodeModulesFromWebpack et dev
 
-Pour plus de clareté, il est possible et conseillé de déplacer la configuration webpack et karma en dehors du fchier `builder.js`, dans des fichiers séparés (cf documentation builder chapitre 'Configuration webpack' et 'Configuration karma'), voici un exemple possible :
+Pour plus de clareté, il est possible et conseillé de déplacer la configuration webpack et karma en dehors du fchier `.builder.js`, dans des fichiers séparés (cf documentation builder chapitre 'Configuration webpack' et 'Configuration karma'), voici un exemple possible :
 
 ficher `webpack.addons.config.js` à la racine du projet, avec le contenu suivant :
 

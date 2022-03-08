@@ -9,7 +9,7 @@ resolveModules(firstDirectoryToTest);
 
 function resolveModules(cdir) {
     var currentDir = path.normalize(cdir);
-    if (helper.fileExists(path.join(currentDir, "builder.js")) && helper.fileExists(path.join(currentDir, "package.json"))) {
+    if (helper.getBuilder(currentDir) && helper.fileExists(path.join(currentDir, "package.json"))) {
         moduleResolver.addModuleDirectory(path.normalize(path.join(currentDir, '..')));
         moduleResolver.addModuleDirectory(path.normalize(currentDir));
         moduleResolver.addModuleDirectory(path.normalize(path.join(currentDir, helper.NODE_MODULES_APP)));

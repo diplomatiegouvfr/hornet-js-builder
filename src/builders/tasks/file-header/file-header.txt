@@ -1,0 +1,7 @@
+/**
+ * <%= pkg.name %>
+ *
+ * @author MEAE - Ministère de l'Europe et des Affaires étrangères
+ * @version <%= pkg.version %>
+ * @license CECILL-2.1
+ */

@@ -1,50 +1,47 @@
-"use strict";
-
-const del = require("del");
+const os = require("os");
 const path = require("path");
+const del = require("del");
+const endsWith = require("lodash.endswith");
+const map = require("lodash.map");
+const merge = require("lodash.merge");
 const PluginError = require("plugin-error");
 const through = require("through2");
-const merge = require ("lodash.merge");
-const map = require ("lodash.map");
-const endsWith = require ("lodash.endswith");
-const os = require("os");
 
-const Utils = function () {
-};
+const Utils = function () {};
 
-
-Utils.gulpDelete = (helper, patterns) => {
+Utils.gulpDelete = (helper, patterns, cwd = process.cwd) => {
     return (done) => {
-        del(patterns).then(
+        let formattedPatterns = Array.isArray(patterns) ? patterns : [patterns];
+        formattedPatterns = formattedPatterns.map((pattern) => pattern.replace(/\\/g, "/")); // glob même sur windows
+        del(formattedPatterns, { cwd }).then(
             (paths) => {
                 helper.debug("Deleted files and folders:\n", paths.join("\n"));
                 return done();
-            }, (err) => {
+            },
+            (err) => {
                 // Rejet de la promesse
                 return done(err);
-            }
+            },
         );
     };
-}
+};
 /**
  * Fonction retournant une fonction de mapping ajoutant les arguments après ceux du tableau sur lequel s'applique le mapping
  * @param ...args les arguments à ajouter
  * @returns {Function}
  */
 Utils.append = () => {
-    var args = Array.prototype.slice.call(arguments, 0);
+    const args = Array.prototype.slice.call(arguments, 0);
     return (element) => {
         if (args.length === 1) {
             if (args[0] === "!") {
                 return element + args[0];
-            } else {
-                return path.join(element, args[0]);
             }
-        } else {
-            return args.map((argElement) => {
-                return path.join(element, argElement);
-            });
+            return path.join(element, args[0]);
         }
+        return args.map((argElement) => {
+            return path.join(element, argElement);
+        });
     };
 };
 
@@ -54,19 +51,17 @@ Utils.append = () => {
  * @returns {Function}
  */
 Utils.prepend = () => {
-    var args = Array.prototype.slice.call(arguments, 0);
+    const args = Array.prototype.slice.call(arguments, 0);
     return (element) => {
         if (args.length === 1) {
             if (args[0] === "!") {
                 return args[0] + element;
-            } else {
-                return path.join(args[0], element);
             }
-        } else {
-            return args.map((argElement) => {
-                return path.join(argElement, element);
-            });
+            return path.join(args[0], element);
         }
+        return args.map((argElement) => {
+            return path.join(argElement, element);
+        });
     };
 };
 
@@ -78,35 +73,34 @@ Utils.prepend = () => {
  * @returns {*}
  */
 Utils.getDescendantProp = (obj, desc) => {
-    var arr = desc.split(".");
-    while(arr.length && (obj = obj[arr.shift()]));
+    const arr = desc.split(".");
+    while (arr.length && (obj = obj[arr.shift()]));
     return obj;
-}
+};
 
 Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) => {
     // require('src/aaa/bbb') > require('hornet-js-core/src/aaa/bbb')
-    var regexRequire = /require\(["'](src\/[\w\-\/\.]*)["']\)/;
-    var regexImportExportFrom = /(import|export)[\s]*(.*)[\s]*from[\s]*["'](src\/[\w\-\/]*)["']/;
-    var extensionAbsolutize = extensions || [".js", ".tsx", ".ts", ".json"]
+    const regexRequire = /require\(["'](src\/[\w\-\/\.]*)["']\)/;
+    const regexImportExportFrom = /(import|export)[\s]*(.*)[\s]*from[\s]*["'](src\/[\w\-\/]*)["']/;
+    const extensionAbsolutize = extensions || [".js", ".tsx", ".ts", ".json"];
 
     let tscOutDir = project.tsConfig.compilerOptions || {};
     tscOutDir = tscOutDir.outDir || undefined;
-    var dest = tscOutDir ? path.resolve(project.dir, tscOutDir) : project.dir;
+    const dest = tscOutDir ? path.resolve(project.dir, tscOutDir) : project.dir;
 
-    var testFileExistWithExtensions = function (fileName, lExt) {
+    const testFileExistWithExtensions = function (fileName, lExt) {
         if (path.extname(fileName).length > 0) {
             return helper.fileExists(fileName);
-        } 
-        for(let i = 0; i < lExt.length; i++) {
+        }
+        for (let i = 0; i < lExt.length; i++) {
             if (helper.fileExists(fileName + lExt[i])) {
                 return true;
             }
         }
         return false;
-    }
+    };
 
-    return through.obj(function(file, enc, cb) {
-
+    return through.obj(function (file, enc, cb) {
         if (file.isNull()) {
             cb(null, file);
             return;
@@ -118,34 +112,34 @@ Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) =>
         }
 
         try {
-            if (!onlyExtensions || onlyExtensions.indexOf(file.extname) > -1 ) {
-                var content = file.contents.toString()/*.replace(/declare /g, '')*/.replace(/\r\n/g, "\n"),
-                    lines = content.split("\n");
-
+            if (!onlyExtensions || onlyExtensions.indexOf(file.extname) > -1) {
+                const content = file.contents
+                    .toString() /* .replace(/declare /g, '') */
+                    .replace(/\r\n/g, "\n");
+                let lines = content.split("\n");
+                // helper.log("file to absolutizeModuleRequire ",file);
                 // remplacement des require("src/...") par require("<moduleName>/src/...") OU
                 // remplacement des import ... from "src/..." par import ... from "<moduleName>/src/..." OU
                 // remplacement des export from "src/..." par export from "<moduleName>/src/..." OU
                 lines = map(lines, function (line) {
-                    var processedLine = line,
-                        matches = regexRequire.exec(line),
-                        matches2 = regexImportExportFrom.exec(line);
+                    let processedLine = line;
+                    const matches = regexRequire.exec(line);
+                    const matches2 = regexImportExportFrom.exec(line);
 
                     if (matches) {
                         var required = matches[1];
                         if (testFileExistWithExtensions(path.join(dest, required), extensionAbsolutize)) {
-                            required = project.name + "/" + required;
-                            processedLine = line.replace(regexRequire, "require(\"" + required + "\")");
+                            required = `${project.name}/${required}`;
+                            processedLine = line.replace(regexRequire, `require("${required}")`);
                         }
                     } else if (matches2) {
-                        
-                        var requiredType = matches2[1],
-                            required = matches2[2],
-                            requiredSrc = matches2[3];
+                        const requiredType = matches2[1];
+                        var required = matches2[2];
+                        let requiredSrc = matches2[3];
                         if (testFileExistWithExtensions(path.join(dest, requiredSrc), extensionAbsolutize)) {
-                            requiredSrc = project.name + "/" + requiredSrc;
-                            processedLine = line.replace(regexImportExportFrom, requiredType + " " + required + " from \"" + requiredSrc + "\"");
+                            requiredSrc = `${project.name}/${requiredSrc}`;
+                            processedLine = line.replace(regexImportExportFrom, `${requiredType} ${required} from "${requiredSrc}"`);
                         }
-
                     }
                     return processedLine;
                 });
@@ -154,19 +148,21 @@ Utils.absolutizeModuleRequire = (helper, project, extensions, onlyExtensions) =>
             }
             this.push(file);
         } catch (err) {
-            this.emit("error", new PluginError("absolutizeModuleRequire", err, {
-                fileName: file.path
-            }));
+            this.emit(
+                "error",
+                new PluginError("absolutizeModuleRequire", err, {
+                    fileName: file.path,
+                }),
+            );
         }
 
         cb();
     });
-}
+};
 
 Utils.systemPathToRequireName = (systemPath) => {
     return systemPath.replace(/\\/g, "/");
-}
-
+};
 
 /**
  * Altère la description des fichiers pour la bonne génération des sourcemaps
@@ -187,17 +183,17 @@ Utils.rebase = (defaultMapBase) => {
 
         try {
             // nouvelles valeurs de 'file.base' et 'file.relative' à appliquer
-            var newbase = file.oldBase || path.join(file.base, path.dirname(file.relative));
-            //var newrelative = file.oldRelative || path.basename(file.relative);
+            let newbase = file.oldBase || path.join(file.base, path.dirname(file.relative));
+            // var newrelative = file.oldRelative || path.basename(file.relative);
 
-            var isMap = endsWith(file.relative, ".js.map");
-            var firstPass = !(file.oldBase); // premier passage
+            const isMap = endsWith(file.relative, ".js.map");
+            const firstPass = !file.oldBase; // premier passage
             if (isMap) {
                 newbase = defaultMapBase;
             } else if (firstPass && file.sourceMap && file.sourceMap.sources) {
                 // ne conserve dans l'attribut 'file.sourceMap.sources' que les noms des fichier,
                 // à la place du chemin relatif
-                var newSources = file.sourceMap.sources.map(function (sourceMapFile) {
+                const newSources = file.sourceMap.sources.map(function (sourceMapFile) {
                     return sourceMapFile.split("/").pop(); // extraction du nom de fichier
                 });
                 file.sourceMap.sources = newSources;
@@ -208,12 +204,15 @@ Utils.rebase = (defaultMapBase) => {
             file.oldRelative = file.relative;
 
             file.base = newbase;
-            //file.relative = newrelative;
+            // file.relative = newrelative;
             this.push(file);
         } catch (err) {
-            this.emit("error", new PluginError("hornetbuilder-rebase", err, {
-                fileName: file.path
-            }));
+            this.emit(
+                "error",
+                new PluginError("hornetbuilder-rebase", err, {
+                    fileName: file.path,
+                }),
+            );
         }
 
         cb();
@@ -221,26 +220,29 @@ Utils.rebase = (defaultMapBase) => {
 };
 
 Utils.packageJsonFormatter = (helper, project) => {
-    return through.obj(function(file, enc, cb){
+    return through.obj(function (file, enc, cb) {
         if (file.isNull()) {
             cb(null, file);
             return;
         }
 
-        if (file.isStream()){
+        if (file.isStream()) {
             cb(new PluginError("packageJsonFormatter", "Streaming not supported"));
             return;
         }
 
         try {
-            let packageJsonCopy = merge({}, project.packageJson);
-            let lines = JSON.stringify(packageJsonCopy, null, 2).split("\n");
+            const packageJsonCopy = merge({}, project.packageJson);
+            const lines = JSON.stringify(packageJsonCopy, null, 2).split("\n");
             file.contents = Buffer.from(lines.join(os.EOL));
             this.push(file);
         } catch (err) {
-            this.emit("error", new PluginError("packageJsonFormatter", err, {
-                fileName: file.path
-            }));
+            this.emit(
+                "error",
+                new PluginError("packageJsonFormatter", err, {
+                    fileName: file.path,
+                }),
+            );
         }
         cb();
     });

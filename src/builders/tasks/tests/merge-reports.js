@@ -1,58 +1,60 @@
-"use strict";
+const path = require("path");
+const libCoverage = require("istanbul-lib-coverage");
+const libReport = require("istanbul-lib-report");
+const reports = require("istanbul-reports");
+const through = require("through2");
 
-const istanbul = require("istanbul");
-const through = require('through2');
+let mergedCoverageMap;
 
-var Task = require("./../task");
+const Task = require("../task");
 
 class MergeReportsTests extends Task {
-
     task(gulp, helper, conf, project) {
         return (done) => {
-            return  helper.stream(done, 
-                gulp.src("**/coverage_*.json", {
-                    base: conf.testReportDir, read: true
-                })
-                // Ecriture des rapports de couverture de code
-                .pipe( this.mergeReports(helper, conf)).on("finish", (err) => {
-                    if(err) helper.error("Erreur durant le merge des rapports de couverture : " + err);
-                }));
-        }
+            delete global.__coverage__;
+            mergedCoverageMap = libCoverage.createCoverageMap({});
+            return helper.stream(
+                done,
+                gulp
+                    .src("**/coverage_*.json", {
+                        base: conf.testReportDir,
+                        read: true,
+                        cwd: project.dir,
+                    })
+                    // Ecriture des rapports de couverture de code
+                    .pipe(this.mergeReports(helper, conf))
+                    .on("finish", (err) => {
+                        if (err) helper.error(`Erreur durant le merge des rapports de couverture : ${err}`);
+                    }),
+            );
+        };
     }
 
     mergeReports(helper, conf) {
-
-        var collector = new istanbul.Collector();
-        var Report = istanbul.Report;
-
-        var reporters = conf.merge.reporters.map(function (reporter) {
-            let reportOpts = conf.merge.reportOpts[reporter] || {};
-            return Report.create(reporter, reportOpts);
-          });
-
         function merge(file, encoding, done) {
             if (file.isBuffer()) {
-                let instruResult = JSON.parse(file.contents.toString('utf-8'));
-                if(Object.keys(instruResult).length != 0) {
-                    for(let file in instruResult) {
-                        let newResult = instruResult[file];
-                        
-                        newResult.path = newResult.path.replace("/istanbul/", conf.target.base.substring(1));
-                        
-                        if(!helper.fileExists(newResult.path)) {
-                            newResult.path = newResult.path + "x";
+                const instruResult = JSON.parse(file.contents.toString("utf-8"));
+
+                if (Object.keys(instruResult).length != 0) {
+                    for (const fileInstru in instruResult) {
+                        const newResult = instruResult[fileInstru];
+
+                        newResult.path = newResult.path.replace(`${path.sep}${conf.testWorkDir}${path.sep}`, conf.target.base.substring(1));
+
+                        if (!helper.fileExists(newResult.path)) {
+                            newResult.path += "x"; // jsx
                         }
 
-                        delete instruResult[file];
+                        delete instruResult[fileInstru];
 
-                        instruResult[file.replace("/istanbul/", conf.target.base.substring(1))] = newResult;
-
+                        instruResult[fileInstru.replace(`${path.sep}${conf.testWorkDir}${path.sep}`, conf.target.base.substring(1))] = newResult;
                     }
-                    collector.add(instruResult);
+                    const map = libCoverage.createCoverageMap(instruResult);
+                    mergedCoverageMap.merge(map);
                 }
             }
             if (file.isStream()) {
-                this.emit('error', new Error("Stream not supported in merge report"));
+                this.emit("error", new Error("Stream not supported in merge report"));
                 helper.error("Stream not supported in merge report");
                 return done();
             }
@@ -60,29 +62,35 @@ class MergeReportsTests extends Task {
         }
 
         function flush(done) {
-            try{
-                reporters.forEach(function (reporter) {
-                    try {
-                        reporter.writeReport(collector, true, function () {
-                            helper.info('report generated', reporter);
-                        })
-                    } catch (err) {
-                        helper.error("Erreur durant le merge des rapports de couverture : " + err);
-                        done(err);
-                    }
+            if (Object.keys(mergedCoverageMap.data) == 0) {
+                helper.warn("Aucune couverture de test à merger.");
+                /* conf.merge.reporters = ["json"]; */
+            }
+
+            try {
+                conf.merge.reporters.forEach((reporter) => {
+                    const report = reports.create(reporter, {
+                        skipEmpty: false,
+                        skipFull: false,
+                        ...(conf.merge.reportOpts[reporter] || {}),
+                    });
+                    const context = libReport.createContext({
+                        dir: (conf.merge.reportOpts[reporter] && conf.merge.reportOpts[reporter].dir) || conf.merge.reportOpts.dir,
+                        defaultSummarizer: "nested",
+                        coverageMap: mergedCoverageMap,
+                    });
+                    report.execute(context);
                 });
                 this.emit("finish");
-            } catch(err) {
-                helper.error("Erreur durant le merge des rapports de couverture : " + err);
+            } catch (err) {
+                helper.error(`Erreur durant le merge des rapports de couverture : ${err}`);
                 done(err);
             }
             done();
         }
 
         return through.obj(merge, flush);
-
     }
 }
-
 
 module.exports = MergeReportsTests;

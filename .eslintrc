@@ -1,0 +1,36 @@
+{
+    "extends": [
+        "hornet"
+    ],
+    "rules":{
+      "no-new": "off",
+      "no-param-reassign": "off",
+      "sonarjs/no-duplicate-string": "off",
+      "prettier/prettier": [
+        "error",
+        {
+            "arrowParens": "always",
+            "tabWidth": 4,
+            "printWidth": 200,
+            "proseWrap": "always",
+            "singleQuote": false,
+            "trailingComma": "all",
+            "useTabs": false,
+            "overrides": [
+                {
+                    "files": "package*.json",
+                    "options": {
+                        "printWidth": 1000,
+                    },
+                },
+            ],
+        },
+        {
+            "usePrettierrc": false,
+        },
+        ],
+    },
+    "parserOptions": {
+      "ecmaVersion": 11
+    }
+}

@@ -6,3 +6,15 @@ node_modules
 target
 npm-debug.log
 *.zip
+.npm-cache
+!src/gulp/**
+.vscode
+tmp
+.jfrog
+dependencies-report.json
+sonar-project.properties
+.gitlab-ci.yml
+.eslintrc
+changelog.md
+.husky
+linter_report

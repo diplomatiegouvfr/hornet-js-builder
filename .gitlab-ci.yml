@@ -1,0 +1,16 @@
+include:
+  - project: 'hornet.js/gitlab-ci/npm-package-ci'
+    file: 'pipeline.yaml'
+
+variables:
+  QUALIFIED_GROUP: "fr.gouv.diplomatie.hornet"
+
+.artifactory_npm-publish:
+  variables:
+    WORKING_DIRECTORY_PUBLISH: '.'
+
+lint:
+  allow_failure: true
+
+sonar:
+  allow_failure: true

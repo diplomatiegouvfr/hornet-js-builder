@@ -1,8 +1,6 @@
-"use strict";
-
+const commander = require("../../../gulp/commander");
 const State = require("../../state");
 const Task = require("../task");
-const commander = require("../../../gulp/commander");
 
 class GetLastVersion extends Task {
     constructor(name, taskDepend, taskDependencies, gulp, helper, conf, project) {
@@ -11,9 +9,10 @@ class GetLastVersion extends Task {
 
     getlastVersionSnapshot(packageJson, module) {
         let snapshotVersion;
-        packageJson && Object.keys(packageJson).filter(
-            (key) => ["dependencies", "devDependencies"].includes(key)).map(
-                (key) => {
+        packageJson &&
+            Object.keys(packageJson)
+                .filter((key) => ["dependencies", "devDependencies"].includes(key))
+                .forEach((key) => {
                     if (packageJson[key] && !snapshotVersion) {
                         snapshotVersion = packageJson[key][module];
                     }
@@ -23,18 +22,16 @@ class GetLastVersion extends Task {
 
     task(gulp, helper, conf, project) {
         return (done) => {
-            let moduleName = helper.getModule() || project.name;
+            const moduleName = helper.getModule() || project.name;
             helper.info("Récupération de la version pour le module : ", moduleName);
-            helper.debug
+            helper.debug;
 
-
-            let args = ["view"];
+            const args = ["view"];
             args.push("--json");
             args.push(moduleName);
             args.push("time");
 
-            return commander.toPromise({ cmd: "npm", args: args, cwd: helper.getMainProcessDir() }, true).then((ret) => {
-
+            return commander.toPromise({ cmd: "npm", args, cwd: helper.getMainProcessDir() }, true, undefined, true).then((ret) => {
                 if (!ret) {
                     helper.info("Pas de version trouvé pour le module : ", moduleName);
                     return;
@@ -46,17 +43,16 @@ class GetLastVersion extends Task {
                     if (helper.getVersion() === "snapshot") {
                         if (State.moduleList) {
                             // multi-module
-                            Object.keys(State.moduleList).forEach(projectName => {
+                            Object.keys(State.moduleList).forEach((projectName) => {
                                 if (!snapshotVersion) {
                                     snapshotVersion = this.getlastVersionSnapshot(State.moduleList[projectName].packageJson, moduleName);
                                 }
                             });
                         } else {
                             snapshotVersion = this.getlastVersionSnapshot(project.packageJson, moduleName);
-
                         }
                     }
-                    const versionFound = Object.keys(versions).find(version => version === snapshotVersion || version === helper.getVersion());
+                    const versionFound = Object.keys(versions).find((version) => version === snapshotVersion || version === helper.getVersion());
                     const newVersions = {};
                     if (versionFound) {
                         newVersions[versionFound] = versions[versionFound];
@@ -70,13 +66,13 @@ class GetLastVersion extends Task {
                     let lastVersion;
 
                     while (!found && i < sortedValue.length) {
-                        const lastVersionEntry = Object.entries(versions).filter(version => version[1] === sortedValue[i]);
+                        const lastVersionEntry = Object.entries(versions).filter((version) => version[1] === sortedValue[i]);
 
                         if (lastVersionEntry[0] && lastVersionEntry[0][0] && /\d/.test(lastVersionEntry[0][0])) {
                             found = true;
                             lastVersion = lastVersionEntry[0][0];
                         }
-                        i = i + 1;
+                        i += 1;
                     }
                     if (lastVersion) {
                         helper.info("Last Version:", lastVersion);
@@ -90,10 +86,8 @@ class GetLastVersion extends Task {
                     done(new Error("la commande npm n'a retourné aucune resultat"));
                 }
             });
-
-        }
+        };
     }
 }
-
 
 module.exports = GetLastVersion;

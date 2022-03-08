@@ -1,18 +1,13 @@
-'use strict';
-
-var chalk = require("chalk");
+const chalk = require("chalk");
+const log = require("fancy-log"); // remplacement gulp-util.log
 const isFunction = require("lodash.isfunction");
 const isUndefined = require("lodash.isundefined");
-const log = require('fancy-log'); // remplacement gulp-util.log
-var prettyTime = require("pretty-hrtime");
-var helper = require("../helpers");
+const prettyTime = require("pretty-hrtime");
 const State = require("../builders/state");
-var runSequence = require("run-sequence");
 const Task = require("../builders/tasks/task");
-
+const helper = require("../helpers");
 
 module.exports = function (gulp) {
-
     /**
      * Ajoute les fonctions suivantes à gulp:
      * <ul>
@@ -25,76 +20,77 @@ module.exports = function (gulp) {
      * </ul>
      * @param gulp
      */
-    //var LOG = 0;
+    // var LOG = 0;
     function extendGulp(gulp) {
         // on fait sauter la limite du nombre de listeners
         gulp.setMaxListeners(0);
 
-        var tasksHistory = {};
+        const tasksHistory = {};
         gulp.tasksHistory = tasksHistory;
         // Enrobe la fonction de déclaration des tache pour automatiser l'utilisation de run-sequence et gérer le cas du parent-builder
-        var oldTaskFn = gulp.task;
-        gulp.task = function(taskName, deps, cb) {
+        const oldTaskFn = gulp.task;
+        const oldParallelFn = gulp.parallel;
+        const oldSeriesFn = gulp.series;
 
-            
+        gulp.task = function (taskName, deps, cb) {
             cb = Array.isArray(deps) ? cb : deps;
-            cb = isFunction(cb) ? cb : function(done){done();};
+            cb = isFunction(cb)
+                ? cb
+                : function (done) {
+                      done();
+                  };
             deps = Array.isArray(deps) ? deps : [];
 
-            var currentDir = process.cwd();
-            var subModule = helper.getCurrentSubModule();
+            let currentDir = process.cwd();
+            const subModule = helper.getCurrentSubModule();
             if (subModule) {
                 currentDir = subModule.dir;
-                taskName += ("/" + subModule.name);
-                deps.forEach(function(dep, idx) {
-                    deps[idx] += ("/" + subModule.name);
+                taskName += `/${subModule.name}`;
+                deps.forEach(function (dep, idx) {
+                    deps[idx] += `/${subModule.name}`;
                 });
             }
 
             tasksHistory[taskName] = {
                 deps: [],
-                fn: isUndefined(cb) ? function(done) { done(); } : cb
+                fn: isUndefined(cb)
+                    ? function (done) {
+                          done();
+                      }
+                    : cb,
             };
 
             if (deps.length > 0) {
                 tasksHistory[taskName].deps = deps;
-                oldTaskFn.call(gulp, taskName, function(done) {
-                    var arr = tasksHistory[taskName].deps.slice(0);
+                oldTaskFn.call(gulp, taskName, function (done) {
+                    const arr = tasksHistory[taskName].deps.slice(0);
                     helper.checkTasksExistence(gulp, arr);
-                    arr.push(function(err) {
-                        if (err) {
-                            done(err);
-                        } else {
-                            tasksHistory[taskName].fn(done);
-                        }
-                    });
                     try {
-                        runSequence.apply(this, arr);
+                        gulp.series(...arr)((err) => {
+                            if (err) {
+                                done(err);
+                            } else {
+                                tasksHistory[taskName].fn(done);
+                            }
+                        });
                     } catch (err) {
                         done(err);
                     }
                 });
-
             } else {
-                oldTaskFn.call(gulp, taskName, deps, function(done) {
-                    process.chdir(currentDir);
-                    
-                        
-                    if ( Array.isArray(tasksHistory[taskName].deps) &&  tasksHistory[taskName].deps.length > 0 ) {
-                            var arr = tasksHistory[taskName].deps.slice(0);
-                            helper.checkTasksExistence(gulp, arr);
-                            arr.push(function(err) {
-                                if (err) {
-                                    done(err);
-                                } else {
-                                    tasksHistory[taskName].fn(done);
-                                }
-                            });
-                            try {
-                                runSequence.apply(this, arr);
-                            } catch (err) {
+                // oldTaskFn.call(gulp, taskName, deps, function(done) {
+                oldTaskFn.call(gulp, taskName, function (done) {
+                    if (Array.isArray(tasksHistory[taskName].deps) && tasksHistory[taskName].deps.length > 0) {
+                        const arr = tasksHistory[taskName].deps.slice(0);
+                        helper.checkTasksExistence(gulp, arr);
+                        gulp.series(...arr)((err) => {
+                            if (err) {
+                                console.log("err", err);
                                 done(err);
+                            } else {
+                                tasksHistory[taskName].fn(done);
                             }
+                        });
                     } else {
                         try {
                             tasksHistory[taskName].fn(done);
@@ -102,47 +98,71 @@ module.exports = function (gulp) {
                             done(err);
                         }
                     }
-
-
-
                 });
             }
+        };
+
+        gulp.parallel = function (...tasksName) {
+            const subModule = helper.getCurrentSubModule();
+            let newTasksName = tasksName;
+            if (subModule && Array.isArray(tasksName)) {
+                newTasksName = tasksName.map((taskName) => {
+                    return typeof taskName === "string" ? `${taskName}/${subModule.name}` : taskName;
+                });
+            }
+            return oldParallelFn.call(gulp, ...newTasksName);
+        };
+
+        gulp.series = function (...tasksName) {
+            const subModule = helper.getCurrentSubModule();
+            let newTasksName = tasksName;
+            if (subModule && Array.isArray(tasksName)) {
+                newTasksName = tasksName.map((taskName) => {
+                    return typeof taskName === "string" ? `${taskName}/${subModule.name}` : taskName;
+                });
+            }
+            return oldSeriesFn.call(gulp, ...newTasksName);
         };
 
         function createPrePostTaskFn(taskName) {
             let name = taskName;
             let subName = "";
-            let subModule = helper.getCurrentSubModule();
-            let deps = tasksHistory[name].deps;
+            const subModule = helper.getCurrentSubModule();
+            let { deps } = tasksHistory[name];
             if (subModule) {
-                name += ("/" + subModule.name);
-                subName = "/" + subModule.name;
-                deps = tasksHistory[name].deps.map(removeSuffixeModule(subName))
+                name += `/${subModule.name}`;
+                subName = `/${subModule.name}`;
+                deps = tasksHistory[name].deps.map(removeSuffixeModule(subName));
             }
 
-            var gulpTask = gulp.tasks[taskName];
-            var preTaskName = "pre-" + taskName;
-            var doTaskName = "do-" + taskName;
-            var postTaskName = "post-" + taskName;
+            const preTaskName = `pre-${taskName}`;
+            const doTaskName = `do-${taskName}`;
+            const postTaskName = `post-${taskName}`;
 
-
-
-            if (isUndefined(gulpTask)) {
-                throw new Error("La tâche '" + name + "' n'existe pas");
+            if (typeof gulp._registry._tasks[taskName] === "undefined") {
+                throw new Error(`La tâche '${name}' n'existe pas ou n'est pas compatible avec votre type de projet`);
             }
 
-            if (isUndefined(gulp.tasks[preTaskName+subName]) && isUndefined(gulp.tasks[doTaskName+subName]) && isUndefined(gulp.tasks[postTaskName+subName])) {
+            if (
+                typeof gulp._registry._tasks[preTaskName + subName] === "undefined" &&
+                typeof gulp._registry._tasks[doTaskName + subName] === "undefined" &&
+                typeof gulp._registry._tasks[postTaskName + subName] === "undefined"
+            ) {
                 // Génération de la tâche 'post'
-                new Task(postTaskName, "", [], gulp, helper, null, null, (done) => {return done()});
+                new Task(postTaskName, "", [], gulp, helper, null, null, (done) => {
+                    return done();
+                });
 
                 // Génération de la tâche 'do' qui a la fonction d'origine
-                new Task(doTaskName, "", [], gulp, helper, null, null, tasksHistory[name].fn);
+                new Task(doTaskName, "", deps, gulp, helper, null, null, tasksHistory[name].fn);
 
                 // Génération de la tâche 'pre'
-                new Task(preTaskName, "", [], gulp, helper, null, null, (done) => {return done()});
+                new Task(preTaskName, "", [], gulp, helper, null, null, (done) => {
+                    return done();
+                });
 
                 // Modification de la tâche d'origine, ordre : [pre-, deps originales ... , tache originale, post-]
-                new Task(taskName, "", [preTaskName].concat(deps).concat([doTaskName, postTaskName]), gulp, helper, null, null);
+                new Task(taskName, "", gulp.series(preTaskName, doTaskName, postTaskName), gulp, helper, null, null);
             }
         }
 
@@ -152,42 +172,41 @@ module.exports = function (gulp) {
                     return dep.substring(0, dep.indexOf(suffixe));
                 }
                 return dep;
-            }
+            };
         }
 
         function rewriteTaskFn(gulp, taskName, taskFn) {
-            let subModule = helper.getCurrentSubModule();
+            const subModule = helper.getCurrentSubModule();
             if (subModule) {
-                taskName += ("/" + subModule.name);
+                taskName += `/${subModule.name}`;
             }
-            gulp.tasks[taskName].fn = taskFn || function () {}; // no-op;
+            gulp.task(taskName, taskFn);
         }
         gulp.beforeTask = function (taskName, taskFn) {
             createPrePostTaskFn(taskName);
-            rewriteTaskFn(gulp, "pre-" + taskName, taskFn);
+            rewriteTaskFn(gulp, `pre-${taskName}`, taskFn);
         };
 
         gulp.afterTask = function (taskName, taskFn) {
             createPrePostTaskFn(taskName);
-            rewriteTaskFn(gulp, "post-" + taskName, taskFn);
+            rewriteTaskFn(gulp, `post-${taskName}`, taskFn);
         };
 
-        gulp.addTaskDependency = function(taskName, subTaskName, idx) {
-            var moduleTaskName = taskName + (helper.getCurrentSubModule() ? ("/" + helper.getCurrentSubModule().name) : "");
-            var moduleSubTaskName = subTaskName + (helper.getCurrentSubModule() ? ("/" + helper.getCurrentSubModule().name) : "");
+        gulp.addTaskDependency = function (taskName, subTaskName, idx) {
+            const moduleTaskName = taskName + (helper.getCurrentSubModule() ? `/${helper.getCurrentSubModule().name}` : "");
+            const moduleSubTaskName = subTaskName + (helper.getCurrentSubModule() ? `/${helper.getCurrentSubModule().name}` : "");
 
-            if (isUndefined(gulp.tasks[moduleTaskName]) || isUndefined(tasksHistory[moduleTaskName])) {
-                throw new Error("La tâche '" + taskName + "' n'existe pas");
+            if (!gulp._registry._tasks[moduleTaskName] || isUndefined(tasksHistory[moduleTaskName])) {
+                throw new Error(`La tâche '${taskName}' n'existe pas ou n'est pas compatible avec votre type de projet`);
             }
-            if (isUndefined(gulp.tasks[moduleSubTaskName]) || isUndefined(tasksHistory[moduleSubTaskName])) {
-                throw new Error("La sous-tâche '" + moduleSubTaskName + "' n'existe pas");
+            if (!gulp._registry._tasks[moduleSubTaskName] || isUndefined(tasksHistory[moduleSubTaskName])) {
+                throw new Error(`La sous-tâche '${moduleSubTaskName}' n'existe pas`);
             }
             idx = isUndefined(idx) ? tasksHistory[moduleTaskName].deps.length : idx;
             tasksHistory[moduleTaskName].deps.splice(idx, 0, moduleSubTaskName);
-            //gulp.task(taskName, tasksHistory[moduleTaskName].deps, tasksHistory[moduleTaskName].fn)
+            // gulp.task(taskName, tasksHistory[moduleTaskName].deps, tasksHistory[moduleTaskName].fn)
         };
     }
-
 
     // format orchestrator errors
     function formatError(e) {
@@ -209,11 +228,10 @@ module.exports = function (gulp) {
         return new Error(String(e.err)).stack;
     }
 
-
     // exit with 0 or 1
-    var failed = false;
+    let failed = false;
     process.once("exit", function (code) {
-        if(State.result) {
+        if (State.result) {
             console.log(State.result);
         }
         if (code === 0 && failed) {
@@ -223,50 +241,40 @@ module.exports = function (gulp) {
 
     // wire up logging events
     function logEvents(gulpInst) {
-        var inc = 0;
+        let inc = 0;
 
         // total hack due to poor error management in orchestrator
         gulpInst.on("err", function () {
             failed = true;
         });
-        gulpInst.on("task_start", function (e) {
+        gulpInst.on("start", function (e) {
             // TODO: batch these
             // so when 5 tasks start at once it only logs one time with all 5
             inc++;
-            let logShift = "_".repeat(inc);
-            log(logShift + "Starting", "'" + chalk.cyan(e.task) + "'...");
-
+            const logShift = "_".repeat(inc);
+            !helper.isSilent() && log(`${logShift}Starting`, `'${chalk.cyan(e.name || e.task)}'...`);
         });
 
-        gulpInst.on("task_stop", function (e) {
-            let logShift = "_".repeat(inc);
+        gulpInst.on("stop", function (e) {
+            const logShift = "_".repeat(inc);
             inc--;
-            var time = prettyTime(e.hrDuration);
-            log(logShift + 
-                "Finished", "'" + chalk.cyan(e.task) + "'",
-                "after", chalk.magenta(time)
-            );
+            const time = prettyTime(e.duration);
+            !helper.isSilent() && log(`${logShift}Finished`, `'${chalk.cyan(e.name || e.task)}'`, "after", chalk.magenta(time));
         });
 
-        gulpInst.on("task_err", function (e) {
-            if(e && e.err && e.err.console) {
+        gulpInst.on("error", function (e) {
+            if (e && e.err && e.err.console) {
                 log(e.err.data);
             } else {
-                var msg = formatError(e);
-                var time = prettyTime(e.hrDuration);
-                log(
-                    "'" + chalk.cyan(e.task) + "'",
-                    chalk.red("errored after"),
-                    chalk.magenta(time)
-                );
+                const msg = formatError(e.error);
+                const time = prettyTime(e.duration);
+                log(`'${chalk.cyan(e.name || e.task)}'`, chalk.red("errored after"), chalk.magenta(time));
                 log(msg);
             }
         });
 
         gulpInst.on("task_not_found", function (err) {
-            log(
-                chalk.red("Task '" + err.task + "' is not in your gulpfile")
-            );
+            log(chalk.red(`Task '${err.task}' is not in your gulpfile`));
             log("Please check the documentation for proper gulpfile formatting");
             process.exit(1);
         });
@@ -275,4 +283,3 @@ module.exports = function (gulp) {
     extendGulp(gulp);
     logEvents(gulp);
 };
-

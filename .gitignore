@@ -1,4 +1,3 @@
-test
 istanbul
 .svn
 *.txt
@@ -8,3 +7,11 @@ definition-ts
 npm-debug.log
 .vscode
 .history
+!src/builders/tasks/file-header/*.txt
+!src/gulp/**
+coverage
+.nyc*
+junit.xml
+linter_report
+.husky
+.env

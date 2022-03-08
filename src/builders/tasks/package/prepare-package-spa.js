@@ -1,17 +1,12 @@
-"use strict";
-
-const Task = require("./../task");
-const _ = require("lodash");
+const Task = require("../task");
 
 /**
  * Fonction générique de recopie de fichiers vers le repertoire de destination
  */
 class PreparePackageSpa extends Task {
-
     task(gulp, helper, conf, project) {
         return (done) => {
-
-            let base = undefined;
+            const base = undefined;
 
             if (Array.isArray(conf.spaResources)) {
                 Array.prototype.push.apply(conf.complementarySpaSources, conf.spaResources);
@@ -20,21 +15,24 @@ class PreparePackageSpa extends Task {
             if (conf.spaFilter && Array.isArray(conf.spaFilter)) {
                 let resultFilter;
                 conf.spaFilter.map((filter) => {
-                    let reg = new RegExp(filter);
-                    resultFilter = conf.complementarySpaSources.filter(word => {
+                    const reg = new RegExp(filter);
+                    resultFilter = conf.complementarySpaSources.filter((word) => {
                         return reg.test(word);
                     });
                 });
                 conf.complementarySpaSources = resultFilter;
-            }  
+            }
 
             helper.stream(
                 done,
-                gulp.src(conf.complementarySpaSources, {
-                    base: base
-                }).pipe(gulp.dest(conf.static))
+                gulp
+                    .src(conf.complementarySpaSources, {
+                        base,
+                        cwd: project.dir,
+                    })
+                    .pipe(gulp.dest(conf.static)),
             );
-        }
+        };
     }
 }
 

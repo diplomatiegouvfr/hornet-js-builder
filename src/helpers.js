@@ -1,61 +1,91 @@
-"use strict";
-const log = require('fancy-log'); // remplacement gulp-util.log
 const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const camelcase = require("camelcase");
 const chalk = require("chalk");
+const { program } = require("commander");
+const eventStream = require("event-stream");
+const log = require("fancy-log"); // remplacement gulp-util.log
+const JSON5 = require("json5");
+const cloneDeep = require("lodash.clonedeep");
+const flatten = require("lodash.flatten");
 const isObject = require("lodash.isobject");
 const isUndefined = require("lodash.isundefined");
 const map = require("lodash.map");
-const flatten = require("lodash.flatten");
-const cloneDeep = require("lodash.clonedeep");
 const merge = require("lodash.merge");
-const os = require("os");
-const path = require("path");
 const semver = require("semver");
-const eventStream = require("event-stream");
-const JSON5 = require("json5");
 const State = require("./builders/state");
-
 const taskInfo = require("./builders/tasks/task-info");
 
-const shell = require("shelljs");
-const vorpal = require("vorpal")();
+const Helper = function () {};
 
-vorpal.command("$ [cmd...]", "run command in a shell terminal, ex : '$ ls'")
-    .allowUnknownOptions()
-    .action(async function (args) {
-        shell.exec(vorpal._command.command.substring(2));
-    });
+program
+    .version(require("../package.json").version)
+    .usage("[options] <tasks ...>")
+    .option("-d, --debug", "Mode debug")
+    .option("-e, --external", "Mode auto external")
+    .option("--pid", "Permet de ne pas exécuter les tests")
+    .option("-l, --list", "Listing de toutes les tâches")
+    .option("--show-webpack-files", "Log les fichiers pris en compte par webpack dans sa phase de compilation du bundle client")
+    .option("--webpackVisualizer", "Visualisation de la répartition des sources projets et node modules dans un chart, /static/dev/webpack-visualizer.html")
+    .option("-i, --ide", "Indique que c'est l'IDE qui compile les TS, dans ce cas la compilation TS est désactivée ainsi que les watchers associés")
+    .option("-r, --registry <url>", "L'url du repository global : servant à la récupération des dépendances et à la publication")
+    .option("--publish-registry <url>", "L'url du repository servant uniquement à la publication (tasks 'publish' & 'unpublish'")
+    .option("-f, --force", "Forcer la mise à jour des dépendances")
+    .option("--ignoreApp", "ne prend pas la version de dépendance applicative, mais la plus récente")
+    .option("--skipTests", "Permet de ne pas exécuter les tests")
+    .option("--skipDedupe", "Permet de ne pas exécuter npm dedupe")
+    .option("--stopOnError", "Permet de stopper toutes les tâches sur une erreur")
+    .option("--skipMinified", "Permet de ne pas minifier les chuncks")
+    .option("--noWarn", "Permet de ne pas afficher les warnings")
+    .option("-p, --debugPort <port>", "Indique le port utilisé par node pour permettre la connexion d'un debugger externe")
+    .option("-m, --module <module>", "Indique le module pour lequel on souhaite avoir une recherche de version")
+    .option("--file <file>", "Indique le chemin d'un fichier")
+    .option("--dev", "active le mode developpement")
+    .option(
+        "--offline",
+        "active le mode offline pour la récupération des dépendances, ex : coupure réseau. Prerequis avoir les node_modules, ajouter fetch-retries=0 dans .npmrc",
+    )
+    //    .option("--release <final / snapshot>", "version ou suffixe si commence par '-' ou '.'", /^(final|snapshot)$/i)
+    .option("--versionFix <versionFix>", "version ou suffixe si commence par '-', '.' ou si null", (value) => {
+        Helper.debug(value);
+        return value ? value.replace(/'/g, "") : "auto";
+    })
+    .option("--versionSearch <versionSearch>", "préfixe de la dernière version", (value) => {
+        Helper.debug(value);
+        return value ? value.replace(/'/g, "") : "auto";
+    })
+    .option("--dependencyVersionFix <dependency>", "Fix une version pour une dépendance")
+    .option("-s, --silent", "Permet de n'afficher que les niveaux log, error et warning")
+    .allowUnknownOption()
+    .passCommandToAction(true);
 
-var Helper = function () {
-};
-
-var oldCLog = console.log;
-
+const oldCLog = console.log;
 
 // Establish the object that gets returned to break out of a loop iteration.
-var breaker = {};
-var args = [];
+const breaker = {};
+let args = [];
 
-var ArrayProto = Array.prototype, ObjProto = Object.prototype;
-var slice = ArrayProto.slice, //
-    nativeMap = ArrayProto.map, //
-    nativeForEach = ArrayProto.forEach;
+const ArrayProto = Array.prototype;
+const ObjProto = Object.prototype;
+const { slice } = ArrayProto; //
+const nativeMap = ArrayProto.map; //
+const nativeForEach = ArrayProto.forEach;
 
 // Variables statiques stockant la valeur du ficheir de configuratin du builder
-Helper.BUILDER_FILE = "builder.js";
 Helper.TYPE = {
     PARENT: "parent",
     APPLICATION: "application",
     APPLICATION_SERVER: "application-server",
     MODULE: "module",
     CUSTOM: "custom",
-    COMPOSANT: "composant"
-}
+    COMPOSANT: "composant",
+};
 
 Helper.RELEASE_TYPE = {
     FINAL: "final",
-    SNAPSHOT: "snapshot"
-}
+    SNAPSHOT: "snapshot",
+};
 
 // Variables statiques stockant la valeur du répertoire d"installation des dépendances nodejs
 Helper.NODE_MODULES = "node_modules";
@@ -66,81 +96,80 @@ Helper.DEPENDENCIES = "dependencies";
 Helper.DEV_DEPENDENCIES = "devDependencies";
 
 Helper.allowJSON5 = function () {
-    if (!JSON["__oldParse"]) {
+    if (!JSON.__oldParse) {
         // autorise les : require("monFichierJson") avec extension .json5
         require("json5/lib/require");
 
         // surcharge JSON.parse
-        JSON["__oldParse"] = JSON.parse;
+        JSON.__oldParse = JSON.parse;
         JSON.parse = function () {
             try {
-                return JSON["__oldParse"].apply(JSON, arguments);
+                return JSON.__oldParse.apply(JSON, arguments);
             } catch (e) {
                 return JSON5.parse.apply(JSON5, arguments);
             }
         };
     }
-}
+};
 
 // Getter & Setter pour les modes du builder (options)
 Helper.setDebug = function (value) {
     if (!isUndefined(value)) {
-        process.env.IS_DEBUG_ENABLED = value;
+        process.env.IS_DEBUG_ENABLED = value === false ? "" : value;
     }
 };
 
 Helper.setCommandArgs = function (value) {
     args = value;
-}
+};
 
 Helper.getCommandArgs = function () {
     return args;
-}
+};
 
 Helper.setRemainingArgs = function (value) {
     process.remaining = value;
-}
+};
 
 Helper.getRemainingArgs = function () {
     return process.remaining;
-}
+};
 
-Helper.getVorpal = function () {
-    return vorpal;
-}
+Helper.getCommander = function () {
+    return program;
+};
 
 Helper.getTaskInfo = function (value) {
     return taskInfo[value];
-}
+};
 
 Helper.setList = function (value) {
-
     if (!isUndefined(value)) {
         let taskInfoPrint;
         Object.keys(taskInfo).forEach((key) => {
-            taskInfoPrint += "\n " + chalk.blue.bold(key) + " | " + taskInfo[key];
-        })
-        Helper.info("Listing de toutes les tâches du builder" + taskInfoPrint);
+            taskInfoPrint += `\n ${chalk.blue.bold(key)} | ${taskInfo[key]}`;
+        });
+        Helper.info(`Listing de toutes les tâches du builder${taskInfoPrint}`);
         process.exit(1);
     }
 };
 Helper.isDebug = function () {
-    return process.env.IS_DEBUG_ENABLED ? true : false;
+    return !!process.env.IS_DEBUG_ENABLED;
 };
 
 Helper.setActiveExternal = function (value) {
     if (!isUndefined(value)) {
-        process.env.IS_EXTERNAL_ENABLED = value;
+        process.env.IS_EXTERNAL_ENABLED = value === false ? "" : value;
     }
 };
 
 Helper.isActiveExternal = function () {
-    return process.env.IS_EXTERNAL_ENABLED ? true : false;
+    return !!process.env.IS_EXTERNAL_ENABLED;
 };
 
 Helper.setForce = function (value) {
     if (!isUndefined(value)) {
-        process.env.IS_FORCE_ENABLED = value;
+        process.env.IS_FORCE_ENABLED = value === false ? "" : value;
     }
 };
 Helper.isForce = function () {
@@ -166,7 +195,7 @@ Helper.getPublishRegistry = function () {
 
 Helper.setSkipTests = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_SKIP_TESTS = value;
+        process.env.HB_SKIP_TESTS = value === false ? "" : value;
     }
 };
 Helper.isSkipTests = function () {
@@ -175,7 +204,7 @@ Helper.isSkipTests = function () {
 
 Helper.setSkipDedupe = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_SKIP_DEDUPE = value;
+        process.env.HB_SKIP_DEDUPE = value === false ? "" : value;
     }
 };
 Helper.isSkipDedupe = function () {
@@ -184,7 +213,7 @@ Helper.isSkipDedupe = function () {
 
 Helper.setSkipMinified = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_SKIP_MINIFIED = value;
+        process.env.HB_SKIP_MINIFIED = value === false ? "" : value;
     }
 };
 Helper.isSkipMinified = function () {
@@ -193,7 +222,7 @@ Helper.isSkipMinified = function () {
 
 Helper.setNoWarn = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_NO_WARN = value;
+        process.env.HB_NO_WARN = value === false ? "" : value;
     }
 };
 Helper.isNoWarn = function () {
@@ -202,7 +231,7 @@ Helper.isNoWarn = function () {
 
 Helper.setIDE = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_IDE = value;
+        process.env.HB_IDE = value === false ? "" : value;
     }
 };
 Helper.isIDE = function () {
@@ -211,7 +240,7 @@ Helper.isIDE = function () {
 
 Helper.setWebpackVisualizer = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_WEBPACK_VISUALIZER = value;
+        process.env.HB_WEBPACK_VISUALIZER = value === false ? "" : value;
     }
 };
 Helper.isWebpackVisualizer = function () {
@@ -230,7 +259,7 @@ Helper.getModule = function () {
 
 Helper.setShowWebPackFiles = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_SHOW_WEBPACK_FILES = value;
+        process.env.HB_SHOW_WEBPACK_FILES = value === false ? "" : value;
     }
 };
 Helper.isShowWebPackFiles = function () {
@@ -245,26 +274,6 @@ Helper.getDebugPort = function () {
     return parseInt(process.env.HB_DEBUG_PORT);
 };
 
-Helper.setLintRules = function (rules) {
-    if (!isUndefined(rules)) {
-        process.env.HB_LINT_RULES = rules;
-    }
-};
-
-Helper.getLintRules = function () {
-    return process.env.HB_LINT_RULES;
-};
-
-Helper.setLintReport = function (report) {
-    if (!isUndefined(report)) {
-        process.env.HB_LINT_REPORT = report;
-    }
-};
-
-Helper.getLintReport = function () {
-    return process.env.HB_LINT_REPORT || "prose";
-};
-
 Helper.setPreInstallDev = function (skip) {
     if (!isUndefined(skip)) {
         process.env.IS_PRE_INSTALL_DEV = skip;
@@ -277,7 +286,7 @@ Helper.isPreInstallDev = function () {
 
 Helper.setMultiType = function (value) {
     if (!isUndefined(value)) {
-        process.env.IS_MULTI_TYPE = value;
+        process.env.IS_MULTI_TYPE = value === false ? "" : value;
     }
 };
 Helper.isMultiType = function () {
@@ -293,9 +302,18 @@ Helper.getFile = function () {
     return process.env.HB_FILE;
 };
 
+Helper.setTsFile = function (value) {
+    if (!isUndefined(value)) {
+        process.env.HB_TS_FILE = value;
+    }
+};
+Helper.getTsFile = function () {
+    return process.env.HB_TS_FILE;
+};
+
 Helper.setDevMode = function (value) {
     if (!isUndefined(value)) {
-        process.env.IS_DEV_MODE_ENABLED = value;
+        process.env.IS_DEV_MODE_ENABLED = value === false ? "" : value;
     }
 };
 Helper.isDevMode = function () {
@@ -304,7 +322,7 @@ Helper.isDevMode = function () {
 
 Helper.setOfflineMode = function (value) {
     if (!isUndefined(value)) {
-        process.env.IS_OFFLINE_MODE_ENABLED = value;
+        process.env.IS_OFFLINE_MODE_ENABLED = value === false ? "" : value;
     }
 };
 Helper.isOfflineMode = function () {
@@ -340,75 +358,151 @@ Helper.getDependency = function () {
     return process.env.DEPENDENCY;
 };
 
-Helper.setQuery = function (value) {
-    if (!isUndefined(value)) {
-        process.env.QUERY = value;
-    }
-};
-
-Helper.getQuery = function () {
-    return process.env.QUERY;
-};
-
-Helper.setUri = function (value) {
-    if (!isUndefined(value)) {
-        process.env.URI = value;
-    }
-};
-
-Helper.getUri = function () {
-    return process.env.URI;
-};
-
 Helper.setStopOnError = function (value) {
     if (!isUndefined(value)) {
-        process.env.HB_STOP_ON_ERROR = value;
+        process.env.HB_STOP_ON_ERROR = value === false ? "" : value;
     }
-}
+};
 
 Helper.getStopOnError = function () {
     return process.env.HB_STOP_ON_ERROR;
 };
 
+Helper.setSilent = function (value) {
+    if (!isUndefined(value)) {
+        process.env.HB_SILENT = value === false ? "" : value;
+    }
+};
+Helper.isSilent = function () {
+    return process.env.HB_SILENT || false;
+};
+
 Helper.getEnvExternalModule = function () {
-    let envVar = process.env.HB_EXT_MODULES;
+    const envVar = process.env.HB_EXT_MODULES;
     if (isUndefined(envVar)) {
         return [];
     }
-    return envVar.split(/\s*(;|$)\s*/)
+    return envVar.split(/\s*(;|$)\s*/);
+};
+
+Helper.initFromCommander = function (program) {
+    Helper.setForce(program.force);
+    Helper.setDebug(program.debug);
+    Helper.setActiveExternal(program.external);
+    Helper.setPreInstallDev(program.pid);
+    Helper.setList(program.list);
+    Helper.setRegistry(program.registry);
+    Helper.setPublishRegistry(program.publishRegistry);
+    Helper.setSkipTests(program.skipTests);
+    Helper.setSkipDedupe(program.skipDedupe);
+    Helper.setSkipMinified(program.skipMinified);
+    Helper.setNoWarn(program.noWarn);
+    Helper.setIDE(program.ide);
+    Helper.setShowWebPackFiles(program.showWebpackFiles);
+    Helper.setWebpackVisualizer(program.webpackVisualizer);
+    Helper.setDebugPort(program.debugPort);
+    Helper.setModule(program.module);
+    Helper.setFile(program.file);
+    Helper.setDevMode(program.dev);
+    Helper.setOfflineMode(program.offline);
+    Helper.setRelease(program.release);
+    Helper.setVersion(program.versionFix);
+    Helper.setVersion(program.versionSearch);
+    Helper.setDependency(program.dependencyVersionFix);
+    Helper.setStopOnError(program.stopOnError);
+    Helper.setSilent(program.silent);
+
+    Helper.setCommandArgs(process.argv);
+    Helper.setMainProcessDir(process.cwd());
+
+    const RemainingArgs = [...program.rawArgs];
+    const firstArgs = Math.max(
+        RemainingArgs.findIndex((item) => item.startsWith("-")),
+        0,
+    );
+    if (firstArgs !== 0) {
+        Helper.setRemainingArgs(
+            RemainingArgs.splice(firstArgs) // Remove all arguments until one --option
+                .filter((item, index, array) => {
+                    // If the option is consumed by commander.js, then we skip it
+                    if (program.options.find((o) => o.short === item || o.long === item)) {
+                        return false;
+                    }
+
+                    // If it's an argument of an option consumed by commander.js, then we
+                    // skip it too
+                    const prevKeyRaw = array[index - 1];
+                    if (prevKeyRaw) {
+                        const previousKey = camelcase(prevKeyRaw.replace("--", "").replace("no", ""));
+                        if (program[previousKey] === item) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }),
+        );
+        program.args = program.args.filter((arg) => Helper.getRemainingArgs().indexOf(arg) == -1);
+    }
+};
+
+Helper.initCommanderFromHelper = function () {
+    const program = {};
+    program.force = Helper.isForce();
+    program.debug = Helper.isDebug();
+    program.external = Helper.isActiveExternal();
+    program.pid = Helper.isPreInstallDev();
+    program.registry = Helper.getRegistry();
+    program.publishRegistry = Helper.getPublishRegistry();
+    program.skipTests = Helper.isSkipTests();
+    program.skipDedupe = Helper.isSkipDedupe();
+    program.skipMinified = Helper.isSkipMinified();
+    program.noWarn = Helper.isNoWarn();
+    program.ide = Helper.isIDE();
+    program.showWebpackFiles = Helper.isShowWebPackFiles();
+    program.webpackVisualizer = Helper.isWebpackVisualizer();
+    program.debugPort = Helper.getDebugPort();
+    program.module = Helper.getModule();
+    program.file = Helper.getFile();
+    program.dev = Helper.isDevMode();
+    program.offline = Helper.isOfflineMode();
+    program.release = Helper.getRelease();
+    program.versionFix = Helper.getVersion();
+    program.versionSearch = Helper.getVersion();
+    program.dependencyVersionFix = Helper.getDependency();
+    program.stopOnError = Helper.getStopOnError();
+    program.silent = Helper.isSilent();
+    program.rawArgs = [];
+    process.argv = Helper.getCommandArgs();
+    process.cwd = () => Helper.getMainProcessDir();
+    return program;
 };
 
 Helper.logBuilderModes = function () {
     Helper.debug("Mode DEBUG [ON]");
-    Helper.debug("Mode IDE:", (Helper.isIDE() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode FORCE:", (Helper.isForce() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode Offline:", (Helper.isOfflineMode() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode Dev:", (Helper.isDevMode() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode ShowWebPackFiles:", (Helper.isShowWebPackFiles() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode SkipTests:", (Helper.isSkipTests() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode SkipMinified:", (Helper.isSkipMinified() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode NoWarn:", (Helper.isNoWarn() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode WebpackVisualizer:", (Helper.isWebpackVisualizer() ? "[ON]" : "[OFF]"));
-    Helper.debug("Mode LintRules:", Helper.getLintRules());
-    Helper.debug("Mode LintReport:", Helper.getLintReport());
+    Helper.debug("Mode IDE:", Helper.isIDE() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode FORCE:", Helper.isForce() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode Offline:", Helper.isOfflineMode() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode Dev:", Helper.isDevMode() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode ShowWebPackFiles:", Helper.isShowWebPackFiles() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode SkipTests:", Helper.isSkipTests() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode SkipMinified:", Helper.isSkipMinified() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode NoWarn:", Helper.isNoWarn() ? "[ON]" : "[OFF]");
+    Helper.debug("Mode WebpackVisualizer:", Helper.isWebpackVisualizer() ? "[ON]" : "[OFF]");
 };
 
-
 Helper.each = function (obj, iterator, context) {
-    if (!obj)
-        return;
+    if (!obj) return;
     if (nativeForEach && obj.forEach === nativeForEach) {
         obj.forEach(iterator, context);
     } else if (obj.length === +obj.length) {
-        for (var i = 0, l = obj.length; i < l; i++) {
-            if (iterator.call(context, obj[i], i, obj) === breaker)
-                return;
+        for (let i = 0, l = obj.length; i < l; i++) {
+            if (iterator.call(context, obj[i], i, obj) === breaker) return;
         }
     } else {
-        for (var key in obj) {
+        for (const key in obj) {
             if (Helper.has(obj, key)) {
-                if (iterator.call(context, obj[key], key, obj) === breaker)
-                    return;
+                if (iterator.call(context, obj[key], key, obj) === breaker) return;
             }
         }
     }
@@ -417,7 +511,6 @@ Helper.each = function (obj, iterator, context) {
 Helper.has = function (obj, key) {
     return ObjProto.hasOwnProperty.call(obj, key);
 };
-
 
 /**
  * Retour true si str commence par prefix
@@ -447,40 +540,42 @@ Helper.getStringBefore = function (str, searchString) {
 // Méthodes de logging
 //
 Helper.debug = function () {
-    if (Helper.isDebug()) {
-        var argsWithColors = chalk.grey.apply(chalk, Helper.processLogArgs(arguments));
+    if (!Helper.isSilent() && Helper.isDebug()) {
+        const argsWithColors = chalk.grey.apply(chalk, Helper.processLogArgs(arguments));
         log.call(log, argsWithColors);
     }
 };
 
+Helper.log = function () {
+    console.log(...arguments);
+};
+
 Helper.info = function () {
-    log.call(log, chalk.white.apply(chalk, Helper.processLogArgs(arguments)));
+    !Helper.isSilent() && log.call(log, chalk.white.apply(chalk, Helper.processLogArgs(arguments)));
 };
 
 Helper.warn = function () {
     if (!Helper.isNoWarn()) {
-        var argsWithColors = chalk.black.bgYellow.apply(chalk, ["[WARN]"].concat(Helper.processLogArgs(arguments)));
+        const argsWithColors = chalk.black.bgYellow.apply(chalk, ["[WARN]"].concat(Helper.processLogArgs(arguments)));
         log.call(log, argsWithColors);
     }
-
 };
 
 Helper.error = function () {
-    var argsWithColors = chalk.red.apply(chalk, ["[ERROR]"].concat(Helper.processLogArgs(arguments)));
+    const argsWithColors = chalk.red.apply(chalk, ["[ERROR]"].concat(Helper.processLogArgs(arguments)));
     log.call(log, argsWithColors);
 };
 
-Helper.processLogArgs = function (args) {
-    //Les objets ne sont pas stringifiés avec chalk donc c'est fait main :(
-    var processedArgs = map(args, function (arg) {
+Helper.processLogArgs = function (argsToLog) {
+    // Les objets ne sont pas stringifiés avec chalk donc c'est fait main :(
+    const processedArgs = map(argsToLog, function (arg) {
         if (isObject(arg)) {
             if (arg instanceof Error) {
                 return [os.EOL, arg.toString()];
             }
             return [os.EOL, JSON.stringify(arg, null, 2)];
-        } else {
-            return arg;
         }
+        return arg;
     });
 
     return flatten(processedArgs);
@@ -489,45 +584,44 @@ Helper.processLogArgs = function (args) {
 //
 // Tests sur les fichiers et dossiers
 //
-Helper.folderExists = function (path) {
+Helper.folderExists = function (pathToVerify) {
     try {
-        var stat = fs.statSync(path);
+        var stat = fs.statSync(pathToVerify);
     } catch (_) {
-        return false
+        return false;
     }
     return stat.isDirectory();
 };
 
-Helper.fileExists = function (path) {
+Helper.fileExists = function (pathToVerify) {
     try {
-        var stat = fs.statSync(path);
+        var stat = fs.statSync(pathToVerify);
     } catch (_) {
-        return false
+        return false;
     }
-    return stat.isFile()
+    return stat.isFile();
 };
 
-Helper.isSymlink = function (path) {
+Helper.isSymlink = function (pathToVerify) {
     try {
-        var stat = fs.lstatSync(path);
+        var stat = fs.lstatSync(pathToVerify);
     } catch (_) {
-        return false
+        return false;
     }
     return stat.isSymbolicLink();
 };
-
 
 /**
  * Lit un repertoire de manière récursive en applicant le callback sur chaque fichier
  */
 Helper.readDirRecursive = function (dir, callback) {
-    //Helper.debug('Reading dir: ' + dir);
-    var files = fs.readdirSync(dir);
+    // Helper.debug('Reading dir: ' + dir);
+    const files = fs.readdirSync(dir);
 
     files.forEach(function (file) {
-        //Helper.debug('File: ' + file);
-        var nextRead = path.join(dir, file);
-        var stats = fs.lstatSync(nextRead);
+        // Helper.debug('File: ' + file);
+        const nextRead = path.join(dir, file);
+        const stats = fs.lstatSync(nextRead);
         if (stats.isDirectory()) {
             Helper.readDirRecursive(nextRead + path.sep, callback);
         } else {
@@ -536,34 +630,31 @@ Helper.readDirRecursive = function (dir, callback) {
     });
 };
 
-
 Helper.getModuleList = function (dir, project) {
-    var moduleList = [];
-    var builderPath = path.join(dir, "builder.js");
-    var current = process.cwd();
-    let builderCurrentFile = path.join(current, Helper.BUILDER_FILE);
-    let path2addCurrentBuilderJS;
-    if (fs.existsSync(builderCurrentFile)) {
-        path2addCurrentBuilderJS = Helper.ReadTypeBuilderJS(builderCurrentFile);
-    }
+    const moduleList = [];
+    const builderPath = Helper.getBuilder(dir);
+    
     if (fs.existsSync(builderPath)) {
-        var builder = require(builderPath);
+        const builder = require(builderPath);
         if (builder && builder.type == Helper.TYPE.PARENT) {
-            Helper.readDirRecursiveAndCallBackOnDir(dir, (dir, file) => {
-                var packagePath = path.join(dir, file, "package.json");
-                var builderJsPath = path.join(dir, file, "builder.js");
+            Helper.readDirRecursiveAndCallBackOnDir(dir, (currentDir, file) => {
+                const packagePath = path.join(currentDir, file, "package.json");
+                const builderJsPath = Helper.getBuilder(path.join(currentDir, file));
                 if (!fs.existsSync(packagePath) || !fs.existsSync(builderJsPath)) {
                     // pas de package.json, pas un module
                     return false;
                 }
-                let builderDef = Helper.ReadTypeBuilderJS(builderJsPath);
-                if (builderDef
-                    && (builderDef == Helper.TYPE.APPLICATION || builderDef == Helper.TYPE.APPLICATION_SERVER)
-                    && (project && (project.type == Helper.TYPE.APPLICATION || project.type == Helper.TYPE.APPLICATION_SERVER))) {
+                const builderDef = Helper.ReadTypeBuilderJS(builderJsPath);
+                if (
+                    builderDef &&
+                    (builderDef == Helper.TYPE.APPLICATION || builderDef == Helper.TYPE.APPLICATION_SERVER) &&
+                    project &&
+                    (project.type == Helper.TYPE.APPLICATION || project.type == Helper.TYPE.APPLICATION_SERVER)
+                ) {
                     return false;
                 }
 
-                moduleList.push(Helper.getProject(path.join(dir, file)));
+                moduleList.push(Helper.getProject(path.join(currentDir, file)));
                 return true;
             });
         }
@@ -571,17 +662,16 @@ Helper.getModuleList = function (dir, project) {
     return moduleList;
 };
 
-
 /**
  * Lit un repertoire de manière récursive en applicant le callback sur chaque dossier, le callback doit retourner true pour lire le sous dossier
  */
 Helper.readDirRecursiveAndCallBackOnDir = function (dir, callback) {
     //  helper.debug('readDirRecursive:', dir);
-    var files = fs.readdirSync(dir);
+    const files = fs.readdirSync(dir);
 
     files.forEach(function (file) {
-        var nextRead = path.join(dir, file);
-        var stats = fs.lstatSync(nextRead);
+        const nextRead = path.join(dir, file);
+        const stats = fs.lstatSync(nextRead);
         if (stats.isDirectory()) {
             //  helper.debug('readDirRecursive, found dir:', file);
             if (callback(dir, file)) {
@@ -592,34 +682,14 @@ Helper.readDirRecursiveAndCallBackOnDir = function (dir, callback) {
 };
 
 /**
- * Tri un objet avec un comparateur
- * default : tri alphabétique sur les clés de l'objet
- * @param obj
- * @param cmp
- * @returns {object}
- */
-Helper.sortObj = function (obj, cmp) {
-    var r = [];
-    for (var i in obj)
-        if (obj.hasOwnProperty(i)) r.push({ key: i, value: obj[i] });
-
-    return r.sort(cmp || function (o1, o2) {
-        return o1.key < o2.key ? -1 : o1.key > o2.key ? 1 : 0;
-    }).reduce(function (obj, n) {
-        obj[n.key] = n.value;
-        return obj;
-    }, {});
-};
-
-/**
  * Calcule la plus version la plus récente
  * @param versions
  * @returns {string}
  */
 Helper.getLastVersion = function (versions) {
-    var lastVersion = versions[0];
-    var semver = require("semver");
-    for (var i = 1; i < versions.length; i++) {
+    let lastVersion = versions[0];
+    const semver = require("semver");
+    for (let i = 1; i < versions.length; i++) {
         if (semver.lt(lastVersion, versions[i])) {
             lastVersion = versions[i];
         }
@@ -632,9 +702,9 @@ Helper.getLastVersion = function (versions) {
  * @returns {*}
  */
 Helper.findCacheFolder = function () {
-    var paths = Helper.getCachePathfolders();
+    const paths = Helper.getCachePathfolders();
 
-    for (var i = 0; i < paths.length; i++) {
+    for (let i = 0; i < paths.length; i++) {
         if (Helper.folderExists(paths[i])) return paths[i];
     }
 
@@ -647,12 +717,10 @@ Helper.findCacheFolder = function () {
  * @returns {Array}
  */
 Helper.getCachePathfolders = function () {
-    var tryPaths = [];
-    var cacheFolderName = process.env.HORNET_BUILDER_CACHE || "hbc";
+    const tryPaths = [];
+    const cacheFolderName = process.env.HORNET_BUILDER_CACHE || "hbc";
 
-    if (process.platform === "win32"
-        && process.env.APPDATA
-        && Helper.folderExists(process.env.APPDATA)) {
+    if (process.platform === "win32" && process.env.APPDATA && Helper.folderExists(process.env.APPDATA)) {
         tryPaths.push(path.resolve(path.join(process.env.APPDATA, cacheFolderName)));
     }
 
@@ -663,12 +731,12 @@ Helper.getCachePathfolders = function () {
 };
 
 Helper.readInstalledDependencies = function (nodeModulesPath, recursive = true) {
-    var installed = {};
+    let installed = {};
     if (Helper.folderExists(nodeModulesPath)) {
-        var files = fs.readdirSync(nodeModulesPath);
+        const files = fs.readdirSync(nodeModulesPath);
         Helper.each(files, function (file) {
             if (Helper.fileExists(path.join(nodeModulesPath, file, "package.json"))) {
-                var json = require(path.join(nodeModulesPath, file, "package.json"));
+                const json = require(path.join(nodeModulesPath, file, "package.json"));
                 installed[json.name] = json.version;
             } else {
                 installed = { ...installed, ...Helper.readInstalledDependencies(path.join(nodeModulesPath, file)) };
@@ -684,30 +752,32 @@ Helper.readInstalledDependencies = function (nodeModulesPath, recursive = true) 
  */
 Helper.removeDir = function (dir) {
     if (Helper.folderExists(dir) || Helper.isSymlink(dir)) {
-        let moduleResolver = require("./module-resolver");
+        const moduleResolver = require("./module-resolver");
         moduleResolver.addModuleDirectory(Helper.BUILDER_DEPENDENCIES);
         require("rimraf").sync(dir);
         moduleResolver.removeModuleDirectory(Helper.BUILDER_DEPENDENCIES);
     }
 };
 
-
 Helper.getExternalModuleDirectories = function (project, addNodeModules, addOnlyParent) {
-    var moduleDirectories = [];
+    const moduleDirectories = [];
     try {
-        var builder = project.builderJs;
-        let extDirectories = Helper.getEnvExternalModule().length > 0 ? Helper.getEnvExternalModule() : builder.externalModules && builder.externalModules.directories || [];
-        if (builder.externalModules && ((builder.externalModules && builder.externalModules.enabled) || Helper.isActiveExternal()) &&
-            extDirectories.length > 0) {
-            let current = process.cwd();
-            let currentType = builder.type;
+        const builder = project.builderJs;
+        const extDirectories =
+            Helper.getEnvExternalModule().length > 0 ? Helper.getEnvExternalModule() : (builder.externalModules && builder.externalModules.directories) || [];
+        if (
+            builder.externalModules &&
+            ((builder.externalModules && builder.externalModules.enabled) || Helper.isActiveExternal()) &&
+            extDirectories.length > 0
+        ) {
+            const current = process.cwd();
+            const currentType = builder.type;
             extDirectories.forEach((directory) => {
                 try {
                     directory = directory.replace("~", os.homedir());
                     if (fs.statSync(directory).isDirectory()) {
-
                         let moduleTarget = directory;
-                        let typeScriptOption = Helper.resolveTypescriptConfig(directory, "tsconfig.json", null);
+                        const typeScriptOption = Helper.resolveTypescriptConfig(directory, "tsconfig.json", null);
                         if (typeScriptOption) {
                             let tscOutDir = typeScriptOption.compilerOptions || {};
                             tscOutDir = tscOutDir.outDir || undefined;
@@ -719,33 +789,36 @@ Helper.getExternalModuleDirectories = function (project, addNodeModules, addOnly
                         moduleDirectories.push(moduleTarget);
 
                         if (addNodeModules) {
-                            let nModules = path.resolve(path.join(directory, Helper.NODE_MODULES));
+                            const nModules = path.resolve(path.join(directory, Helper.NODE_MODULES));
                             if (fs.existsSync(nModules) && fs.statSync(nModules).isDirectory()) {
                                 moduleDirectories.push(nModules);
                             }
                         }
 
                         // on vérifie si des répertoires du 1er niveau sont des modules nodejs pour les ajouter eux aussi
-                        var files = fs.readdirSync(directory);
+                        const files = fs.readdirSync(directory);
                         files.forEach((file) => {
-                            var modPath = path.join(directory, file);
+                            const modPath = path.join(directory, file);
                             if (fs.statSync(modPath).isDirectory()) {
                                 if (file.indexOf(".") == 0) return;
                                 // si un fichier "package.json" existe, c"est un module nodejs
                                 if (fs.existsSync(path.join(modPath, "package.json"))) {
-                                    let builderFile = path.join(modPath, Helper.BUILDER_FILE)
+                                    const builderFile = Helper.getBuilder(modPath);
                                     if (fs.existsSync(builderFile)) {
-                                        let path2addBuilderJS = Helper.ReadTypeBuilderJS(builderFile);
-                                        if (path2addBuilderJS !== Helper.TYPE.APPLICATION && path2addBuilderJS !== Helper.TYPE.APPLICATION_SERVER || (currentType !== Helper.TYPE.APPLICATION && currentType !== Helper.TYPE.APPLICATION_SERVER && current === modPath)) {
+                                        const path2addBuilderJS = Helper.ReadTypeBuilderJS(builderFile);
+                                        if (
+                                            (path2addBuilderJS !== Helper.TYPE.APPLICATION && path2addBuilderJS !== Helper.TYPE.APPLICATION_SERVER) ||
+                                            (currentType !== Helper.TYPE.APPLICATION && currentType !== Helper.TYPE.APPLICATION_SERVER && current === modPath)
+                                        ) {
                                             moduleDirectories.push(modPath);
                                             if (addNodeModules) {
-                                                let nModules = path.resolve(path.join(modPath, Helper.NODE_MODULES));
+                                                const nModules = path.resolve(path.join(modPath, Helper.NODE_MODULES));
                                                 if (fs.existsSync(nModules) && fs.statSync(nModules).isDirectory()) {
                                                     moduleDirectories.push(nModules);
                                                 }
                                             }
                                         } else {
-                                            Helper.info("Exclusion : " + path2addBuilderJS);
+                                            Helper.info(`Exclusion : ${path2addBuilderJS}`);
                                         }
                                     }
                                 }
@@ -753,7 +826,7 @@ Helper.getExternalModuleDirectories = function (project, addNodeModules, addOnly
                         });
                     }
                 } catch (e) {
-                    Helper.error("MODULE RESOLVER > erreur lors de la lecture du répertoire externe '" + directory + "' :", e);
+                    Helper.error(`MODULE RESOLVER > erreur lors de la lecture du répertoire externe '${directory}' :`, e);
                     process.exit(1);
                 }
             });
@@ -769,15 +842,18 @@ Helper.getExternalModuleDirectories = function (project, addNodeModules, addOnly
             }
         } else {
             // si on traite un module dans un projet de type parent, on ajoute tous les modules de ce dernier
-            let parentBuilderFile = path.join(project.dir, "../", Helper.BUILDER_FILE)
+            const parentBuilderFile = Helper.getBuilder(path.join(project.dir, "../"));
             if (fs.existsSync(parentBuilderFile)) {
-                let parentBuilderJs = require(parentBuilderFile);
+                const parentBuilderJs = require(parentBuilderFile);
                 if (parentBuilderJs.type === Helper.TYPE.PARENT) {
                     moduleDirectories.push(path.resolve(project.dir, ".."));
                     if (!addOnlyParent) {
                         Helper.getModuleList(path.join(project.dir, "../"), project).forEach((module) => {
-                            if ((project.packageJson.dependencies && project.packageJson.dependencies[module.name]) || (project.packageJson.devDependencies && project.packageJson.devDependencies[module.name])) {
-                                let typeScriptOption = Helper.resolveTypescriptConfig(module.dir, "tsconfig.json", null);
+                            if (
+                                (project.packageJson.dependencies && project.packageJson.dependencies[module.name]) ||
+                                (project.packageJson.devDependencies && project.packageJson.devDependencies[module.name])
+                            ) {
+                                const typeScriptOption = Helper.resolveTypescriptConfig(module.dir, "tsconfig.json", null);
                                 if (typeScriptOption) {
                                     let tscOutDir = typeScriptOption.compilerOptions || {};
                                     tscOutDir = tscOutDir.outDir || undefined;
@@ -793,7 +869,6 @@ Helper.getExternalModuleDirectories = function (project, addNodeModules, addOnly
                 }
             }
         }
-
     } catch (e) {
         console.error("MODULE RESOLVER > lors de la résolution des externals module' :", e);
     }
@@ -801,13 +876,12 @@ Helper.getExternalModuleDirectories = function (project, addNodeModules, addOnly
 };
 
 Helper.getExternalModules = function (project) {
-    var externalDirectories = Helper.getExternalModuleDirectories(project);
-    var modules = [];
+    const externalDirectories = Helper.getExternalModuleDirectories(project);
+    const modules = [];
     externalDirectories.forEach(function (dir) {
-        var packageJsonPath = path.join(dir, "package.json");
+        const packageJsonPath = path.join(dir, "package.json");
         if (fs.existsSync(packageJsonPath)) {
-
-            let typeScriptOption = Helper.resolveTypescriptConfig(dir, "tsconfig.json", null);
+            const typeScriptOption = Helper.resolveTypescriptConfig(dir, "tsconfig.json", null);
             let moduleTarget;
             if (typeScriptOption) {
                 let tscOutDir = typeScriptOption.compilerOptions || {};
@@ -817,14 +891,14 @@ Helper.getExternalModules = function (project) {
                 }
             }
 
-            var packageJson = require(packageJsonPath);
+            const packageJson = require(packageJsonPath);
             modules.push({
-                dir: dir,
+                dir,
                 name: packageJson.name,
                 version: packageJson.version,
-                packageJson: packageJson,
+                packageJson,
                 external: true,
-                moduleTarget: moduleTarget
+                moduleTarget,
             });
         }
     });
@@ -832,15 +906,15 @@ Helper.getExternalModules = function (project) {
 };
 
 Helper.applyExternalModuleDirectories = function (moduleResolver, project) {
-    var externalModuleDirectories = Helper.getExternalModuleDirectories(project);
+    const externalModuleDirectories = Helper.getExternalModuleDirectories(project);
     externalModuleDirectories.forEach(function (dir) {
-        Helper.info("MODULE RESOLVER > le répertoire '" + dir + "' est déclaré");
+        Helper.info(`MODULE RESOLVER > le répertoire '${dir}' est déclaré`);
         moduleResolver.addModuleDirectory(dir);
     });
 
-    let parentBuilderFile = path.join(project.dir, "../", Helper.BUILDER_FILE)
+    const parentBuilderFile = Helper.getBuilder(path.join(project.dir, "../"));
     if (fs.existsSync(parentBuilderFile)) {
-        let parentBuilderJs = require(parentBuilderFile);
+        const parentBuilderJs = require(parentBuilderFile);
         if (parentBuilderJs.type === Helper.TYPE.PARENT) {
             moduleResolver.addModuleDirectory(path.join(project.dir, "../"));
         }
@@ -849,7 +923,7 @@ Helper.applyExternalModuleDirectories = function (moduleResolver, project) {
 
 Helper.requireUncached = function (module) {
     delete require.cache[require.resolve(module)];
-    return require(module)
+    return require(module);
 };
 
 Helper.getCurrentProject = function () {
@@ -857,45 +931,58 @@ Helper.getCurrentProject = function () {
 };
 
 Helper.ReadTypeBuilderJS = function (path) {
-    let data = fs.readFileSync(path, 'utf8');
-    let regex = /type:\s*["|'](\S+)["|']\s*/g;
-    var corresp = regex.exec(data);
+    const data = fs.readFileSync(path, "utf8");
+    const regex = /type:\s*["|'](\S+)["|']\s*/g;
+    const corresp = regex.exec(data);
     return corresp && corresp[1]; // pour avoir un type avant d'installer le byuildDependencies
-}
+};
 
-Helper.getProject = function (dir) {
-    let packageJsonPath = path.join(dir, "package.json");
-    let builderJsPath = path.join(dir, "builder.js");
+Helper.getBuilder = (dir) => {
+    let builderJsPath = path.join(dir, ".builder.js");
+
+    if (!fs.existsSync(builderJsPath)) {
+        builderJsPath = path.join(dir, "builder.js");
+    }
+    return builderJsPath;
+};
+
+Helper.getProject = (dir) => {
+    const packageJsonPath = path.join(dir, "package.json");
+    const builderJsPath = Helper.getBuilder(dir);
     // FIXME : Currently, only default configuration is used (override done by configjs are not used)
     let configProjectPath = path.join(dir, "config", "default.js");
     if (!fs.existsSync(configProjectPath)) {
         configProjectPath = path.join(dir, "config", "default.json");
     }
-    let builderJsType;
 
-    if (!fs.existsSync(packageJsonPath) || !fs.existsSync(builderJsPath)) {
-        Helper.error("Le projet doit avoir un fichier package.json et un fichier builder.js (dir=" + process.cwd() + ")");
+    if (!fs.existsSync(packageJsonPath)) {
+        Helper.error(`Le projet doit avoir un fichier package.json (dir=${dir})`);
         process.exit(1);
     }
 
-    builderJsType = Helper.ReadTypeBuilderJS(builderJsPath)
-    let moduleResolver = require("./module-resolver");
+    if (!fs.existsSync(builderJsPath)) {
+        Helper.error(`Le projet doit avoir un fichier .builder.js (dir=${dir})`);
+        process.exit(1);
+    }
+    const builderJsType = Helper.ReadTypeBuilderJS(builderJsPath);
+    const moduleResolver = require("./module-resolver");
     moduleResolver.addModuleDirectory(dir);
 
-    let packageJson = require(packageJsonPath);
+    const packageJson = require(packageJsonPath);
     let configProject = {};
     if (builderJsType === Helper.TYPE.APPLICATION) {
+        if (!fs.existsSync(configProjectPath)) {
+            Helper.error(`Le projet doit avoir un fichier default.js ou default.json (dir=${dir})`);
+            process.exit(1);
+        }
         configProject = require(configProjectPath);
     }
-    //retour arrière sur commit 187090, impossible à utiliser dans le cas ou le builder.js contient des requires
-    //let builderJs = require(builderJsPath);
     let contextRoot;
     if (configProject) {
         contextRoot = configProject.contextPath;
     }
 
-    let staticPath = "/" + (contextRoot || packageJson.name) + "/static-" + packageJson.version + "/";
-
+    const staticPath = `/${contextRoot || packageJson.name}/static-${packageJson.version}/`;
 
     moduleResolver.removeModuleDirectory(dir);
 
@@ -903,20 +990,20 @@ Helper.getProject = function (dir) {
         name: packageJson.name,
         version: packageJson.version,
         type: builderJsType,
-        dir: dir,
-        packageJson: packageJson,
+        dir,
+        packageJson,
         configJson: configProject,
         configJsonPath: configProjectPath,
-        packageJsonPath: packageJsonPath,
+        packageJsonPath,
         builderJs: builderJsPath,
-        staticPath: staticPath,
-        tsConfig: Helper.resolveTypescriptConfig(dir, "tsconfig.json", null)
+        staticPath,
+        tsConfig: Helper.resolveTypescriptConfig(dir, Helper.getTsFile() || "tsconfig.json", null),
     };
 };
 
 Helper.loadSubModuleTasks = function (project) {
     return new Promise(function (resolve, reject) {
-        Helper.debug("chargement des taches du sous module : " + project.name);
+        Helper.debug(`chargement des taches du sous module : ${project.name}`);
         Helper.setCurrentSubModule(project);
         require("./builders-loader")(project, function () {
             Helper.setCurrentSubModule(null);
@@ -932,7 +1019,6 @@ Helper.setCurrentSubModule = function (project) {
     }
 };
 
-
 Helper.getCurrentSubModule = function () {
     return this.currentSubModule;
 };
@@ -944,7 +1030,7 @@ Helper.getCurrentSubModule = function () {
  * @returns {EventEmitter}
  */
 Helper.stream = function (done, streams) {
-    var cb = arguments[0];
+    const cb = arguments[0];
     return eventStream.merge.apply(eventStream, [].slice.call(arguments, 1)).on("end", function () {
         cb();
     });
@@ -962,58 +1048,56 @@ Helper.getMainProcessDir = function () {
     return process.env.HB_MAIN_CWD;
 };
 
-Helper.checkTasksExistence = function (gulp, tasks) {
+Helper.checkTasksExistence = function (gulp, tasks, exit = true) {
+    let allExist = true;
     tasks.forEach(function (task) {
-        if (!gulp.hasTask(task)) {
-            log(chalk.red("La tâche '" + task + "' n'existe pas"));
-            process.exit(1);
+        if (!gulp._getTask(task)) {
+            log(chalk.red(`La tâche '${task}' n'existe pas ou n'est pas compatible avec votre type de projet`));
+            exit && process.exit(1);
+            allExist = false;
         }
     });
+    return allExist;
 };
 
 Helper.isValidVersion = function (version, moduleName) {
-
     if (!semver.validRange(version)) {
         return false;
-    } else {
-        if (version.substring(0, 1).match("[~,>,>=,<,<=,=]") != null) {
-            version = version.substring(1);
-        }
     }
-
+    if (version.substring(0, 1).match("[~,>,>=,<,<=,=]") != null) {
+        version = version.substring(1);
+    }
 
     // On autorise toute les versions release valide
     if (semver.prerelease(version) == null) {
-        return (semver.validRange(version) != null);
+        return semver.validRange(version) != null;
     }
-    else {
-        if (semver.prerelease(Helper.getCurrentProject().version) != null) {
-            return (semver.validRange(version) != null);
-        } else {
-            return false;
-        }
+
+    if (semver.prerelease(Helper.getCurrentProject().version) != null) {
+        return semver.validRange(version) != null;
     }
+    return false;
 };
 
 /**
  * Retourne la dépendance entre modules d'un projet dans un parent
  */
 Helper.getModuleDependencies = function (project) {
-    let ParentDir = path.resolve(project.dir, "../");
-    let parentBuilderFile = path.join(ParentDir, Helper.BUILDER_FILE);
+    const ParentDir = path.resolve(project.dir, "../");
+    const parentBuilderFile = Helper.getBuilder(ParentDir);
     if (fs.existsSync(parentBuilderFile)) {
-        let parentBuilderJs = require(parentBuilderFile);
+        const parentBuilderJs = require(parentBuilderFile);
         if (parentBuilderJs.type === Helper.TYPE.PARENT) {
             Helper.debug("recherche des modules depuis : ", ParentDir);
             State.parentBuilder.externalModules = parentBuilderJs.externalModules;
-            var moduleList = Helper.getModuleList(ParentDir);
+            const moduleList = Helper.getModuleList(ParentDir);
 
-            //Extraction des dépendances entre les modules
+            // Extraction des dépendances entre les modules
             moduleList.forEach(function (mod) {
                 mod.dependencies = [];
-                var json = mod.packageJson;
-                var dep = json[Helper.DEPENDENCIES] || {};
-                var testDep = json[Helper.DEV_DEPENDENCIES] || {};
+                const json = mod.packageJson;
+                const dep = json[Helper.DEPENDENCIES] || {};
+                const testDep = json[Helper.DEV_DEPENDENCIES] || {};
 
                 moduleList.forEach(function (dependent) {
                     if (dep[dependent.name] || testDep[dependent.name]) {
@@ -1024,48 +1108,49 @@ Helper.getModuleDependencies = function (project) {
 
             // on trie les modules de façon à gérer les inter-dépendances
             moduleList.sort(function (p1, p2) {
-                return (p1.dependencies.indexOf(p2.name) != -1) ? -1 : 1
+                return p1.dependencies.indexOf(p2.name) != -1 ? -1 : 1;
             });
             moduleList.sort(function (p1, p2) {
-                return (p1.dependencies.indexOf(p2.name) != -1) ? -1 : 1
+                return p1.dependencies.indexOf(p2.name) != -1 ? -1 : 1;
             });
 
             moduleList.reverse();
             Helper.debug("Modules trouvés :", moduleList);
-            var subProjectTypes = {};
-            let idxProject = moduleList.findIndex((mod) => {
+            const idxProject = moduleList.findIndex((mod) => {
                 return mod.name === project.name;
             });
-            let current = moduleList.splice(idxProject)[0];
+            const current = moduleList.splice(idxProject)[0];
             return moduleList.filter((mod) => {
                 return current.dependencies.includes(mod.name);
             });
         }
     }
-
-}
+};
 
 /**
- * Fonction retournant une fonction de mapping ajoutant les arguments avant ceux du tableau sur lequel s'applique le mapping
+ * Fonction retournant une fonction de mapping ajoutant les arguments avant ceux du tableau sur lequel s'applique le mapping avec 'path.join'
  * @param ...args les arguments à ajouter
  * @returns {Function}
  */
 Helper.prepend = function () {
-    var args = Array.prototype.slice.call(arguments, 0);
+    const prependArgs = Array.prototype.slice.call(arguments, 0);
     return function (element) {
-        if (args.length === 1) {
-            if (args[0] === "!") {
-                return args[0] + element;
-            } else {
-                return path.join(args[0], element);
+        if (prependArgs.length === 1) {
+            if (prependArgs[0] === "!") {
+                return prependArgs[0] + element;
             }
-        } else {
-            return args.map(function (argElement) {
-                return path.join(argElement, element);
-            });
+            return path.join(prependArgs[0], element);
         }
+        return prependArgs.map(function (argElement) {
+            if (typeof element === "string" || element instanceof String) {
+                if (element[0] === "!") {
+                    return path.join(element[0] + argElement, element.substring(1));
+                }
+                return path.join(argElement, element);
+            }
+        });
     };
-}
+};
 
 /**
  * Fonction copy de répertoire
@@ -1074,13 +1159,13 @@ Helper.prepend = function () {
  */
 Helper.copyDir = function (src, dest) {
     fs.mkdirSync(dest);
-    var files = fs.readdirSync(src);
-    for (var i = 0; i < files.length; i++) {
-        var current = fs.lstatSync(path.join(src, files[i]));
+    const files = fs.readdirSync(src);
+    for (let i = 0; i < files.length; i++) {
+        const current = fs.lstatSync(path.join(src, files[i]));
         if (current.isDirectory()) {
             Helper.copyDir(path.join(src, files[i]), path.join(dest, files[i]));
         } else if (current.isSymbolicLink()) {
-            var symlink = fs.readlinkSync(path.join(src, files[i]));
+            const symlink = fs.readlinkSync(path.join(src, files[i]));
             fs.symlinkSync(symlink, path.join(dest, files[i]));
         } else {
             fs.copyFileSync(path.join(src, files[i]), path.join(dest, files[i]));
@@ -1089,21 +1174,25 @@ Helper.copyDir = function (src, dest) {
 };
 
 Helper.resolveTypescriptConfig = function (directory, configName, config) {
-    let tsconfigFile = path.join(directory, configName);
+    const tsconfigFile = path.join(directory, configName);
     let actualConf = cloneDeep(config);
 
     if (fs.existsSync(tsconfigFile)) {
-        let configTypescript = require(tsconfigFile);
+        const configTypescript = require(tsconfigFile);
         if (configTypescript && configTypescript.extends) {
             actualConf = merge(
                 actualConf,
-                Helper.resolveTypescriptConfig(path.resolve(directory, path.dirname(configTypescript.extends)), path.basename(configTypescript.extends) + ".json", actualConf)
+                Helper.resolveTypescriptConfig(
+                    path.resolve(directory, path.dirname(configTypescript.extends)),
+                    `${path.basename(configTypescript.extends)}.json`,
+                    actualConf,
+                ),
             );
         }
         actualConf = merge(actualConf, configTypescript);
     }
-    Helper.debug(directory, configName, `extend : ${actualConf ? actualConf.extends: null}`);
+    Helper.debug(directory, configName, `extend : ${actualConf ? actualConf.extends : null}`);
     return actualConf;
-}
+};
 
 module.exports = Helper;

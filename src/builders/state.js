@@ -1,10 +1,7 @@
-"use strict";
-
 /**
  * Classe déchange d'informations entre les différentes tâches
  */
-class State {
-}
+class State {}
 
 /**
  * rapport pour l'état et l'arbre des dépendances
@@ -46,7 +43,6 @@ State.prefix = "";
  * @static
  */
 State.taskHistory = {};
-
 
 /**
  * Resultat afficher en fin de traitement
